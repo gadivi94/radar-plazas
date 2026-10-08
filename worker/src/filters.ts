@@ -1,5 +1,5 @@
 // Filtros compartidos por la búsqueda (API) y las alertas.
-import { expandirZonas, norm } from "./geo";
+import { centroProvincia, coordCatalana, distanciaKm, expandirZonas, norm } from "./geo";
 import { SUBTIPOS } from "./sectores";
 import type { Oferta } from "./types";
 
@@ -10,6 +10,7 @@ export interface Filtros {
   tipos?: string[];           // sectores
   subtipos?: string[];        // subcategorías (policia-local, tcae…); si hay, basta con que coincida una
   nivelMax?: number;          // solo plazas que piden como mucho este nivel de estudios (0-4)
+  cerca?: { lat: number; lon: number; km: number; etiqueta?: string }; // a menos de km de un punto (código postal o ubicación)
   dificultades?: number[];
   grupos?: string[];         // A1 A2 B C1 C2 AP · "?" = sin especificar
   palabras?: string[];       // alguna debe aparecer en título u organismo
@@ -28,6 +29,14 @@ export function estadoActual(o: Oferta, hoy = hoyMadrid()): string {
   return o.estado || "abierta";
 }
 
+/** [lon, lat] de una plaza: su municipio o, si no se sabe, el centro de su provincia. Las estatales no tienen lugar. */
+export function coordDe(o: Oferta): [number, number] | null {
+  if (o.comunidad === "Estatal") return null;
+  if (o.lat && o.lon) return [Number(o.lon), Number(o.lat)];
+  if (!o.comunidad || o.comunidad === "Cataluña") { const c = coordCatalana(o.municipio); if (c) return c; }
+  return centroProvincia(o.provincia);
+}
+
 export function coincide(o: Oferta, f: Filtros, hoy = hoyMadrid()): boolean {
   const has = (a?: unknown[]) => Array.isArray(a) && a.length > 0;
   if (has(f.fuentes) && !f.fuentes!.includes(o.fuente)) return false;
@@ -41,6 +50,10 @@ export function coincide(o: Oferta, f: Filtros, hoy = hoyMadrid()): boolean {
     if (!okSub && !okSector) return false;
   } else if (has(f.tipos) && !f.tipos!.includes(o.tipo || "otros")) return false;
   if (typeof f.nivelMax === "number" && o.nivel != null && Number(o.nivel) > f.nivelMax) return false;
+  if (f.cerca && typeof f.cerca.lat === "number") {
+    const p = coordDe(o);
+    if (!p || distanciaKm(p, [f.cerca.lon, f.cerca.lat]) > (f.cerca.km || 25)) return false;
+  }
   if (has(f.dificultades) && !f.dificultades!.includes(Number(o.dificultad || 2))) return false;
   if (has(f.grupos) && !f.grupos!.includes(o.grupo || "?")) return false;
   if (f.soloInterinos && !Number(o.interino)) return false;

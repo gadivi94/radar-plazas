@@ -23,7 +23,7 @@ function shell(env: Env, o: { titulo: string; desc: string; ruta: string; cuerpo
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${e(o.titulo)} · Radar de Plazas</title>
+<title>${e(o.titulo)} · Radar de Plazas / Oposiciones</title>
 <meta name="description" content="${e(o.desc.slice(0, 160))}">
 <link rel="canonical" href="${e(url)}">${o.noindex ? '\n<meta name="robots" content="noindex">' : ""}
 <meta property="og:type" content="website"><meta property="og:title" content="${e(o.titulo)}"><meta property="og:description" content="${e(o.desc.slice(0, 200))}"><meta property="og:url" content="${e(url)}"><meta property="og:image" content="${sitio(env)}/icon-512.png">
@@ -37,9 +37,9 @@ ${(o.jsonld || []).map((j) => `<script type="application/ld+json">${JSON.stringi
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a class="marca" href="/">Radar de <span>Plazas</span></a><a class="volver" href="/">Todas las plazas →</a></div>
+  <div class="top"><a class="marca" href="/">Radar de <span>Plazas</span> / Oposiciones</a><a class="volver" href="/">Todas las plazas →</a></div>
 ${o.cuerpo}
-  <footer><nav aria-label="Más"><a href="/oposiciones">Por sector</a><a href="/estadisticas.html">Estadísticas</a><a href="/guias/">Guías</a><a href="/sueldos.html">Sueldos</a><a href="/legal/aviso-legal.html">Aviso legal</a><a href="/legal/privacidad.html">Privacidad</a><a href="/contacto.html">Contacto</a></nav><span>© 2026 @gadivi · Radar de Plazas. Información de fuentes oficiales (BOE, CIDO, TMB): comprueba siempre la convocatoria publicada.</span></footer>
+  <footer><nav aria-label="Más"><a href="/quienes-somos.html">Quiénes somos</a><a href="/oposiciones">Por sector</a><a href="/estadisticas.html">Estadísticas</a><a href="/guias/">Guías</a><a href="/sueldos.html">Sueldos</a><a href="/legal/aviso-legal.html">Aviso legal</a><a href="/legal/privacidad.html">Privacidad</a><a href="/contacto.html">Contacto</a></nav><span>© 2026 @gadivi · Radar de Plazas / Oposiciones. Información de fuentes oficiales (BOE, CIDO, TMB): comprueba siempre la convocatoria publicada.</span></footer>
 </div>
 <script src="/cumple.js"></script>
 </body>
@@ -223,7 +223,7 @@ export async function sitemap(env: Env): Promise<Response> {
   const web = sitio(env);
   const filas = (await env.DB.prepare("SELECT id, titulo, tipo, subtipo, comunidad, provincia, encontrada FROM ofertas WHERE (plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado != 'cerrada') LIMIT 20000").bind(hoy).all<Oferta>()).results;
   const urls = new Map<string, string | undefined>();
-  for (const r of ["/", "/oposiciones", "/estadisticas.html", "/sueldos.html", "/guias/", "/guias/interino-y-bolsa.html", "/guias/grupos-y-titulacion.html", "/guias/como-presentar-solicitud.html", "/guias/tipos-de-pruebas.html", "/guias/glosario.html", "/contacto.html"]) urls.set(r, undefined);
+  for (const r of ["/", "/oposiciones", "/estadisticas.html", "/sueldos.html", "/guias/", "/guias/interino-y-bolsa.html", "/guias/grupos-y-titulacion.html", "/guias/como-presentar-solicitud.html", "/guias/tipos-de-pruebas.html", "/guias/glosario.html", "/contacto.html", "/quienes-somos.html"]) urls.set(r, undefined);
   for (const s of [...ORDEN_SECTORES, "otros"]) urls.set(`/oposiciones/${s}`, undefined);
   for (const k of Object.keys(SUBTIPOS)) urls.set(`/oposiciones/${k}`, undefined);
   for (const o of filas) {

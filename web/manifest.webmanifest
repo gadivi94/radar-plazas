@@ -1,6 +1,6 @@
 {
-  "name": "Radar de Plazas",
-  "short_name": "Radar Plazas",
+  "name": "Radar de Plazas / Oposiciones",
+  "short_name": "Radar Opos",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#eef2f1",

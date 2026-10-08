@@ -73,7 +73,8 @@ function pasaFiltros(o,sin){
   if(S.niv!=null&&o.nivel!=null&&o.nivel>S.niv)return false;
   if(sin!=="dif"&&S.dif.length&&!S.dif.includes(dificultad(o)))return false;
   if(sin!=="grp"&&S.grp.length&&!S.grp.includes(grupoDe(o)))return false;
-  if(S.solo){const c=cumpleDe(o);if(c&&c.estado==="no")return false}
+  if(S.solo){const c=cumpleDe(o);if(c&&c.estado==="no")return false;
+    const int=S.perfil?.intereses||[];if(int.length&&!int.includes(o.tipo||"otros"))return false}
   return true;
 }
 
@@ -116,14 +117,18 @@ function render(){
   $("fniv").innerHTML=NIV_OPC.map(([v,l])=>`<option value="${v}">${t(l)}</option>`).join("");$("fniv").value=S.niv==null?"":String(S.niv);
   $("fdif").innerHTML=DIF.map(([v,l])=>`<button type="button" data-dif="${v}" aria-pressed="${S.dif.includes(v)}">${t(l)}<small>${cuenta("dif",o=>dificultad(o)===v)}</small></button>`).join("");
   $("fgrp").innerHTML=GRUPOS.map(([v,l])=>`<button type="button" data-grp="${v}" aria-pressed="${S.grp.includes(v)}">${t(l)}<small>${cuenta("grp",o=>grupoDe(o)===v)}</small></button>`).join("");
-  $("soloCumplo").checked=S.solo;$("soloNota").textContent=S.perfil?.nivel!=null?"":"(rellena Mi perfil)";
+  $("soloCumplo").checked=S.solo;$("soloNota").textContent=S.perfil?.nivel!=null?"":"(completa tu perfil)";
+  const av=$("avisoPerfil"),sinPerfil=S.perfil?.nivel==null;let cerrado=false;try{cerrado=!!sessionStorage.getItem("rp_avp")}catch(_){}
+  av.hidden=!(sinPerfil&&!cerrado)&&!(!sinPerfil&&!S.solo&&!cerrado);
+  av.innerHTML=sinPerfil?`<span>Completa tu perfil (estudios, idiomas e intereses) y te enseñamos solo las plazas que encajan contigo.</span><button type="button" data-ir-perfil>Completar perfil</button><button type="button" class="x" data-cerrar-aviso aria-label="Cerrar">✕</button>`
+    :`<span>Tienes el perfil hecho. ¿Ver solo las plazas que encajan contigo?</span><button type="button" data-solo-perfil>Ver solo las mías</button><button type="button" class="x" data-cerrar-aviso aria-label="Cerrar">✕</button>`;
   if(S.meta){$("lastrun").textContent=`${LANG==="ca"?"Última revisió":"Última revisión"}: ${new Date(S.meta.fecha).toLocaleString(LANG==="ca"?"ca-ES":"es-ES",{dateStyle:"medium",timeStyle:"short"})} · ${S.meta.recogidas??0} ${t("nuevas")} · ${S.meta.completadas??0} ${LANG==="ca"?"fitxes llegides":"fichas leídas"}`}
   S.mapRows=base.filter(o=>pasaFiltros(o));
   if(S.clasico){drawPins();renderInfo();drawEs()}
   renderLugar();
   window.Mapa3D&&S.m3&&Mapa3D.actualizar(S.mapRows,S.place);
   const rows=S.mapRows.filter(lugarActivo)
-    .sort((a,b)=>{const da=daysLeft(a),db=daysLeft(b);if(da===null&&db===null)return 0;if(da===null)return 1;if(db===null)return -1;return da-db});
+    .sort(S.place?.kind==="cerca"?(a,b)=>distOferta(a)-distOferta(b):(a,b)=>{const da=daysLeft(a),db=daysLeft(b);if(da===null&&db===null)return 0;if(da===null)return 1;if(db===null)return -1;return da-db});
   const activos=S.dif.length+S.grp.length+(S.place?1:0)+(S.sec?1:0)+S.subs.length+(S.niv!=null?1:0)+(S.solo?1:0);
   $("fres").textContent=`${rows.length} ${t(rows.length===1?"plaza":"plazas")}`;
   $("fclear").hidden=!activos;
@@ -146,18 +151,19 @@ function nombreLugar(p){
   if(p.kind==="provES")return "en la provincia de "+p.id;
   if(p.kind==="com")return "en "+(COM_NOM[p.id]||"la comarca");
   if(p.kind==="toda")return "válidas en toda Cataluña";
+  if(p.kind==="cerca")return `a menos de ${p.km} km de ${p.id}`;
   return "en "+p.id;
 }
 function renderActivos(){
   const a=[];
   if(S.q)a.push(["q",`“${S.q}”`]);
-  if(S.place)a.push(["place",nombreLugar(S.place).replace(/^en (la provincia de )?/,"")]);
+  if(S.place)a.push(["place",S.place.kind==="cerca"?`A ${S.place.km} km de ${S.place.id}`:nombreLugar(S.place).replace(/^en (la provincia de )?/,"")]);
   if(S.sec)a.push(["sec",SECT[S.sec]?.n||S.sec]);
   for(const k of S.subs)a.push(["sub:"+k,SUBN[k]?.n||k]);
   if(S.niv!=null)a.push(["niv",NIV_OPC.find(x=>x[0]===String(S.niv))?.[1]]);
   for(const d of S.dif)a.push(["dif:"+d,DIF[d-1][1]]);
   for(const g of S.grp)a.push(["grp:"+g,g==="?"?"Sin grupo":"Grupo "+g]);
-  if(S.solo)a.push(["solo","Solo las que cumplo"]);
+  if(S.solo)a.push(["solo","Encaja con mi perfil"]);
   $("activos").innerHTML=a.map(([k,l])=>`<button type="button" class="activo" data-quitar="${esc(k)}" aria-label="Quitar filtro ${esc(l)}">${esc(l)}</button>`).join("");
 }
 function renderM3info(rows){
@@ -185,6 +191,7 @@ function card(o){
   if(o.terminiFecha)tags.push(`<span class="tag">${t("hasta")} ${fmtDate(o.terminiFecha)}</span>`);
   else if(o.terminiTexto)tags.push(`<span class="tag">${esc(o.terminiTexto)}</span>`);
   if(o.zona)tags.push(`<span class="tag">${esc(o.zona)}</span>`);
+  if(S.place?.kind==="cerca"){const d=distOferta(o);if(d!==null)tags.push(`<span class="tag dist">📍 a ${d<1?"menos de 1":Math.round(d)} km${o._aprox?" (aprox.)":""}</span>`)}
   const c=cumpleDe(o);
   if(c)tags.push(c.estado==="si"?`<span class="tag ok">✓ ${t("Cumples")}</span>`:c.estado==="no"?`<span class="tag ko" title="${esc(c.faltan.join(" · "))}">✗ ${t("Te falta")}: ${esc(c.faltan[0])}${c.faltan.length>1?` +${c.faltan.length-1}`:""}</span>`:`<span class="tag">? ${t("Revisa")} ${esc(c.dudas.join(", "))}</span>`);
   const dis=!S.busy.has(o.id)?"":"disabled";
@@ -215,7 +222,8 @@ function seguimiento(o){
 }
 function resumenFiltros(f){
   const p=[];
-  if(f.zonas?.length)p.push(f.zonas.length>4?`${f.zonas.length} municipios`:f.zonas.join(", "));
+  if(f.cerca)p.push(`A menos de ${f.cerca.km} km de ${f.cerca.etiqueta||"tu ubicación"}`);
+  else if(f.zonas?.length)p.push(f.zonas.length>4?`${f.zonas.length} municipios`:f.zonas.join(", "));
   else if(f.provincias?.length)p.push(f.provincias.join(", "));
   else if(f.comunidades?.length)p.push(f.comunidades.join(", "));else p.push("Toda España");
   if(f.subtipos?.length)p.push(f.subtipos.map(k=>SUBN[k]?.n||k).join(", "));
@@ -237,6 +245,7 @@ function filtrosActuales(){
   if(pl?.kind==="ccaa")f.comunidades=[pl.id];
   else if(pl?.kind==="provES")f.provincias=[pl.id];
   else if(pl?.kind==="muniES")f.zonas=[pl.id];
+  else if(pl?.kind==="cerca")f.cerca={lat:pl.lat,lon:pl.lon,km:pl.km,etiqueta:pl.id};
   else if(pl?.kind==="muni")f.zonas=[pl.id];
   else if(pl?.kind==="com")f.zonas=GEO.munis.filter(m=>m[1]===pl.id).map(m=>m[0]);
   else if(pl?.kind==="prov"){f.comunidades=["Cataluña"];f.zonas=GEO.munis.filter(m=>m[2]===pl.id).map(m=>m[0])}
@@ -375,6 +384,7 @@ function lugarActivo(o){
   if(S.place.kind==="ccaa")return (o.comunidad||"Cataluña")===S.place.id;
   if(S.place.kind==="provES")return normTxt(o.provincia)===normTxt(S.place.id)||o.comunidad==="Estatal";
   if(S.place.kind==="muniES")return normTxt(o.municipio)===normTxt(S.place.id);
+  if(S.place.kind==="cerca"){const d=distOferta(o);return d!==null&&d<=S.place.km}
   if(o.comunidad&&o.comunidad!=="Cataluña")return false;
   const m=muniDe(o);
   if(S.place.kind==="toda")return !m;
@@ -400,12 +410,14 @@ function renderLugar(){
   if(porCom.size)h+=`<optgroup label="Comarcas con plazas">${[...porCom].map(([c,n])=>[COM_NOM[c],c,n]).sort(byName).map(([l,c,n])=>opt("com:"+c,l,n)).join("")}</optgroup>`;
   if(porMuni.size)h+=`<optgroup label="Localidades con plazas">${[...porMuni].sort(byName).map(([l,n])=>opt("muni:"+l,l,n)).join("")}</optgroup>`;
   if(toda)h+=`<optgroup label="Sin municipio">${opt("toda:1","Válidas en toda Cataluña",toda)}</optgroup>`;
+  if(S.place?.kind==="cerca")h+=opt(placeKey(S.place),`A ${S.place.km} km de ${S.place.id}`,null);
   const k=placeKey(S.place);
   if(k&&!h.includes(`value="${esc(k)}"`))h+=opt(k,(["muni","ccaa","provES","muniES"].includes(S.place.kind)?S.place.id:S.place.kind==="com"?COM_NOM[S.place.id]:PROV_NOM[S.place.id])||"Lugar elegido",0);
   sel.innerHTML=h;sel.value=k;
 }
 $("lugarsel").addEventListener("change",e=>{
   const v=e.target.value;
+  if(v.startsWith("cerca:"))return;
   if(!v){S.place=null;setVB({...FULL})}
   else{const [kind,id]=v.split(/:(.*)/s);S.place={kind,id:["muni","ccaa","provES","muniES"].includes(kind)?id:kind==="toda"?"1":+id};
     if(kind==="ccaa"||kind==="provES"){setVB({...FULL});if(kind==="provES"||(kind==="ccaa"&&id!=="Cataluña"))cambiarMapa("es")}
@@ -504,21 +516,30 @@ function renderCrit(){
     <form class="add" id="nuevaAlerta"><input id="nombreAlerta" placeholder="Nombre (ej.: Policía local Girona)" autocomplete="off" required maxlength="80"><button type="submit">${t("Crear")}</button></form>
     ${S.yo&&!S.yo.admin?`<p class="note">${al.length} de ${max} alertas de la cuenta gratuita.</p>`:""}</div>`}`;
 }
+const IDIOMAS=[["catalan","Catalán"],["valenciano","Valenciano"],["euskera","Euskera"],["gallego","Gallego"],["ingles","Inglés"],["frances","Francés"],["aleman","Alemán"]];
+function completitud(p){if(!p)return 0;let n=0;if(p.nivel!=null)n+=35;if(p.intereses?.length)n+=25;if(Object.values(p.idiomas||{}).some(Boolean)||p.catalan)n+=15;if(p.edad)n+=10;if(p.carne?.length)n+=10;if(p.nacionalidad)n+=5;return Math.min(100,n)}
 function renderPerfil(){
-  const p=S.perfil||{},carne=p.carne||[];
-  $("perfilBody").innerHTML=`<p class="note">${t("Rellena tu perfil y marcaremos en cada plaza si cumples los requisitos que detectamos. Se guarda en este dispositivo y, si entras, en tu cuenta.")}</p>
+  const p=S.perfil||{},carne=p.carne||[],idi=p.idiomas||(p.catalan?{catalan:p.catalan}:{}),int=p.intereses||p.prefs?.intereses||[],pc=completitud(p);
+  $("perfilBody").innerHTML=`<p class="note">Con tu perfil marcamos en cada plaza si cumples los requisitos y, si quieres, te enseñamos solo lo que encaja contigo. Se guarda en este dispositivo y, si entras, en tu cuenta.</p>
+    <div class="progreso" role="progressbar" aria-valuenow="${pc}" aria-valuemin="0" aria-valuemax="100" aria-label="Perfil completado"><i style="width:${pc}%"></i></div>
+    <div class="pgrupo"><h3>Estudios terminados</h3><select class="sel" data-pf="nivel"><option value="">Elige tu nivel…</option>${NIVELES.map((n,i)=>`<option value="${i}" ${p.nivel===i?"selected":""}>${esc(n)}</option>`).join("")}</select></div>
+    <div class="pgrupo"><h3>Idiomas</h3><div class="idiomas">${IDIOMAS.map(([k,l])=>`<label>${l}<select data-idioma="${k}"><option value="">No</option>${["A1","A2","B1","B2","C1","C2"].map(n=>`<option ${idi[k]===n?"selected":""}>${n}</option>`).join("")}</select></label>`).join("")}</div></div>
+    <div class="pgrupo"><h3>¿Qué te interesa?</h3><div class="intereses">${SECTORES.filter(x=>x.k!=="otros").map(x=>`<label><input type="checkbox" data-interes="${x.k}" ${int.includes(x.k)?"checked":""}> ${ICONO[x.k]||""} ${esc(x.n)}</label>`).join("")}</div></div>
     <div class="pform">
-      <label>${t("Nivel de estudios")}<select data-pf="nivel"><option value="">—</option>${NIVELES.map((n,i)=>`<option value="${i}" ${p.nivel===i?"selected":""}>${esc(n)}</option>`).join("")}</select></label>
       <label>${t("Edad")}<input data-pf="edad" type="number" inputmode="numeric" min="14" max="80" value="${p.edad??""}"></label>
-      <label>${t("Catalán")}<select data-pf="catalan"><option value="">${t("Ninguno")}</option>${["A2","B1","B2","C1","C2"].map(n=>`<option ${p.catalan===n?"selected":""}>${n}</option>`).join("")}</select></label>
       <label>${t("Nacionalidad")}<select data-pf="nacionalidad"><option value="es" ${p.nacionalidad!=="ue"&&p.nacionalidad!=="otra"?"selected":""}>${t("Española")}</option><option value="ue" ${p.nacionalidad==="ue"?"selected":""}>${t("De otro país de la UE")}</option><option value="otra" ${p.nacionalidad==="otra"?"selected":""}>${t("De fuera de la UE")}</option></select></label>
     </div>
     <div class="docs"><span class="mini-l">${t("Carné de conducir")}</span>${["A","A2","B","C","D","BTP"].map(c=>`<label><input type="checkbox" data-carne="${c}" ${carne.includes(c)?"checked":""}> ${c}</label>`).join("")}</div>
-    <p class="note">${p.nivel!=null?"✓ Perfil guardado. Activa «Solo las que cumplo» en los filtros para ver solo las plazas a tu alcance.":"Con el nivel de estudios ya podemos empezar a marcar plazas."}</p>`;
+    <label class="encaja"><input type="checkbox" id="soloPerfil" ${S.solo?"checked":""} ${p.nivel==null?"disabled":""}><span>Mostrar solo las plazas que encajan con mi perfil<small>Oculta las que piden estudios, idiomas o carnés que no tienes y, si marcas intereses, las de otros sectores.</small></span></label>`;
 }
 function guardarPerfil(){
-  const p={};for(const el of document.querySelectorAll("[data-pf]")){const v=el.value;if(v==="")continue;p[el.dataset.pf]=["nivel","edad"].includes(el.dataset.pf)?+v:v}
-  p.carne=[...document.querySelectorAll("[data-carne]:checked")].map(x=>x.dataset.carne);
+  const p={...(S.perfil||{})};
+  for(const el of document.querySelectorAll("#perfilBody [data-pf]")){const v=el.value;if(v===""){delete p[el.dataset.pf];continue}p[el.dataset.pf]=["nivel","edad"].includes(el.dataset.pf)?+v:v}
+  p.carne=[...document.querySelectorAll("#perfilBody [data-carne]:checked")].map(x=>x.dataset.carne);
+  p.idiomas=Object.fromEntries([...document.querySelectorAll("#perfilBody [data-idioma]")].filter(x=>x.value).map(x=>[x.dataset.idioma,x.value]));
+  p.intereses=[...document.querySelectorAll("#perfilBody [data-interes]:checked")].map(x=>x.dataset.interes);
+  delete p.catalan;
+  if(p.prefs)p.prefs={...p.prefs,intereses:p.intereses};
   S.perfil=p;ls.set("rp_perfil",JSON.stringify(p));
   if(S.ses)api("/cuenta",{method:"PATCH",body:JSON.stringify({perfil:p})}).catch(()=>{});
   render();renderPerfil();
@@ -573,6 +594,9 @@ document.addEventListener("click",async e=>{
   if(tg.dataset.acceso){abrirAcceso("Crea tu cuenta gratis para recibir alertas por correo. Te enviamos un código de 6 cifras, sin contraseñas.");return}
   if(tg.id==="accesoX"){$("acceso").hidden=true;return}
   if(tg.id==="otroEmail"){$("fCodigo").hidden=true;$("fEmail").hidden=false;$("accesoErr").textContent="";$("email").focus();return}
+  if(tg.dataset.irPerfil!==undefined){const d=$("perfil");d.open=true;d.scrollIntoView({behavior:"smooth",block:"start"});return}
+  if(tg.dataset.soloPerfil!==undefined){S.solo=true;guardarFiltros();render();renderPerfil();toast("Ahora ves solo las plazas que encajan contigo");return}
+  if(tg.dataset.cerrarAviso!==undefined){try{sessionStorage.setItem("rp_avp","1")}catch(_){}$("avisoPerfil").hidden=true;return}
   if(tg.id==="verMas"){S.mostrar=(S.mostrar||60)+60;render();return}
   if(tg.dataset.mapa){cambiarMapa(tg.dataset.mapa);return}
   if(tg.id==="salir"){try{await api("/auth/logout",{method:"POST"})}catch(_){}cerrarSesion();toast("Sesión cerrada");return}
@@ -628,7 +652,8 @@ document.addEventListener("change",async e=>{
   const el=e.target;
   if(el.id==="fniv"){S.niv=el.value===""?null:+el.value;guardarFiltros();render();return}
   if(el.id==="soloCumplo"){S.solo=el.checked;if(S.solo&&S.perfil?.nivel==null){$("perfil").open=true;$("perfil").scrollIntoView({behavior:"smooth"});toast("Primero rellena tu perfil")}guardarFiltros();render();return}
-  if(el.dataset.pf!==undefined||el.dataset.carne){guardarPerfil();toast("Perfil guardado");return}
+  if(el.closest&&el.closest("#perfilBody")&&(el.dataset.pf!==undefined||el.dataset.carne||el.dataset.idioma||el.dataset.interes)){guardarPerfil();toast("Perfil guardado");return}
+  if(el.id==="soloPerfil"){S.solo=el.checked;guardarFiltros();render();toast(S.solo?"Ahora ves solo las plazas que encajan contigo":"Ves todas las plazas");return}
   if(el.dataset.etapaDe){const o=S.ofertas.find(x=>x.id===el.dataset.etapaDe);if(o&&await marcar(o,el.value)){S.abiertos.add(o.id);toast("Etapa: "+ETAPAS.find(x=>x[0]===el.value)[1]);render()}return}
   if(el.dataset.doc){const o=S.ofertas.find(x=>x.id===el.dataset.de);if(!o)return;const docs={...(o.docs||{}),[el.dataset.doc]:el.checked};
     if(await marcar(o,o.marca,{docs}))S.abiertos.add(o.id);return}
@@ -726,7 +751,6 @@ function coordDeNombre(nom,cat){
 function provDe(o){if(o.provincia)return o.provincia;const m=(!o.comunidad||o.comunidad==="Cataluña")&&muniDe(o);return m?PROV_NOM[m.prov]:null}
 function usarClasico(motivo){
   S.clasico=true;S.m3=false;$("hero").classList.add("plano");$("mapaClasico").hidden=false;
-  for(const el of document.querySelectorAll(".seg3,.volar"))el.hidden=true;
   const av=$("m3aviso");av.hidden=false;av.textContent=motivo||"Tu dispositivo no puede mostrar el mapa 3D: abajo tienes el mapa plano.";
   if(!$("map").firstChild)initMap();cambiarMapa(S.mapa);render();
 }
@@ -734,9 +758,9 @@ async function iniciarMapa3D(){
   if(!window.Mapa3D||!Mapa3D.soporta()){usarClasico();return}
   for(const b of document.querySelectorAll("[data-m3modo]"))b.setAttribute("aria-pressed",String(b.dataset.m3modo===Mapa3D.modo()));
   try{
-    await Mapa3D.iniciar({contenedor:$("mapa3d"),provDe,coordDe,coordDeNombre,diasDe:daysLeft,
-      alElegir(p){S.place=placeKey(S.place)===placeKey(p)?null:p;guardarFiltros();render();Mapa3D.enfocar(S.place)},
-      alGirar(v){$("m3girar").setAttribute("aria-pressed",String(v))}});
+    await Mapa3D.iniciar({contenedor:$("mapa3d"),leyenda:$("leyenda3"),provDe,coordDe,coordDeNombre,diasDe:daysLeft,
+      alElegir(p){S.place=p;guardarFiltros();render();Mapa3D.enfocar(S.place)},
+      alCambiarModo(m){for(const x of document.querySelectorAll("[data-m3modo]"))x.setAttribute("aria-pressed",String(x.dataset.m3modo===m))}});
     S.m3=true;render();if(S.place)Mapa3D.enfocar(S.place);
   }catch(e){usarClasico("No se ha podido cargar el mapa 3D: abajo tienes el mapa plano.")}
 }
@@ -746,12 +770,11 @@ document.addEventListener("click",e=>{
   if(b.dataset.volar){const v=b.dataset.volar;
     if(v==="España"){S.place=null}else if(v!=="Canarias"&&v!=="Baleares"&&COMUNIDADES.includes(v))S.place={kind:"ccaa",id:v};
     else if(v==="Canarias"||v==="Baleares")S.place={kind:"ccaa",id:v};
+    if(S.m3){const m=S.place?"provincias":"comunidades";Mapa3D.modo(m);for(const x of document.querySelectorAll("[data-m3modo]"))x.setAttribute("aria-pressed",String(x.dataset.m3modo===m))}
     guardarFiltros();render();if(S.m3)Mapa3D.enfocar(S.place);
     for(const x of document.querySelectorAll("[data-volar]"))x.setAttribute("aria-pressed",String(x===b&&v!=="España"));return}
-  if(b.id==="m3plano"){const si=b.getAttribute("aria-pressed")!=="true";b.setAttribute("aria-pressed",String(si));b.textContent=si?"3D":"2D";b.title=si?"Ver en 3D":"Ver en plano";Mapa3D.plano(si);return}
-  if(b.id==="m3girar"){b.setAttribute("aria-pressed",String(Mapa3D.girar()));return}
   if(b.id==="m3ver"){$("barra").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});return}
-  if(b.id==="m3quitar"){S.place=null;guardarFiltros();render();if(S.m3)Mapa3D.enfocar(null);for(const x of document.querySelectorAll("[data-volar]"))x.setAttribute("aria-pressed","false");return}
+  if(b.id==="m3quitar"){S.place=null;guardarFiltros();render();if(S.m3){Mapa3D.modo("comunidades");for(const x of document.querySelectorAll("[data-m3modo]"))x.setAttribute("aria-pressed",String(x.dataset.m3modo==="comunidades"));Mapa3D.enfocar(null)}for(const x of document.querySelectorAll("[data-volar]"))x.setAttribute("aria-pressed","false");return}
   if(b.id==="verFiltros"){const f=$("filtros"),abrir=f.hidden;f.hidden=!abrir;b.setAttribute("aria-expanded",String(abrir));return}
   if(b.dataset.quitar){const k=b.dataset.quitar;
     if(k==="q"){S.q="";$("q").value=""}else if(k==="place"){S.place=null;if(S.m3)Mapa3D.enfocar(null)}else if(k==="sec"){S.sec="";S.subs=[]}else if(k==="niv")S.niv=null;else if(k==="solo")S.solo=false;
@@ -761,3 +784,119 @@ document.addEventListener("click",e=>{
 let tq=null;
 $("q").addEventListener("input",e=>{clearTimeout(tq);tq=setTimeout(()=>{S.q=e.target.value.trim();S.mostrar=0;if(S.q&&S.tab==="nuevas"){S.tab="todas"}render()},180)});
 if(matchMedia("(min-width: 900px)").matches){$("filtros").hidden=false;$("verFiltros").setAttribute("aria-expanded","true")}
+
+// ---------- Cerca de mí y código postal ----------
+S.km=+ls.get("rp_km","25")||25;
+function km(a,b){const R=6371,r=Math.PI/180,dLa=(b[1]-a[1])*r,dLo=(b[0]-a[0])*r;const h=Math.sin(dLa/2)**2+Math.cos(a[1]*r)*Math.cos(b[1]*r)*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function coordOferta(o){
+  if(o.comunidad==="Estatal")return null;
+  if(o.lat&&o.lon){o._aprox=false;return [o.lon,o.lat]}
+  const c=coordDe(o);if(c){o._aprox=false;return [c.lon,c.lat]}
+  const p=provDe(o),cc=p&&window.MAPA_DATOS&&Object.entries(MAPA_DATOS.centros).find(([n])=>normTxt(n)===normTxt(p));
+  if(cc){o._aprox=true;return cc[1]}
+  return null;
+}
+function distOferta(o){
+  const p=S.place;if(!p||p.kind!=="cerca")return null;
+  const k=p.lat+","+p.lon;if(o._dk===k)return o._d;
+  const c=coordOferta(o);o._dk=k;o._d=c?km(c,[p.lon,p.lat]):null;return o._d;
+}
+function cargarDatosMapa(){return window.MAPA_DATOS?Promise.resolve():new Promise(ok=>{const sc=document.createElement("script");sc.src="mapa-datos.js";sc.onload=ok;sc.onerror=ok;document.head.appendChild(sc)})}
+async function ponerCerca(lat,lon,etiqueta){
+  await cargarDatosMapa();
+  S.place={kind:"cerca",id:etiqueta,lat,lon,km:S.km};S.mostrar=0;
+  if(S.tab==="nuevas")S.tab="todas";
+  guardarFiltros();render();if(S.m3)Mapa3D.enfocar(S.place);
+  const n=S.mapRows.filter(lugarActivo).length;
+  toast(`${n} ${n===1?"plaza":"plazas"} a menos de ${S.km} km de ${etiqueta}`);
+}
+async function buscarCP(cp){
+  try{const r=await api(`/cp/${cp}`);if(r.lat==null)throw new Error("No hemos encontrado ese código postal");
+    await ponerCerca(r.lat,r.lon,`CP ${cp}${r.lugar?" ("+r.lugar+")":""}`);return r}
+  catch(err){toast(err.message);return null}
+}
+function geolocalizar(){
+  if(!navigator.geolocation){toast("Tu navegador no permite saber tu ubicación. Prueba con tu código postal.");return}
+  toast("Buscando tu ubicación…");
+  navigator.geolocation.getCurrentPosition(p=>ponerCerca(+p.coords.latitude.toFixed(4),+p.coords.longitude.toFixed(4),"tu ubicación"),
+    e=>toast(e.code===1?"Sin permiso de ubicación. Puedes escribir tu código postal.":"No hemos podido saber tu ubicación. Prueba con tu código postal."),
+    {enableHighAccuracy:false,timeout:12000,maximumAge:600000});
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.id==="cercaMi"||b.id==="cercaMi2")geolocalizar();
+});
+$("cpIn").addEventListener("input",e=>{const v=e.target.value.replace(/\D/g,"");e.target.value=v;if(v.length===5)buscarCP(v)});
+$("kmSel").value=String(S.km);
+$("kmSel").addEventListener("change",e=>{S.km=+e.target.value;ls.set("rp_km",String(S.km));if(S.place?.kind==="cerca"){S.place.km=S.km;guardarFiltros();render();if(S.m3)Mapa3D.enfocar(S.place)}});
+// En el buscador, 5 cifras = código postal
+$("q").addEventListener("keydown",e=>{if(e.key==="Enter"&&/^\d{5}$/.test(e.target.value.trim())){e.preventDefault();const cp=e.target.value.trim();e.target.value="";S.q="";buscarCP(cp)}});
+$("q").addEventListener("input",e=>{const v=e.target.value.trim();if(/^\d{5}$/.test(v)){e.target.value="";clearTimeout(tq);S.q="";buscarCP(v)}});
+if(S.place?.kind==="cerca")cargarDatosMapa().then(()=>render());
+
+// ---------- Tutor ----------
+const ESTILOS=["En la calle","En una oficina","Atendiendo a personas","Con las manos","Con tecnología","Cuidando de otros","Conduciendo","Con horario fijo"];
+const SUGERENCIAS=["¿Por dónde empiezo?","Quiero trabajar cuanto antes","¿Qué oposición me conviene preparar?","¿Qué hay cerca de casa?","¿Qué estudios me abrirían más puertas?"];
+S.chat=JSON.parse((()=>{try{return sessionStorage.getItem("rp_chat")}catch(_){return null}})()||"[]");
+function guardarChat(){try{sessionStorage.setItem("rp_chat",JSON.stringify(S.chat.slice(-20)))}catch(_){}}
+function md(t){
+  let h=esc(t).replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>")
+    .replace(/\[([^\]]+)\]\((\/[^)\s]+|https:\/\/radaropos\.com[^)\s]*)\)/g,(m,txt,u)=>`<a href="${u.startsWith("/")?API+u:u}">${txt}</a>`);
+  const out=[];let lista=[];
+  for(const l of h.split(/\n+/)){const m=l.match(/^\s*(?:[-•*]|\d+[.)])\s+(.*)/);if(m){lista.push(`<li>${m[1]}</li>`);continue}
+    if(lista.length){out.push(`<ul>${lista.join("")}</ul>`);lista=[]}if(l.trim())out.push(`<p>${l}</p>`)}
+  if(lista.length)out.push(`<ul>${lista.join("")}</ul>`);
+  return out.join("");
+}
+function renderTutor(estado){
+  const box=$("tutorBody"),form=$("tutorForm");
+  if(!S.ses){form.hidden=true;box.innerHTML=`<div class="cta"><p>El tutor mira tus estudios, lo que te gusta, cuánto tiempo puedes estudiar y dónde vives, y te propone por dónde empezar con plazas reales abiertas ahora.</p><button type="button" class="linkbtn" data-acceso="tutor">Entrar gratis para usarlo</button></div>`;return}
+  if(estado==="cuestionario"||!S.perfil?.prefs){form.hidden=true;const p=S.perfil||{},pr=p.prefs||{};
+    box.innerHTML=`<form class="cuest" id="cuest">
+      <p class="note">Cuéntame un poco de ti. Tardas un minuto y puedes cambiarlo cuando quieras.</p>
+      <fieldset><legend>Tus estudios</legend><select name="nivel" required><option value="">Elige…</option>${NIVELES.map((n,i)=>`<option value="${i}" ${p.nivel===i?"selected":""}>${esc(n)}</option>`).join("")}</select></fieldset>
+      <fieldset><legend>¿Qué te atrae?</legend><div class="ops">${SECTORES.filter(x=>x.k!=="otros").map(x=>`<label><input type="checkbox" name="intereses" value="${x.k}" ${(p.intereses||pr.intereses||[]).includes(x.k)?"checked":""}> ${ICONO[x.k]||""} ${esc(x.n)}</label>`).join("")}</div></fieldset>
+      <fieldset><legend>¿Cómo te gusta trabajar?</legend><div class="ops">${ESTILOS.map(x=>`<label><input type="checkbox" name="estilo" value="${esc(x)}" ${(pr.estilo||[]).includes(x)?"checked":""}> ${esc(x)}</label>`).join("")}</div></fieldset>
+      <fieldset><legend>¿Qué buscas ahora?</legend><div class="ops">${[["ya","Trabajar cuanto antes"],["estabilidad","Una plaza fija aunque cueste"],["ambas","Las dos cosas"]].map(([v,l])=>`<label><input type="radio" name="prisa" value="${v}" ${pr.prisa===v?"checked":""} required> ${l}</label>`).join("")}</div></fieldset>
+      <fieldset><legend>¿Cuánto puedes estudiar?</legend><select name="horas">${[["0","Nada por ahora"],["5","Menos de 5 h a la semana"],["15","De 5 a 15 h a la semana"],["30","Más de 15 h a la semana"]].map(([v,l])=>`<option value="${v}" ${pr.horas===v?"selected":""}>${l}</option>`).join("")}</select></fieldset>
+      <fieldset><legend>¿Dónde vives y hasta dónde te moverías?</legend><div class="cerca"><input type="text" name="cp" inputmode="numeric" maxlength="5" placeholder="Código postal" value="${esc(pr.cp||"")}"><select name="movilidad">${[["15","Mi ciudad (15 km)"],["50","Hasta 50 km"],["comunidad","Mi comunidad"],["toda","Toda España"]].map(([v,l])=>`<option value="${v}" ${pr.movilidad===v?"selected":""}>${l}</option>`).join("")}</select></div></fieldset>
+      <button type="submit" class="linkbtn">Guardar y empezar</button>
+    </form>`;return}
+  form.hidden=false;
+  box.innerHTML=(S.chat.length?S.chat.map(m=>`<div class="burbuja ${m.rol==="user"?"yo":"tu"}">${m.rol==="user"?esc(m.texto):md(m.texto)}</div>`).join(""):`<div class="burbuja tu"><p>Hola. Ya tengo tu perfil: dime qué te preocupa o pulsa una de estas preguntas y te propongo un camino con plazas reales.</p></div>`)+
+    (estado==="pensando"?`<p class="escribiendo">El tutor está pensando…</p>`:"")+
+    `<div class="sugerencias">${SUGERENCIAS.map(x=>`<button type="button" data-sugerencia="${esc(x)}">${esc(x)}</button>`).join("")}<button type="button" data-sugerencia="__gustos">Cambiar mis gustos</button></div>`;
+  box.scrollTop=box.scrollHeight;
+}
+async function preguntarTutor(texto){
+  if(!texto.trim()||S.tutorOcupado)return;
+  S.chat.push({rol:"user",texto:texto.trim()});guardarChat();S.tutorOcupado=true;renderTutor("pensando");
+  try{const r=await api("/ia/tutor",{method:"POST",body:JSON.stringify({mensajes:S.chat.slice(-8),perfil:S.perfil})});S.chat.push({rol:"assistant",texto:r.respuesta||"No tengo respuesta ahora mismo."})}
+  catch(err){S.chat.push({rol:"assistant",texto:err.message})}
+  finally{S.tutorOcupado=false;guardarChat();renderTutor()}
+}
+function abrirTutor(){$("tutor").hidden=false;$("tutorBtn").hidden=true;renderTutor();setTimeout(()=>($("tutorQ").offsetParent?$("tutorQ"):$("tutorX")).focus(),50)}
+function cerrarTutor(){$("tutor").hidden=true;$("tutorBtn").hidden=false;$("tutorBtn").focus()}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.id==="tutorBtn"||b.dataset.abrirTutor!==undefined){abrirTutor();return}
+  if(b.id==="tutorX"){cerrarTutor();return}
+  if(b.dataset.sugerencia){if(b.dataset.sugerencia==="__gustos")renderTutor("cuestionario");else preguntarTutor(b.dataset.sugerencia);return}
+  if(b.dataset.acceso==="tutor")cerrarTutor();
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("tutor").hidden)cerrarTutor()});
+document.addEventListener("submit",async e=>{
+  if(e.target.id==="tutorForm"){e.preventDefault();const q=$("tutorQ");const v=q.value;q.value="";preguntarTutor(v);return}
+  if(e.target.id==="cuest"){e.preventDefault();const f=new FormData(e.target),btn=e.target.querySelector("[type=submit]");btn.disabled=true;
+    const prefs={intereses:f.getAll("intereses"),estilo:f.getAll("estilo"),prisa:f.get("prisa"),horas:f.get("horas"),movilidad:f.get("movilidad")};
+    const cp=String(f.get("cp")||"").trim();
+    if(/^\d{5}$/.test(cp)){try{const r=await api(`/cp/${cp}`);Object.assign(prefs,{cp,lugar:r.lugar||r.provincia,lat:r.lat,lon:r.lon})}catch(_){prefs.cp=cp}}
+    S.perfil={...(S.perfil||{}),nivel:+f.get("nivel"),intereses:prefs.intereses,prefs};ls.set("rp_perfil",JSON.stringify(S.perfil));
+    try{await api("/cuenta",{method:"PATCH",body:JSON.stringify({perfil:S.perfil})})}catch(_){}
+    renderPerfil();render();renderTutor();
+    if(!S.chat.length)preguntarTutor("¿Por dónde empiezo?");return}
+});
+$("tutorQ").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("tutorForm").requestSubmit()}});
+
+// El botón flotante del tutor solo aparece cuando el mapa ya no se ve (así no tapa sus botones)
+if("IntersectionObserver" in window)new IntersectionObserver(es=>{for(const e of es)$("tutorBtn").classList.toggle("fuera",e.isIntersecting)},{threshold:0.05}).observe($("hero"));

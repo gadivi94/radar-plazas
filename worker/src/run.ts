@@ -11,7 +11,7 @@ import { geocodificar } from "./geocodificar";
 import { fmt } from "./classify";
 import { correoActivo, enviarCorreo } from "./mail";
 import { clasificar, nivelDe } from "./sectores";
-import { provinciaCatalana } from "./geo";
+import { coordCatalana, provinciaCatalana } from "./geo";
 import { corto, correoAvisos, correoBoletin, correoCambios, correoRecordatorio, enviarTelegram, textoTelegram, type Seccion } from "./avisos";
 import type { Env, Oferta } from "./types";
 
@@ -82,6 +82,16 @@ export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSe
     try { await limpieza(env); } catch (e) { res.errores.push("limpieza: " + String(e)); }
   }
 
+  // Coordenadas de las plazas catalanas ya guardadas (una vez)
+  if ((await getMeta(env, "coordcat")) !== "1") {
+    try {
+      const filas = (await env.DB.prepare("SELECT id, municipio FROM ofertas WHERE lat IS NULL AND comunidad = 'Cataluña' AND municipio IS NOT NULL").all<{ id: string; municipio: string }>()).results;
+      const st = filas.flatMap((f) => { const c = coordCatalana(f.municipio); return c ? [env.DB.prepare("UPDATE ofertas SET lat = ?, lon = ? WHERE id = ?").bind(c[1], c[0], f.id)] : []; });
+      for (let i = 0; i < st.length; i += 50) await env.DB.batch(st.slice(i, i + 50));
+      await setMeta(env, "coordcat", "1");
+    } catch (e) { res.errores.push("coordcat: " + String(e).slice(0, 80)); }
+  }
+
   // 2 · Reclasificar una vez lo que se guardó con la clasificación antigua (sin subcategoría ni requisitos)
   if ((await getMeta(env, "reclasificado")) !== "2") {
     try { await reclasificar(env, hoy); await setMeta(env, "reclasificado", "2"); } catch (e) { res.errores.push("reclasificar: " + String(e)); }
@@ -143,7 +153,7 @@ export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSe
   }
 
   // Coordenadas para el mapa 3D (pocas por vuelta, con pausa)
-  try { res.geo = await geocodificar(env, Number(env.GEO_POR_VUELTA || 12)); } catch (_) { /* opcional */ }
+  try { res.geo = await geocodificar(env, Number(env.GEO_POR_VUELTA || 20)); } catch (_) { /* opcional */ }
 
   // 4 · Avisos de plazas nuevas: ya completadas (o con más de 3 h esperando ficha) y aún no avisadas
   const candidatas = (await env.DB.prepare(

@@ -535,3 +535,54 @@ describe("empresas de transporte", () => {
     expect(tg.map((o) => o.titulo)).toEqual(["MECÀNIC/A (TORN DE DIA)"]);
   });
 });
+
+describe("ubicación y tutor", () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => { globalThis.fetch = realFetch; });
+  test("código postal, radio en km y tutor con plazas cercanas", async () => {
+    const DB = fakeD1();
+    const correos: Array<{ text: string }> = [], ia: Array<{ messages: Array<{ role: string; content: string }> }> = [];
+    let nominatim = 0;
+    globalThis.fetch = (async (input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("api.resend.com")) { correos.push(JSON.parse(String(init?.body))); return new Response("{}"); }
+      if (url.includes("nominatim")) { nominatim++; return new Response(JSON.stringify([{ lat: "41.5381", lon: "2.4447", address: { city: "Mataró" } }])); }
+      throw new Error("fetch no esperado " + url);
+    }) as typeof fetch;
+    const env = { DB, ASSETS: { fetch: async () => new Response("web") }, RESEND_API_KEY: "re",
+      AI: { run: async (_m: string, input: never) => { ia.push(input); return { response: "Te propongo empezar por [Agente cívico en Mataró](/plaza/cido/1/agent-civic)." }; } } } as never;
+    const ins = (id: string, titulo: string, muni: string, lat: number, lon: number, tipo = "seguridad", nivel = 1) =>
+      DB.raw.run(`INSERT INTO ofertas (id, fuente, titulo, organismo, municipio, comunidad, tipo, nivel, lat, lon, encontrada, detalle_ok, notificada, dificultad) VALUES ('${id}', 'CIDO', '${titulo}', 'Ajuntament', '${muni}', 'Cataluña', '${tipo}', ${nivel}, ${lat}, ${lon}, '2026-10-08', 1, 1, 1)`);
+    ins("cido:1", "Borsa d agents cívics", "Mataró", 41.54, 2.44);
+    ins("cido:2", "Agent de policia local", "Lleida", 41.61, 0.62, "seguridad", 2);
+    ins("cido:3", "Tècnic superior", "Mataró", 41.54, 2.44, "tecnico", 4);
+    const call = async (path: string, init: RequestInit & { token?: string } = {}) => {
+      const r = await worker.fetch(new Request("https://x/api" + path, { ...init, headers: { "Content-Type": "application/json", ...(init.token ? { Authorization: "Bearer " + init.token } : {}) } }), env);
+      return { status: r.status, body: await r.json() as Record<string, any> };
+    };
+    // Código postal → punto (con caché)
+    const cp = await call("/cp/08301");
+    expect(cp.body).toMatchObject({ cp: "08301", provincia: "Barcelona", lugar: "Mataró", lat: 41.5381, aprox: false });
+    await call("/cp/08301");
+    expect(nominatim).toBe(1);
+    expect((await call("/cp/99999")).status).toBe(404);
+    // Radio en km en la API
+    const cerca = await call("/ofertas?lat=41.5381&lon=2.4447&km=30");
+    expect(cerca.body.items.map((o: { id: string }) => o.id).sort()).toEqual(["cido:1", "cido:3"]);
+    // Tutor: necesita cuenta; usa perfil, gustos y plazas cercanas a su nivel
+    expect((await call("/ia/tutor", { method: "POST", body: "{}" })).status).toBe(401);
+    await call("/auth/start", { method: "POST", body: JSON.stringify({ email: "leo@ejemplo.com" }) });
+    const code = correos.at(-1)!.text.match(/\d{6}/)![0];
+    const tok = (await call("/auth/verify", { method: "POST", body: JSON.stringify({ email: "leo@ejemplo.com", code, acepta: true }) })).body.token;
+    const perfil = { nivel: 1, prefs: { intereses: ["seguridad"], prisa: "ya", horas: "5", movilidad: "30", cp: "08301", lugar: "Mataró", lat: 41.5381, lon: 2.4447 } };
+    expect((await call("/cuenta", { method: "PATCH", token: tok, body: JSON.stringify({ perfil }) })).status).toBe(200);
+    const t = await call("/ia/tutor", { method: "POST", token: tok, body: JSON.stringify({ mensajes: [{ rol: "user", texto: "¿Por dónde empiezo?" }] }) });
+    expect(t.status).toBe(200);
+    expect(t.body.respuesta).toContain("/plaza/cido/1/");
+    expect(t.body.plazas).toBe(1); // Lleida queda lejos y el técnico superior pide carrera
+    const sistema = ia[0].messages[0].content;
+    expect(sistema).toContain("Le atraen: Seguridad y emergencias");
+    expect(sistema).toContain("(a 0 km)");
+    expect(sistema).not.toContain("Tècnic superior");
+  });
+});

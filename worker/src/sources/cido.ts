@@ -1,5 +1,5 @@
 // CIDO (Diputació de Barcelona): todas las administraciones catalanas, incluidas bolsas e interinos.
-import { provinciaCatalana, provinciaDe } from "../geo";
+import { coordCatalana, provinciaCatalana, provinciaDe } from "../geo";
 import { dificultadDe, grupoDe, interinoDe, isoDe, plazasDe, sistemaDe } from "../classify";
 import { clasificar, nivelDe, requisitosDe } from "../sectores";
 import { campo, parseRss, toText } from "../text";
@@ -50,6 +50,7 @@ export function ofertasDesdeFeed(xml: string, ahora: string): Oferta[] {
       organismo: ens || null,
       municipio,
       provincia: prov?.provincia ?? provinciaCatalana(municipio),
+      lat: coordCatalana(municipio)?.[1] ?? null, lon: coordCatalana(municipio)?.[0] ?? null,
       comunidad: "Cataluña",
       tipo, subtipo, sistema, interino: interino ? 1 : 0, grupo: null,
       dificultad: dificultadDe({ grupo: null, sistema, interino, tipo }),

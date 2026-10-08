@@ -1,4 +1,4 @@
-import { MUNI_PROV, PROV_CAT } from "./munis-cat";
+import { MUNI_COORD, MUNI_PROV, PROV_CAT, PROV_CENTRO } from "./munis-cat";
 // Provincias → comunidad autónoma, con las variantes de nombre que aparecen en el BOE.
 
 export const COMUNIDADES = [
@@ -50,6 +50,32 @@ export function provinciaCatalana(municipio: string | null | undefined): string 
   const c = MUNI_PROV[k];
   return c ? PROV_CAT[c] : null;
 }
+
+/** [lon, lat] de un municipio catalán. */
+export function coordCatalana(municipio: string | null | undefined): [number, number] | null {
+  if (!municipio) return null;
+  const k = norm(municipio).replace(/’/g, "'").replace(/^(el|la|els|les)\s+|^l'/, "").trim();
+  return MUNI_COORD[k] || null;
+}
+export function centroProvincia(p: string | null | undefined): [number, number] | null {
+  if (!p) return null;
+  const k = Object.keys(PROV_CENTRO).find((x) => norm(x) === norm(p) || norm(x).includes(norm(p)));
+  return k ? PROV_CENTRO[k] : null;
+}
+/** Distancia en km entre dos puntos [lon, lat]. */
+export function distanciaKm(a: [number, number], b: [number, number]): number {
+  const R = 6371, r = Math.PI / 180, dLat = (b[1] - a[1]) * r, dLon = (b[0] - a[0]) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * r) * Math.cos(b[1] * r) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+// Provincias por los dos primeros dígitos del código postal (códigos INE)
+export const PROV_CP: Record<string, string> = {
+  "01": "Álava", "02": "Albacete", "03": "Alicante", "04": "Almería", "05": "Ávila", "06": "Badajoz", "07": "Illes Balears", "08": "Barcelona", "09": "Burgos", "10": "Cáceres",
+  "11": "Cádiz", "12": "Castellón", "13": "Ciudad Real", "14": "Córdoba", "15": "A Coruña", "16": "Cuenca", "17": "Girona", "18": "Granada", "19": "Guadalajara", "20": "Gipuzkoa",
+  "21": "Huelva", "22": "Huesca", "23": "Jaén", "24": "León", "25": "Lleida", "26": "La Rioja", "27": "Lugo", "28": "Madrid", "29": "Málaga", "30": "Murcia",
+  "31": "Navarra", "32": "Ourense", "33": "Asturias", "34": "Palencia", "35": "Las Palmas", "36": "Pontevedra", "37": "Salamanca", "38": "Santa Cruz de Tenerife", "39": "Cantabria", "40": "Segovia",
+  "41": "Sevilla", "42": "Soria", "43": "Tarragona", "44": "Teruel", "45": "Toledo", "46": "Valencia", "47": "Valladolid", "48": "Bizkaia", "49": "Zamora", "50": "Zaragoza", "51": "Ceuta", "52": "Melilla",
+};
 
 export function norm(s: string): string {
   return (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();

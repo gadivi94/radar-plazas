@@ -3,11 +3,14 @@
 import { ciclo } from "./run";
 import { coincide, estadoActual, hoyMadrid, type Filtros } from "./filters";
 import { getMeta, setMeta } from "./db";
-import { COMUNIDADES } from "./geo";
+import { centroProvincia, COMUNIDADES, PROV_CP } from "./geo";
 import { DIFICULTAD_LABEL, TIPOS } from "./classify";
 import { asegurarEsquema, CORS, esClaveAdmin, json, limiteAlertas, rutasCuenta, sha256, usuarioDe, type Usuario } from "./cuentas";
 import { calendario } from "./ics";
-import { iaActiva, preguntaIA, resumenIA } from "./ia";
+import { contextoTutor, iaActiva, preguntaIA, resumenIA, tutorIA, type MensajeTutor, type Perfil } from "./ia";
+import { SECTOR_NOMBRE, SUBTIPOS } from "./sectores";
+import { coordDe } from "./filters";
+import { distanciaKm } from "./geo";
 import { corto, rutaPlaza } from "./avisos";
 import { paginaPlaza, paginaSector, sitemap } from "./paginas";
 import { estadisticas } from "./estadisticas";
@@ -34,6 +37,7 @@ function filtrosDesdeQuery(u: URL): Filtros | null {
     tipos: lista(u.searchParams.get("tipo")),
     subtipos: lista(u.searchParams.get("subtipo")),
     nivelMax: u.searchParams.get("nivel") ? Number(u.searchParams.get("nivel")) : undefined,
+    cerca: u.searchParams.get("lat") && u.searchParams.get("lon") ? { lat: Number(u.searchParams.get("lat")), lon: Number(u.searchParams.get("lon")), km: Number(u.searchParams.get("km") || 25) } : undefined,
     dificultades: lista(u.searchParams.get("dificultad"))?.map(Number),
     grupos: lista(u.searchParams.get("grupo")),
     fuentes: lista(u.searchParams.get("fuente")),
@@ -183,6 +187,67 @@ async function api(req: Request, env: Env, u: URL, yo: Usuario | null): Promise<
   });
 
   if (path === "/estadisticas") return json(await estadisticas(env, hoy));
+
+  // Tutor de orientación con IA (con cuenta)
+  if (path === "/ia/tutor" && req.method === "POST") return conSesion(async (yo) => {
+    if (!iaActiva(env)) return json({ error: "La IA aún no está activada." }, 503);
+    const b = (await req.json().catch(() => ({}))) as { mensajes?: MensajeTutor[]; perfil?: Perfil };
+    const max = yo.admin || yo.plan === "pro" ? 100 : Number(env.IA_DIARIAS || 10) * 2;
+    if (!(await cupoIA(env, "t:" + yo.id, max))) return json({ error: `Has llegado a los ${max} mensajes de hoy con el tutor. Mañana seguimos.` }, 429);
+    const guardado = await env.DB.prepare("SELECT perfil FROM users WHERE id = ?").bind(yo.id).first<{ perfil: string | null }>();
+    const perfil: Perfil = { ...(guardado?.perfil ? JSON.parse(guardado.perfil) : {}), ...(b.perfil || {}) };
+    const pr = perfil.prefs || {};
+    const filas = (await env.DB.prepare(
+      `SELECT id, titulo, organismo, municipio, provincia, comunidad, tipo, subtipo, grupo, nivel, dificultad, interino, sistema, plazo_fin, lat, lon FROM ofertas
+       WHERE (plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado != 'cerrada') LIMIT 6000`,
+    ).bind(hoy).all<Oferta>()).results;
+    const punto: [number, number] | null = pr.lat && pr.lon ? [pr.lon, pr.lat] : null;
+    const km = pr.movilidad && /^\d+$/.test(pr.movilidad) ? Number(pr.movilidad) : null;
+    const candidatas = filas.flatMap((o) => {
+      if (perfil.nivel != null && o.nivel != null && o.nivel > perfil.nivel) return [];
+      const c = coordDe(o);
+      const dist = punto && c ? distanciaKm(punto, c) : null;
+      if (km && punto && o.comunidad !== "Estatal" && (dist == null || dist > km)) return [];
+      if (pr.movilidad === "comunidad" && pr.lugar && punto && dist != null && dist > 250) return [];
+      let nota = 0;
+      if ((perfil.intereses || pr.intereses)?.includes(o.tipo || "otros")) nota += 3;
+      if (pr.prisa === "ya" && (Number(o.interino) || o.sistema === "bolsa" || o.sistema === "concurso")) nota += 2;
+      if (pr.prisa === "estabilidad" && !Number(o.interino) && (o.sistema === "oposicion" || o.sistema === "concurso-oposicion")) nota += 2;
+      if (pr.horas === "0" && (o.dificultad || 2) === 1) nota += 1;
+      if (o.plazo_fin && o.plazo_fin <= new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10)) nota += 1;
+      if (dist != null) nota += dist < 15 ? 2 : dist < 50 ? 1 : 0;
+      return [{ ...o, ruta: rutaPlaza(o), dist, nota }];
+    }).sort((a, b) => b.nota - a.nota || (a.plazo_fin || "9999").localeCompare(b.plazo_fin || "9999"));
+    const contexto = contextoTutor(perfil, candidatas, SECTOR_NOMBRE, SUBTIPOS);
+    try { return json({ respuesta: await tutorIA(env, contexto, (b.mensajes || []).slice(-8)), plazas: candidatas.length }); }
+    catch (e) { return json({ error: "El tutor no ha podido responder ahora. Inténtalo en un rato.", detalle: String(e).slice(0, 120) }, 502); }
+  });
+
+  // Código postal → punto y provincia (Nominatim, con caché)
+  const mCp = path.match(/^\/cp\/(\d{5})$/);
+  if (mCp) {
+    const cp = mCp[1], provincia = PROV_CP[cp.slice(0, 2)];
+    if (!provincia) return json({ error: "Ese código postal no existe en España." }, 404);
+    const k = "cp|" + cp;
+    let g = await env.DB.prepare("SELECT lat, lon FROM geocache WHERE k = ?").bind(k).first<{ lat: number | null; lon: number | null }>();
+    let lugar: string | null = null;
+    if (!g) {
+      if (!(await cupoIA(env, "cp:" + (await sha256(req.headers.get("CF-Connecting-IP") || "0")).slice(0, 20), 40))) return json({ error: "Demasiadas búsquedas por código postal hoy." }, 429);
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=es&addressdetails=1&postalcode=${cp}`, { headers: { "User-Agent": "RadarPlazas/1.0 (+https://radaropos.com; hola@radaropos.com)", "Accept-Language": "es" } });
+        const d = r.ok ? ((await r.json()) as Array<{ lat: string; lon: string; address?: Record<string, string> }>) : [];
+        g = d[0] ? { lat: +d[0].lat, lon: +d[0].lon } : { lat: null, lon: null };
+        const a = d[0]?.address || {};
+        lugar = a.city || a.town || a.village || a.municipality || null;
+        await env.DB.prepare("INSERT OR REPLACE INTO geocache (k, lat, lon) VALUES (?, ?, ?)").bind(k, g.lat, g.lon).run();
+        if (lugar) await env.DB.prepare("INSERT OR REPLACE INTO geocache (k, lat, lon) VALUES (?, NULL, NULL)").bind("cpnom|" + cp + "|" + lugar).run();
+      } catch (_) { g = { lat: null, lon: null }; }
+    } else {
+      lugar = (await env.DB.prepare("SELECT k FROM geocache WHERE k LIKE ? LIMIT 1").bind("cpnom|" + cp + "|%").first<{ k: string }>())?.k.split("|")[2] || null;
+    }
+    const c = g.lat && g.lon ? [g.lon, g.lat] : centroProvincia(provincia);
+    return json({ cp, provincia, lugar, lat: c?.[1] ?? null, lon: c?.[0] ?? null, aprox: !(g.lat && g.lon) });
+  }
 
   if (path === "/estado") {
     const e = JSON.parse((await getMeta(env, "ultima_ejecucion")) || "null");

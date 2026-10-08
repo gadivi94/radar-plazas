@@ -32,7 +32,7 @@ export async function enviarCorreo(env: Env, c: Correo): Promise<void> {
 export function plantilla(env: Env, cuerpo: string, pie = ""): string {
   const web = sitio(env);
   return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#14232b;background:#ffffff">
-<p style="font-size:20px;font-weight:bold;margin:0 0 16px">Radar de <span style="color:#0d6b6b">Plazas</span></p>
+<p style="font-size:20px;font-weight:bold;margin:0 0 16px">Radar de <span style="color:#0d6b6b">Plazas</span> <span style="color:#0d6b6b;font-weight:normal">/</span> Oposiciones</p>
 ${cuerpo}
 <p style="font-size:12px;color:#5b6b72;margin:24px 0 0;border-top:1px solid #d3dcda;padding-top:12px">${pie}${pie ? "<br>" : ""}Radar de Plazas · <a href="${web}" style="color:#0d6b6b">${web.replace(/^https?:\/\//, "")}</a> · ${escHtml(contacto(env))}</p></div>`;
 }

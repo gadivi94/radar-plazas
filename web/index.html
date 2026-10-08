@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Radar de Plazas · Oposiciones, bolsas e interinos con alertas</title>
+<title>Radar de Plazas / Oposiciones · Oposiciones, bolsas e interinos en toda España</title>
 <meta name="description" content="Oposiciones, bolsas e interinos de toda España en un mapa 3D: BOE, CIDO y empresas públicas de transporte. Filtra por sector, estudios y lugar, y recibe alertas gratis.">
 <link rel="canonical" href="https://radaropos.com/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Radar de Plazas">
+<meta property="og:title" content="Radar de Plazas / Oposiciones">
 <meta property="og:description" content="Oposiciones, bolsas de trabajo e interinos de toda España, con alertas por correo.">
 <meta property="og:url" content="https://radaropos.com/">
 <meta property="og:image" content="https://radaropos.com/icon-512.png">
 <meta name="theme-color" content="#0d6b6b">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Radar Plazas">
+<meta name="apple-mobile-web-app-title" content="Radar Opos">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icon-512.png">
 <link rel="icon" href="/icon-512.png">
@@ -26,28 +26,29 @@
 <body>
 <header class="cab">
   <div class="wrap">
-    <a class="marca" href="./" aria-label="Radar de Plazas, inicio"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="var(--accent)" stroke-width="2"/><circle cx="16" cy="16" r="8" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity=".55"/><path d="M16 16 L16 2 A14 14 0 0 1 28.1 9 Z" fill="var(--accent)" opacity=".35"/><circle cx="22" cy="9.5" r="2.2" fill="var(--urgent)"/></svg><b>Radar de Plazas</b></a>
+    <a class="marca" href="./" aria-label="Radar de Plazas, inicio"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="var(--accent)" stroke-width="2"/><circle cx="16" cy="16" r="8" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity=".55"/><path d="M16 16 L16 2 A14 14 0 0 1 28.1 9 Z" fill="var(--accent)" opacity=".35"/><circle cx="22" cy="9.5" r="2.2" fill="var(--urgent)"/></svg><b>Radar de Plazas <span class="sep">/</span> Oposiciones</b></a>
     <label class="busca"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13 13l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span hidden>Buscar</span><input id="q" type="search" placeholder="Policía, TCAE, Girona, conductor…" autocomplete="off" enterkeyhint="search"></label>
     <button type="button" class="lang" id="lang">CA</button>
     <button type="button" class="cuentabtn" id="btnCuenta">Entrar</button>
   </div>
 </header>
 
-<section class="hero" id="hero" aria-label="Mapa de las plazas">
-  <div id="mapa3d" role="application" aria-label="Mapa 3D de España con las plazas abiertas por comunidad, provincia y municipio"></div>
-  <div class="hero-panel">
-    <h1>Radar de Plazas</h1>
-    <p class="hero-n"><b id="hTotal">–</b> <span id="hTexto">plazas abiertas en toda España</span></p>
-    <div class="seg3" role="group" aria-label="Agrupar el mapa por">
-      <button type="button" data-m3modo="comunidades" aria-pressed="false">Comunidades</button><button type="button" data-m3modo="provincias" aria-pressed="true">Provincias</button><button type="button" data-m3modo="municipios" aria-pressed="false">Municipios</button>
+<section class="mapsec" id="hero" aria-label="Mapa de las plazas">
+  <div class="wrap mapcab">
+    <div class="mapcab-t">
+      <h1>Radar de Plazas <span class="sep">/</span> Oposiciones</h1>
+      <p class="hero-n"><b id="hTotal">–</b> <span id="hTexto">plazas abiertas en toda España</span></p>
+    </div>
+    <div class="seg3" role="group" aria-label="Ver el mapa por">
+      <button type="button" data-m3modo="comunidades" aria-pressed="true">Comunidades</button><button type="button" data-m3modo="provincias" aria-pressed="false">Provincias</button><button type="button" data-m3modo="municipios" aria-pressed="false">Municipios</button>
     </div>
   </div>
-  <p class="m3aviso" id="m3aviso" hidden></p>
-  <div class="hero-pie">
+  <div class="mapcaja"><div id="mapa3d" role="application" aria-label="Mapa de España coloreado según las plazas abiertas. Toca una zona para ver sus plazas."></div><p class="m3aviso" id="m3aviso" hidden></p></div>
+  <div class="wrap mappie">
+    <div class="leyenda3" id="leyenda3" aria-label="Leyenda del mapa"></div>
     <div class="m3info" id="m3info" hidden></div>
     <div class="volar" role="group" aria-label="Ir a">
-      <button type="button" data-volar="España">España</button><button type="button" data-volar="Cataluña">Cataluña</button><button type="button" data-volar="Madrid">Madrid</button><button type="button" data-volar="Andalucía">Andalucía</button><button type="button" data-volar="Comunidad Valenciana">C. Valenciana</button><button type="button" data-volar="País Vasco">País Vasco</button><button type="button" data-volar="Galicia">Galicia</button><button type="button" data-volar="Canarias">Canarias</button><button type="button" data-volar="Baleares">Baleares</button>
-      <button type="button" class="ico" id="m3plano" aria-pressed="false" title="Ver en plano">2D</button><button type="button" class="ico" id="m3girar" aria-pressed="false" title="Girar el mapa">⟳ Girar</button>
+      <button type="button" id="cercaMi">📍 Cerca de mí</button><button type="button" data-abrir-tutor>🧭 Tutor IA</button><button type="button" data-volar="España">España</button><button type="button" data-volar="Cataluña">Cataluña</button><button type="button" data-volar="Madrid">Madrid</button><button type="button" data-volar="Andalucía">Andalucía</button><button type="button" data-volar="Comunidad Valenciana">C. Valenciana</button><button type="button" data-volar="País Vasco">País Vasco</button><button type="button" data-volar="Galicia">Galicia</button><button type="button" data-volar="Canarias">Canarias</button><button type="button" data-volar="Baleares">Baleares</button>
     </div>
   </div>
 </section>
@@ -85,7 +86,8 @@
     <div class="frow"><span data-i18n>Dificultad</span><div class="seg" id="fdif"></div></div>
     <div class="frow"><span data-i18n>Grupo</span><div class="seg" id="fgrp"></div></div>
     <div class="frow"><label for="lugarsel" data-i18n>Lugar</label><select class="sel" id="lugarsel"></select></div>
-    <label class="cumplo"><input type="checkbox" id="soloCumplo"><span data-i18n>Solo las que cumplo</span> <small id="soloNota"></small></label>
+    <div class="frow"><label for="cpIn">Cerca de</label><div class="cerca"><input id="cpIn" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="Código postal" autocomplete="postal-code"><button type="button" id="cercaMi2">📍 Mi ubicación</button><select id="kmSel" aria-label="Distancia máxima"><option value="10">10 km</option><option value="25" selected>25 km</option><option value="50">50 km</option><option value="100">100 km</option></select></div></div>
+    <label class="cumplo"><input type="checkbox" id="soloCumplo"><span>Solo lo que encaja con mi perfil</span> <small id="soloNota"></small></label>
     <div class="fpie"><button type="button" id="fclear" hidden data-i18n>Borrar filtros</button></div>
   </section>
 
@@ -109,6 +111,7 @@
     <div class="credit">Límites: ICGC e IGN</div>
   </section>
 
+  <div class="avisoperfil" id="avisoPerfil" hidden></div>
   <section class="list" id="list" aria-live="polite">
     <div class="esq"></div><div class="esq"></div><div class="esq"></div>
   </section>
@@ -119,14 +122,27 @@
     <details class="crit" id="cuentaBox" hidden><summary data-i18n>Mi cuenta</summary><div class="cuenta-body" id="cuentaBody"></div></details>
   </div>
 
+  <section class="somos" aria-labelledby="somosT">
+    <h2 id="somosT">Quiénes somos</h2>
+    <p>Radar de Plazas / Oposiciones es un proyecto independiente nacido en Barcelona. Cada mañana revisamos el BOE, el CIDO y las webs de empleo de las empresas públicas de transporte, y reunimos en un solo sitio las oposiciones, bolsas de trabajo e interinidades de toda España, con su plazo y sus requisitos.</p>
+    <p>Está pensado para quien busca un empleo público y no quiere perder horas en boletines: personas que quieren empezar a trabajar pronto con una bolsa o una interinidad, quien prepara una oposición y quiere ver todas las convocatorias, y quien está cambiando de rumbo y no sabe por dónde empezar.</p>
+    <a href="quienes-somos.html">Conoce el proyecto</a>
+  </section>
+
   <footer class="foot">
     <p class="lastrun" id="lastrun">Esperando datos…</p>
     <p class="note" data-i18n>Información recopilada de fuentes oficiales (BOE, CIDO de la Diputació de Barcelona, TMB y webs de empleo de empresas públicas de transporte). Radar de Plazas no es un organismo oficial: comprueba siempre requisitos y plazos en la convocatoria publicada.</p>
-    <nav aria-label="Más"><a href="/oposiciones">Por sector</a><a href="/estadisticas.html">Estadísticas</a><a href="/guias/">Guías</a><a href="/sueldos.html">Sueldos</a><a href="/widget.html">Widget para tu web</a></nav>
+    <nav aria-label="Más"><a href="quienes-somos.html">Quiénes somos</a><a href="/oposiciones">Por sector</a><a href="/estadisticas.html">Estadísticas</a><a href="/guias/">Guías</a><a href="/sueldos.html">Sueldos</a><a href="/widget.html">Widget para tu web</a></nav>
     <nav aria-label="Información legal"><a href="legal/aviso-legal.html">Aviso legal</a><a href="legal/privacidad.html">Privacidad</a><a href="legal/cookies.html">Cookies</a><a href="legal/condiciones.html">Condiciones de uso</a><a href="contacto.html">Contacto</a></nav>
-    <span>© 2026 @gadivi · Radar de Plazas</span>
+    <span>© 2026 @gadivi · Radar de Plazas / Oposiciones</span>
   </footer>
 </main>
+<button type="button" class="tutorbtn" id="tutorBtn" aria-controls="tutor">🧭 Tutor</button>
+<section class="tutor" id="tutor" role="dialog" aria-modal="false" aria-labelledby="tutorT" hidden>
+  <div class="tutor-cab"><h2 id="tutorT">Tu tutor</h2><span class="note">Te orienta según tu perfil y tus gustos</span><button type="button" class="x" id="tutorX" aria-label="Cerrar el tutor">✕</button></div>
+  <div class="tutor-cuerpo" id="tutorBody" aria-live="polite"></div>
+  <form class="tutor-pie" id="tutorForm" hidden><textarea id="tutorQ" rows="1" maxlength="600" placeholder="Pregunta lo que quieras: qué te conviene, por dónde empezar…"></textarea><button type="submit">Enviar</button></form>
+</section>
 <div class="toast" id="toast" hidden role="status"></div>
 <script src="geo.js"></script>
 <script src="espana.js"></script>

@@ -256,7 +256,11 @@ export async function rutasCuenta(req: Request, env: Env, path: string, u: URL):
     if (typeof b.avisos_email === "boolean") await db.prepare("UPDATE users SET avisos_email = ? WHERE id = ?").bind(b.avisos_email ? 1 : 0, yo.id).run();
     if (b.frecuencia === "diaria" || b.frecuencia === "semanal") await db.prepare("UPDATE users SET frecuencia = ? WHERE id = ?").bind(b.frecuencia, yo.id).run();
     if (typeof b.boletin === "boolean") await db.prepare("UPDATE users SET boletin = ? WHERE id = ?").bind(b.boletin ? 1 : 0, yo.id).run();
-    if (b.perfil && typeof b.perfil === "object") await db.prepare("UPDATE users SET perfil = ? WHERE id = ?").bind(JSON.stringify(b.perfil).slice(0, 1000), yo.id).run();
+    if (b.perfil && typeof b.perfil === "object") {
+      const txt = JSON.stringify(b.perfil);
+      if (txt.length > 4000) return json({ error: "El perfil es demasiado largo." }, 400);
+      await db.prepare("UPDATE users SET perfil = ? WHERE id = ?").bind(txt, yo.id).run();
+    }
     if (b.telegram === false) await db.prepare("UPDATE users SET telegram = NULL WHERE id = ?").bind(yo.id).run();
     return json({ ok: true });
   }

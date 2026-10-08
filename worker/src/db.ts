@@ -4,7 +4,7 @@ const COLS = [
   "id", "fuente", "titulo", "organismo", "municipio", "provincia", "comunidad", "tipo", "grupo", "sistema",
   "dificultad", "interino", "estado", "plazo_fin", "plazo_texto", "plazo_aprox", "plazas", "url", "tramite_url",
   "detalle_url", "resumen", "publicado", "encontrada", "detalle_ok", "notificada", "marca",
-  "subtipo", "nivel", "requisitos", "historia", "revisada", "ia_resumen",
+  "subtipo", "nivel", "requisitos", "historia", "revisada", "ia_resumen", "lat", "lon",
 ] as const;
 
 const val = (v: unknown) => (v === undefined ? null : typeof v === "boolean" ? (v ? 1 : 0) : v);
