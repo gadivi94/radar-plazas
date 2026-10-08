@@ -19,7 +19,8 @@ jobs:
             for h in radaropos.com radar-plazas.pages.dev; do
               r=$(curl -s -o body.tmp -w '%{http_code} %{size_download} %{time_total}' --compressed "https://$h$u")
               echo "$h$u -> $r" >> out/resultado.txt
-              case "$u$r" in /api/auth/config*) head -c 300 body.tmp >> out/resultado.txt; echo >> out/resultado.txt;; *" 200"*) ;; *) head -c 400 body.tmp | tr '\n' ' ' >> out/resultado.txt; echo >> out/resultado.txt;; esac
+              case "$u" in /api/auth/config) head -c 300 body.tmp >> out/resultado.txt; echo >> out/resultado.txt;; esac
+              case "$r" in 200*) ;; *) head -c 400 body.tmp | tr '\n' ' ' >> out/resultado.txt; echo >> out/resultado.txt;; esac
             done
           done
           curl -s -D - -o /dev/null https://radaropos.com/api/ofertas | head -20 >> out/resultado.txt
