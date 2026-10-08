@@ -90,6 +90,7 @@
   <section class="filtros" id="filtros" aria-label="Filtros" hidden>
     <div class="frow"><label for="fniv" data-i18n>Estudios</label><select class="sel" id="fniv"></select></div>
     <div class="frow"><span data-i18n>Dificultad</span><div class="seg" id="fdif"></div></div>
+    <div class="frow"><span>Tipo</span><div class="seg" id="fsis"></div></div>
     <div class="frow"><span data-i18n>Grupo</span><div class="seg" id="fgrp"></div></div>
     <div class="frow"><label for="lugarsel" data-i18n>Lugar</label><select class="sel" id="lugarsel"></select></div>
     <div class="frow"><label for="cpIn">Cerca de</label><div class="cerca"><input id="cpIn" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="Código postal" autocomplete="postal-code"><button type="button" id="cercaMi2">Mi ubicación</button><select id="kmSel" aria-label="Distancia máxima"><option value="10">10 km</option><option value="25" selected>25 km</option><option value="50">50 km</option><option value="100">100 km</option></select></div></div>
@@ -159,6 +160,8 @@
     <label class="campo">Palabras que no quieres<input id="alExcluir" placeholder="prácticas, temporal…" autocomplete="off"></label>
     <fieldset class="campo"><legend>Comunidades</legend><div class="opciones" id="alComunidades"></div><small>Si no marcas ninguna, toda España.</small></fieldset>
     <label class="check" id="alLugarBox" hidden><input type="checkbox" id="alLugar" checked><span id="alLugarT"></span></label>
+    <fieldset class="campo"><legend>Tipo de proceso</legend><div class="opciones" id="alSistemas"></div></fieldset>
+    <fieldset class="campo"><legend>Grupo</legend><div class="opciones" id="alGrupos"></div><small>AP sin titulación · C2 ESO · C1 bachillerato o FP medio · A2 y A1 universidad.</small></fieldset>
     <div class="campos2">
       <label class="campo">Sector<select id="alSector"></select></label>
       <label class="campo">Tus estudios<select id="alNivel"></select></label>

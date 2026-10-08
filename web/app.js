@@ -51,17 +51,19 @@ const FUENTE={BOE:"BOE",TMB:"TMB",EMPRESA:"web de la empresa"};
 const SUBN=Object.fromEntries(SECTORES.flatMap(s=>s.subs.map(([k,n])=>[k,{n,s:s.k}])));
 const NIV_OPC=[["","Cualquier nivel"],["0","Sin titulación"],["1","Con ESO"],["2","Con bachillerato o FP medio"],["3","Con FP superior"],["4","Con carrera"]];
 const DIF=[[1,"Fácil"],[2,"Media"],[3,"Difícil"]];
+const TIPOS_PROC=[["oposicion","Oposición"],["concurso-oposicion","Concurso-oposición"],["concurso","Concurso de méritos"],["bolsa","Bolsa de trabajo"],["interino","Interinos"]];
+const GRUPO_TXT={AP:"Sin titulación",C2:"ESO",C1:"Bachillerato o FP de grado medio",B:"FP de grado superior",A2:"Grado universitario (diplomatura)",A1:"Grado universitario (licenciatura o máster)","?":"El grupo aún no consta"};
 const GRUPOS=[["AP","AP"],["C2","C2"],["C1","C1"],["B","B"],["A2","A2"],["A1","A1"],["?","Sin especificar"]];
 const normTxt=s=>(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim();
 
 // ---------- Estado ----------
-const S={q:"",m3:false,clasico:false,ofertas:[],alertas:null,meta:null,tab:"nuevas",sec:"",subs:[],niv:null,solo:false,dif:[],grp:[],etapa:"",busy:new Set(),ses:"",yo:null,adm:null,perfil:null,mapa:"cat",abiertos:new Set()};
+const S={q:"",m3:false,clasico:false,ofertas:[],alertas:null,meta:null,tab:"nuevas",sec:"",subs:[],niv:null,solo:false,dif:[],grp:[],sis:[],etapa:"",busy:new Set(),ses:"",yo:null,adm:null,perfil:null,mapa:"cat",abiertos:new Set()};
 S.ses=ls.get("rp_ses","");try{S.yo=S.ses?JSON.parse(ls.get("rp_yo","null")):null}catch(_){S.yo=null}
 try{S.tab=ls.get("rp_tab","nuevas");if(!TABS.some(x=>x[0]===S.tab))S.tab="nuevas";
   leerFiltros(JSON.parse(ls.get("rp_f","{}"))||{});S.perfil=JSON.parse(ls.get("rp_perfil","null"));S.mapa=ls.get("rp_mapa","cat");
 }catch(e){S.place={kind:"ccaa",id:"Cataluña"}}
-function leerFiltros(f){S.dif=f.dif||[];S.grp=f.grp||[];S.sec=f.sec||"";S.subs=f.subs||[];S.niv=f.niv??null;S.solo=!!f.solo;S.place=f.place===undefined?{kind:"ccaa",id:"Cataluña"}:f.place}
-function guardarFiltros(){ls.set("rp_f",JSON.stringify({dif:S.dif,grp:S.grp,place:S.place,sec:S.sec,subs:S.subs,niv:S.niv,solo:S.solo}));marcarCambio()}
+function leerFiltros(f){S.dif=f.dif||[];S.grp=f.grp||[];S.sis=f.sis||[];S.sec=f.sec||"";S.subs=f.subs||[];S.niv=f.niv??null;S.solo=!!f.solo;S.place=f.place===undefined?{kind:"ccaa",id:"Cataluña"}:f.place}
+function guardarFiltros(){ls.set("rp_f",JSON.stringify({dif:S.dif,grp:S.grp,sis:S.sis,place:S.place,sec:S.sec,subs:S.subs,niv:S.niv,solo:S.solo}));marcarCambio()}
 
 function grupoDe(o){const g=(o.grupo||"").toUpperCase();return /^(AP|C2|C1|B|A2|A1)$/.test(g)?g:"?"}
 function dificultad(o){return o.dificultad||2}
@@ -75,6 +77,7 @@ function pasaFiltros(o,sin){
   if(S.niv!=null&&o.nivel!=null&&o.nivel>S.niv)return false;
   if(sin!=="dif"&&S.dif.length&&!S.dif.includes(dificultad(o)))return false;
   if(sin!=="grp"&&S.grp.length&&!S.grp.includes(grupoDe(o)))return false;
+  if(sin!=="sis"&&S.sis.length&&!S.sis.some(k=>k==="interino"?Number(o.interino)===1:o.sisK===k))return false;
   if(S.solo){const c=cumpleDe(o);if(c&&c.estado==="no")return false;
     const int=S.perfil?.intereses||[];if(int.length&&!int.includes(o.tipo||"otros"))return false}
   return true;
@@ -114,6 +117,7 @@ function render(){
   const enLugar=base.filter(lugarActivo);
   const contarPor=(sin,clave)=>{const m=new Map();for(const o of enLugar)if(pasaFiltros(o,sin)){const k=clave(o);m.set(k,(m.get(k)||0)+1)}return m};
   const cSec=contarPor("sec",o=>o.tipo||"otros"),cSub=contarPor("sub",o=>o.subtipo),cDif=contarPor("dif",dificultad),cGrp=contarPor("grp",grupoDe);
+  const cSis=new Map();for(const o of enLugar)if(pasaFiltros(o,"sis")){if(o.sisK)cSis.set(o.sisK,(cSis.get(o.sisK)||0)+1);if(Number(o.interino))cSis.set("interino",(cSis.get("interino")||0)+1)}
   const cuenta=(sin,fn)=>{const m={sec:cSec,sub:cSub,dif:cDif,grp:cGrp}[sin];let n=0;for(const [k,v] of m)if(fn({tipo:k,subtipo:k,dificultad:k,grupo:k,_k:k}))n+=v;return n};
   let tot=0;for(const v of cSec.values())tot+=v;
   $("fsec").innerHTML=SECTORES.map(s=>{const n=cSec.get(s.k)||0;return n||S.sec===s.k?`<button type="button" data-sec="${S.sec===s.k?"":s.k}" aria-pressed="${S.sec===s.k}" title="${n} ${n===1?"plaza":"plazas"}"><span class="i" aria-hidden="true">${ICONO[s.k]||"•"}</span>${esc(CORTO[s.k]||s.n)}</button>`:""}).join("");
@@ -122,7 +126,8 @@ function render(){
   $("fsub").innerHTML=subs.map(([k,n])=>{const x=cSub.get(k)||0;return x||S.subs.includes(k)?`<button type="button" class="chip" data-sub="${k}" aria-pressed="${S.subs.includes(k)}">${esc(n)}<small>${x}</small></button>`:""}).join("");
   $("fniv").innerHTML=NIV_OPC.map(([v,l])=>`<option value="${v}">${t(l)}</option>`).join("");$("fniv").value=S.niv==null?"":String(S.niv);
   $("fdif").innerHTML=DIF.map(([v,l])=>`<button type="button" data-dif="${v}" aria-pressed="${S.dif.includes(v)}">${t(l)}<small>${cDif.get(v)||0}</small></button>`).join("");
-  $("fgrp").innerHTML=GRUPOS.map(([v,l])=>`<button type="button" data-grp="${v}" aria-pressed="${S.grp.includes(v)}">${t(l)}<small>${cGrp.get(v)||0}</small></button>`).join("");
+  $("fgrp").innerHTML=GRUPOS.map(([v,l])=>{const n=cGrp.get(v)||0,on=S.grp.includes(v);return `<button type="button" data-grp="${v}" aria-pressed="${on}" ${n||on?"":"disabled"} title="${esc(GRUPO_TXT[v]||"")}">${t(l)}<small>${n}</small></button>`}).join("");
+  $("fsis").innerHTML=TIPOS_PROC.map(([v,l])=>{const n=cSis.get(v)||0,on=S.sis.includes(v);return `<button type="button" data-sis="${v}" aria-pressed="${on}" ${n||on?"":"disabled"}>${esc(l)}<small>${n}</small></button>`}).join("");
   $("soloCumplo").checked=S.solo;$("soloNota").textContent=S.perfil?.nivel!=null?"":"(completa tu perfil)";
   const av=$("avisoPerfil"),sinPerfil=S.perfil?.nivel==null;let cerrado=false;try{cerrado=!!sessionStorage.getItem("rp_avp")}catch(_){}
   av.hidden=!(sinPerfil&&!cerrado)&&!(!sinPerfil&&!S.solo&&!cerrado);
@@ -135,7 +140,7 @@ function render(){
   window.Mapa3D&&S.m3&&Mapa3D.actualizar(S.mapRows,S.place);
   const rows=S.mapRows.filter(lugarActivo)
     .sort(S.place?.kind==="cerca"?(a,b)=>distOferta(a)-distOferta(b):(a,b)=>{const da=daysLeft(a),db=daysLeft(b);if(da===null&&db===null)return 0;if(da===null)return 1;if(db===null)return -1;return da-db});
-  const activos=S.dif.length+S.grp.length+(S.place?1:0)+(S.sec?1:0)+S.subs.length+(S.niv!=null?1:0)+(S.solo?1:0);
+  const activos=S.dif.length+S.grp.length+S.sis.length+(S.place?1:0)+(S.sec?1:0)+S.subs.length+(S.niv!=null?1:0)+(S.solo?1:0);
   $("fclear").hidden=!activos;
   $("hTotal").textContent=rows.length.toLocaleString("es-ES");
   $("hTexto").textContent=(rows.length===1?"plaza ":"plazas ")+(S.tab==="nuevas"?(S.ses?"nuevas sin revisar":"nuevas esta semana"):S.tab==="mias"?"en seguimiento":S.tab==="descartada"?"descartadas":"abiertas")+" "+nombreLugar(S.place);
@@ -168,6 +173,7 @@ function renderActivos(){
   if(S.niv!=null)a.push(["niv",NIV_OPC.find(x=>x[0]===String(S.niv))?.[1]]);
   for(const d of S.dif)a.push(["dif:"+d,DIF[d-1][1]]);
   for(const g of S.grp)a.push(["grp:"+g,g==="?"?"Sin grupo":"Grupo "+g]);
+  for(const k of S.sis)a.push(["sis:"+k,TIPOS_PROC.find(x=>x[0]===k)?.[1]||k]);
   if(S.solo)a.push(["solo","Encaja con mi perfil"]);
   $("activos").innerHTML=a.map(([k,l])=>`<button type="button" class="activo" data-quitar="${esc(k)}" aria-label="Quitar filtro ${esc(l)}">${esc(l)}</button>`).join("");
 }
@@ -236,12 +242,14 @@ function resumenFiltros(f){
   if(f.palabras?.length)p.push(`“${f.palabras.slice(0,3).join("”, “")}”${f.palabras.length>3?"…":""}`);
   if(f.dificultades?.length)p.push(f.dificultades.map(d=>DIF[d-1][1]).join("/"));
   if(f.grupos?.length)p.push(f.grupos.map(g=>g==="?"?"sin grupo":g).join("/"));
+  if(f.sistemas?.length)p.push(f.sistemas.map(k=>TIPOS_PROC.find(x=>x[0]===k)?.[1]||k).join(", "));
   return p.join(" · ");
 }
 function filtrosActuales(){
   const f={soloAbiertas:true};
   if(S.dif.length)f.dificultades=[...S.dif];
   if(S.grp.length)f.grupos=[...S.grp];
+  if(S.sis.length)f.sistemas=[...S.sis];
   if(S.sec)f.tipos=[S.sec];
   if(S.subs.length)f.subtipos=[...S.subs];
   if(S.niv!=null)f.nivelMax=S.niv;
@@ -622,8 +630,9 @@ document.addEventListener("click",async e=>{
   if(tg.dataset.sec!==undefined){S.sec=S.sec===tg.dataset.sec?"":tg.dataset.sec;S.subs=[];S.mostrar=0;guardarFiltros();render();return}
   if(tg.dataset.sub){const v=tg.dataset.sub;S.subs=S.subs.includes(v)?S.subs.filter(x=>x!==v):[...S.subs,v];guardarFiltros();render();return}
   if(tg.dataset.dif){const v=+tg.dataset.dif;S.dif=S.dif.includes(v)?S.dif.filter(x=>x!==v):[...S.dif,v];guardarFiltros();render();return}
+  if(tg.dataset.sis){const v=tg.dataset.sis;S.sis=S.sis.includes(v)?S.sis.filter(x=>x!==v):[...S.sis,v];S.mostrar=0;guardarFiltros();render();return}
   if(tg.dataset.grp){const v=tg.dataset.grp;S.grp=S.grp.includes(v)?S.grp.filter(x=>x!==v):[...S.grp,v];guardarFiltros();render();return}
-  if(tg.id==="fclear"){S.dif=[];S.grp=[];S.place=null;S.sec="";S.subs=[];S.niv=null;S.solo=false;guardarFiltros();setVB({...FULL});render();return}
+  if(tg.id==="fclear"){S.dif=[];S.grp=[];S.sis=[];S.place=null;S.sec="";S.subs=[];S.niv=null;S.solo=false;guardarFiltros();setVB({...FULL});render();return}
   if(tg.dataset.zoom){
     const z=tg.dataset.zoom;
     if(z==="in")zoomAt(0.6);else if(z==="out")zoomAt(1/0.6);else if(z==="all")setVB({...FULL});else zoomProv(+z);
@@ -703,7 +712,7 @@ function adaptar(o){
   const cat=o.comunidad==="Cataluña";
   return {...o,ens:o.organismo||o.fuente,tramiteUrl:o.tramite_url,terminiFecha:o.plazo_fin,terminiTexto:o.plazo_texto,
     zona:o.municipio||(cat?"Toda Cataluña":o.provincia||o.comunidad),
-    sistema:SISTEMA[o.sistema]||o.sistema||"",tipoPersonal:o.interino?"Interino / bolsa":""};
+    sisK:o.sistema||null,sistema:SISTEMA[o.sistema]||o.sistema||"",tipoPersonal:o.interino?"Interino / bolsa":""};
 }
 async function cargar(){
   // La cuenta va aparte de las plazas: si algo falla al cargar plazas, no parece que se haya cerrado la sesión
@@ -793,7 +802,7 @@ document.addEventListener("click",e=>{
   if(b.id==="verFiltros"||b.id==="cerrarFiltros"){const f=$("filtros"),abrir=b.id==="verFiltros"&&f.hidden;f.hidden=!abrir;$("verFiltros").setAttribute("aria-expanded",String(abrir));if(abrir)f.scrollIntoView({behavior:"smooth",block:"nearest"});return}
   if(b.dataset.quitar){const k=b.dataset.quitar;
     if(k==="q"){S.q="";$("q").value=""}else if(k==="place"){S.place=null;if(S.m3)Mapa3D.enfocar(null)}else if(k==="sec"){S.sec="";S.subs=[]}else if(k==="niv")S.niv=null;else if(k==="solo")S.solo=false;
-    else if(k.startsWith("sub:"))S.subs=S.subs.filter(x=>x!==k.slice(4));else if(k.startsWith("dif:"))S.dif=S.dif.filter(x=>x!==+k.slice(4));else if(k.startsWith("grp:"))S.grp=S.grp.filter(x=>x!==k.slice(4));
+    else if(k.startsWith("sub:"))S.subs=S.subs.filter(x=>x!==k.slice(4));else if(k.startsWith("dif:"))S.dif=S.dif.filter(x=>x!==+k.slice(4));else if(k.startsWith("grp:"))S.grp=S.grp.filter(x=>x!==k.slice(4));else if(k.startsWith("sis:"))S.sis=S.sis.filter(x=>x!==k.slice(4));
     guardarFiltros();render();return}
 });
 let tq=null;
@@ -1128,6 +1137,8 @@ function abrirAlerta(a){
   $("alNombre").value=a?a.nombre:(sugerirNombre(f));
   $("alPalabras").value=(f.palabras||[]).join(", ");$("alExcluir").value=(f.excluir||[]).join(", ");
   $("alComunidades").innerHTML=COMUNIDADES.map(c=>`<label><input type="checkbox" value="${esc(c)}" ${ccaa.has(c)?"checked":""}>${esc(c==="Estatal"?"Ámbito estatal":c)}</label>`).join("");
+  $("alSistemas").innerHTML=TIPOS_PROC.map(([v,l])=>`<label><input type="checkbox" value="${v}" ${(f.sistemas||[]).includes(v)?"checked":""}>${esc(l)}</label>`).join("");
+  $("alGrupos").innerHTML=GRUPOS.filter(([v])=>v!=="?").map(([v,l])=>`<label><input type="checkbox" value="${v}" ${(f.grupos||[]).includes(v)?"checked":""}>${esc(l)}</label>`).join("");
   const lug=lugarDeFiltros(f);$("alLugarBox").hidden=!lug;$("alLugar").checked=!!lug;$("alLugarT").textContent=lug?`Solo en: ${lug}`:"";
   $("alLugarBox").dataset.f=JSON.stringify({zonas:f.zonas,provincias:f.provincias,cerca:f.cerca});
   $("alSector").innerHTML=`<option value="">Todos los sectores</option>`+SECTORES.map(x=>`<option value="${x.k}" ${(f.tipos||[])[0]===x.k?"selected":""}>${esc(x.n)}</option>`).join("");
@@ -1155,6 +1166,8 @@ $("fAlerta").addEventListener("submit",async e=>{
   const pal=listaComas($("alPalabras").value),exc=listaComas($("alExcluir").value);if(pal.length)f.palabras=pal;if(exc.length)f.excluir=exc;
   const cc=[...$("alComunidades").querySelectorAll("input:checked")].map(x=>x.value);if(cc.length)f.comunidades=cc;
   if($("alLugar").checked&&!$("alLugarBox").hidden){const l=JSON.parse($("alLugarBox").dataset.f||"{}");for(const k of ["zonas","provincias","cerca"])if(l[k]&&(!Array.isArray(l[k])||l[k].length))f[k]=l[k]}
+  const sis=[...$("alSistemas").querySelectorAll("input:checked")].map(x=>x.value);if(sis.length)f.sistemas=sis;
+  const grs=[...$("alGrupos").querySelectorAll("input:checked")].map(x=>x.value);if(grs.length)f.grupos=grs;
   const sec=$("alSector").value;if(sec){f.tipos=[sec];const subs=JSON.parse($("alSector").dataset.subs||"[]").filter(k=>SUBN[k]?.s===sec);if(subs.length)f.subtipos=subs}
   const niv=$("alNivel").value;if(niv!=="")f.nivelMax=+niv;
   const frec=document.querySelector('[name="alFrec"]:checked')?.value||"diaria";

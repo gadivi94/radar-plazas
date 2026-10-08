@@ -8,7 +8,7 @@ import { CIDO_FEEDS, CIDO_OBERTES, enriquecerCido, fetchFeed, ofertasDesdeFeed }
 import { ofertasTmb, TMB_URL } from "./sources/tmb";
 import { recogerEmpresas } from "./sources/transporte";
 import { geocodificar } from "./geocodificar";
-import { fmt } from "./classify";
+import { fmt, grupoProbable } from "./classify";
 import { correoActivo, enviarCorreo } from "./mail";
 import { clasificar, nivelDe } from "./sectores";
 import { coordCatalana, provinciaCatalana } from "./geo";
@@ -103,6 +103,16 @@ export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSe
       await env.DB.prepare(`UPDATE ofertas SET estado = 'revisar' WHERE fuente = 'CIDO' AND estado = 'abierta' AND plazo_fin IS NULL AND detalle_ok = 0 AND id NOT IN (SELECT value FROM json_each(?))`).bind(lista).run();
     }
   } catch (e) { res.errores.push("CIDO obertes: " + String(e).slice(0, 100)); }
+
+  // Una vez: grupo probable (por el nombre del puesto) para las plazas sin ficha leída
+  if ((await getMeta(env, "grupo_probable")) !== "1") {
+    try {
+      const filas = (await env.DB.prepare("SELECT id, titulo, comunidad, nivel FROM ofertas WHERE grupo IS NULL").all<{ id: string; titulo: string; comunidad: string | null; nivel: number | null }>()).results;
+      const st = filas.flatMap((f) => { const g = grupoProbable(f.titulo, f.comunidad); return g ? [env.DB.prepare("UPDATE ofertas SET grupo = ?, nivel = COALESCE(nivel, ?) WHERE id = ?").bind(g, nivelDe(g), f.id)] : []; });
+      for (let i = 0; i < st.length; i += 80) await env.DB.batch(st.slice(i, i + 80));
+      await setMeta(env, "grupo_probable", "1");
+    } catch (e) { res.errores.push("grupo_probable: " + String(e).slice(0, 80)); }
+  }
 
   // Coordenadas de las plazas catalanas ya guardadas (una vez)
   if ((await getMeta(env, "coordcat")) !== "1") {

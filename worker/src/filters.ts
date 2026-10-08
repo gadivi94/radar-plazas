@@ -16,6 +16,7 @@ export interface Filtros {
   palabras?: string[];       // alguna debe aparecer en título u organismo
   excluir?: string[];
   soloInterinos?: boolean;
+  sistemas?: string[];       // oposicion · concurso-oposicion · concurso · bolsa · interino
   soloAbiertas?: boolean;
   fuentes?: string[];
 }
@@ -58,6 +59,7 @@ export function coincide(o: Oferta, f: Filtros, hoy = hoyMadrid()): boolean {
   if (has(f.dificultades) && !f.dificultades!.includes(Number(o.dificultad || 2))) return false;
   if (has(f.grupos) && !f.grupos!.includes(o.grupo || "?")) return false;
   if (f.soloInterinos && !Number(o.interino)) return false;
+  if (has(f.sistemas) && !f.sistemas!.some((k) => (k === "interino" ? Number(o.interino) === 1 : o.sistema === k))) return false;
   if (f.soloAbiertas && estadoActual(o, hoy) === "cerrada") return false;
   const hay = norm(`${o.titulo} ${o.organismo || ""} ${o.municipio || ""}`);
   if (has(f.zonas)) {

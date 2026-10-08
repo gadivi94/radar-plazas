@@ -1,6 +1,6 @@
 // CIDO (Diputació de Barcelona): todas las administraciones catalanas, incluidas bolsas e interinos.
 import { coordCatalana, provinciaCatalana, provinciaDe } from "../geo";
-import { dificultadDe, grupoDe, interinoDe, isoDe, plazasDe, sistemaDe } from "../classify";
+import { dificultadDe, grupoDe, grupoProbable, interinoDe, isoDe, plazasDe, sistemaDe } from "../classify";
 import { clasificar, nivelDe, requisitosDe } from "../sectores";
 import { campo, parseRss, toText } from "../text";
 import type { Oferta } from "../types";
@@ -47,6 +47,7 @@ export function ofertasDesdeFeed(xml: string, ahora: string, abiertas = false): 
     const { tipo, subtipo } = clasificar(it.title);
     const interino = interinoDe(texto);
     const sistema = /borsa de treball/i.test(it.title) ? "bolsa" : null;
+    const grupo = grupoProbable(it.title, "Cataluña");
     return [{
       id: `cido:${id}`,
       fuente: "CIDO" as const,
@@ -56,8 +57,9 @@ export function ofertasDesdeFeed(xml: string, ahora: string, abiertas = false): 
       provincia: prov?.provincia ?? provinciaCatalana(municipio),
       lat: coordCatalana(municipio)?.[1] ?? null, lon: coordCatalana(municipio)?.[0] ?? null,
       comunidad: "Cataluña",
-      tipo, subtipo, sistema, interino: interino ? 1 : 0, grupo: null,
-      dificultad: dificultadDe({ grupo: null, sistema, interino, tipo }),
+      tipo, subtipo, sistema, interino: interino ? 1 : 0, grupo,
+      nivel: nivelDe(grupo),
+      dificultad: dificultadDe({ grupo, sistema, interino, tipo }),
       estado: abiertas ? ("abierta" as const) : ("revisar" as const),
       plazas: plazasDe(it.title),
       url: it.link.replace(/^http:/, "https:"),
@@ -106,7 +108,7 @@ export function enriquecerCido(o: Oferta, html: string, hoy = new Date().toISOSt
   if (estado === "abierta" && fin && fin < hoy) estado = "cerrada";
   const termini = fin ? null : campo(desde, "Termini");
   const grupoTxt = campo(desde, "Grup de titulació o assimilat") || "";
-  const grupo = grupoDe(grupoTxt);
+  const grupo = grupoDe(grupoTxt) || (o.grupo as string | null) || grupoProbable(o.titulo, "Cataluña");
   const tipusPersonal = campo(desde, "Tipus de personal") || "";
   const sistemaTxt = campo(desde, "Sistema de selecció") || "";
   const sistema = SISTEMA_ES[sistemaDe(sistemaTxt) || ""] || (o.sistema as string | null) || null;
