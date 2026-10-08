@@ -1,6 +1,7 @@
 // CIDO (Diputació de Barcelona): todas las administraciones catalanas, incluidas bolsas e interinos.
-import { provinciaDe } from "../geo";
-import { dificultadDe, grupoDe, interinoDe, isoDe, plazasDe, sistemaDe, tipoDe } from "../classify";
+import { provinciaCatalana, provinciaDe } from "../geo";
+import { dificultadDe, grupoDe, interinoDe, isoDe, plazasDe, sistemaDe } from "../classify";
+import { clasificar, nivelDe, requisitosDe } from "../sectores";
 import { campo, parseRss, toText } from "../text";
 import type { Oferta } from "../types";
 
@@ -39,7 +40,7 @@ export function ofertasDesdeFeed(xml: string, ahora: string): Oferta[] {
     const municipio = municipioDe(ens, it.title);
     const prov = provinciaDe(municipio);
     const texto = `${it.title} ${ens}`;
-    const tipo = tipoDe(it.title);
+    const { tipo, subtipo } = clasificar(it.title);
     const interino = interinoDe(texto);
     const sistema = /borsa de treball/i.test(it.title) ? "bolsa" : null;
     return [{
@@ -48,9 +49,9 @@ export function ofertasDesdeFeed(xml: string, ahora: string): Oferta[] {
       titulo: it.title,
       organismo: ens || null,
       municipio,
-      provincia: prov?.provincia ?? null,
+      provincia: prov?.provincia ?? provinciaCatalana(municipio),
       comunidad: "Cataluña",
-      tipo, sistema, interino: interino ? 1 : 0, grupo: null,
+      tipo, subtipo, sistema, interino: interino ? 1 : 0, grupo: null,
       dificultad: dificultadDe({ grupo: null, sistema, interino, tipo }),
       estado: "abierta" as const,
       plazas: plazasDe(it.title),
@@ -93,7 +94,8 @@ export function enriquecerCido(o: Oferta, html: string): Partial<Oferta> {
   const sistemaTxt = campo(desde, "Sistema de selecció") || "";
   const sistema = SISTEMA_ES[sistemaDe(sistemaTxt) || ""] || (o.sistema as string | null) || null;
   const interino = interinoDe(`${o.titulo} ${tipusPersonal}`) || Boolean(o.interino);
-  const tipo = o.tipo && o.tipo !== "otros" ? o.tipo : tipoDe(o.titulo, campo(desde, "Matèries") || "");
+  const cls = o.tipo && o.tipo !== "otros" && o.subtipo ? { tipo: o.tipo, subtipo: o.subtipo } : clasificar(o.titulo, `${campo(desde, "Matèries") || ""} ${desde.slice(0, 1500)}`);
+  const tipo = cls.tipo;
 
   // Enlace "Accés al tràmit": primer href después de la etiqueta.
   let tramite: string | null = null;
@@ -102,7 +104,11 @@ export function enriquecerCido(o: Oferta, html: string): Partial<Oferta> {
 
   const req = campo(desde, "Titulació requerida");
   const altres = campo(desde, "Altres requisits");
+  const requisitos = requisitosDe(desde.slice(0, 12000), req || grupoTxt || null);
   return {
+    subtipo: cls.subtipo,
+    nivel: nivelDe(grupo, req || grupoTxt),
+    requisitos: JSON.stringify(requisitos),
     estado,
     plazo_fin: fin,
     plazo_texto: termini && !/^\d/.test(termini) ? termini.slice(0, 160) : null,

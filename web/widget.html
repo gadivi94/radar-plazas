@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Widget de plazas para tu web · Radar de Plazas</title>
+<meta name="description" content="Pon en tu web un recuadro con las plazas abiertas de Radar de Plazas, filtradas por sector y lugar. Gratis para academias, ayuntamientos y blogs.">
+<link rel="canonical" href="https://radaropos.com/widget.html">
+<meta name="theme-color" content="#0d6b6b">
+<link rel="icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="/legal/legal.css">
+<link rel="stylesheet" href="/paginas.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="marca" href="/">Radar de <span>Plazas</span></a><a class="volver" href="/">Todas las plazas →</a></div>
+  <main>
+    <h1>Widget de plazas para tu web</h1>
+
+    <p>¿Tienes una academia, un blog de oposiciones o la web de un ayuntamiento? Copia este código y mostrará las plazas abiertas que elijas, actualizadas cada día. Es gratis.</p>
+    <pre class="codigo">&lt;div data-radar-plazas data-sector="seguridad" data-lugar="Cataluña" data-limite="8"&gt;&lt;/div&gt;
+&lt;script src="https://radaropos.com/widget.js" async&gt;&lt;/script&gt;</pre>
+    <h2>Opciones</h2>
+    <table>
+      <tr><th>data-sector</th><td>seguridad, sanidad, justicia, educacion, social, transporte, empresas, militar, subalterno, administrativo, oficios, tecnico</td></tr>
+      <tr><th>data-subtipo</th><td>Una subcategoría, por ejemplo policia-local, bomberos, tcae, tramitacion</td></tr>
+      <tr><th>data-lugar</th><td>Una comunidad (Cataluña, Madrid…)</td></tr>
+      <tr><th>data-limite</th><td>Número de plazas (máximo 20)</td></tr>
+    </table>
+    <h2>Vista previa</h2>
+    <div data-radar-plazas data-sector="seguridad" data-lugar="Cataluña" data-limite="5"></div>
+  </main>
+  <footer><nav aria-label="Más"><a href="/oposiciones">Por sector</a><a href="/estadisticas.html">Estadísticas</a><a href="/guias/">Guías</a><a href="/sueldos.html">Sueldos</a><a href="/widget.html">Widget</a><a href="/legal/aviso-legal.html">Aviso legal</a><a href="/legal/privacidad.html">Privacidad</a><a href="/contacto.html">Contacto</a></nav><span>© 2026 @gadivi · Radar de Plazas</span></footer>
+</div>
+<script src="/widget.js" async></script>
+</body>
+</html>

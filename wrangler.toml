@@ -9,6 +9,10 @@ binding = "DB"
 database_name = "radar-plazas-db"
 database_id = "6d4af37c-e480-455a-8e52-9b9d997c3f8e"
 
+# Workers AI: resúmenes de las bases y preguntas sobre cada plaza
+[ai]
+binding = "AI"
+
 [vars]
 # Fichas de detalle que se leen en cada revisión (plan gratuito: 35; de pago: hasta 300)
 ENRICH_BUDGET = "35"
@@ -17,3 +21,7 @@ MAIL_FROM = "Radar de Plazas <avisos@radaropos.com>"
 CONTACT_TO = "hola@radaropos.com"
 # Alertas permitidas con la cuenta gratuita (el administrador no tiene límite)
 ALERTAS_GRATIS = "3"
+# Preguntas a la IA por usuario y día (cuenta gratuita)
+IA_DIARIAS = "10"
+# Bot de Telegram (nombre sin @). El token va como secreto TELEGRAM_BOT_TOKEN.
+TELEGRAM_BOT = ""

@@ -1,3 +1,4 @@
+import { MUNI_PROV, PROV_CAT } from "./munis-cat";
 // Provincias → comunidad autónoma, con las variantes de nombre que aparecen en el BOE.
 
 export const COMUNIDADES = [
@@ -39,6 +40,16 @@ const PROV: Array<[string, string, string[]]> = [
   ["Bizkaia", "País Vasco", ["Vizcaya", "Bilbao"]],
   ["Ceuta", "Ceuta", []], ["Melilla", "Melilla", []],
 ];
+
+export const PROVINCIAS = PROV.map(([provincia, comunidad]) => ({ provincia, comunidad }));
+
+/** Provincia de un municipio catalán (el CIDO solo da el ayuntamiento). */
+export function provinciaCatalana(municipio: string | null | undefined): string | null {
+  if (!municipio) return null;
+  const k = norm(municipio).replace(/’/g, "'").replace(/^(el|la|els|les)\s+|^l'/, "").trim();
+  const c = MUNI_PROV[k];
+  return c ? PROV_CAT[c] : null;
+}
 
 export function norm(s: string): string {
   return (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();

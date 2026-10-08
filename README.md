@@ -37,6 +37,26 @@ Plazas públicas de toda España (BOE, CIDO y TMB) con mapa de Cataluña, filtro
 
 Textos legales: rellenar el domicilio marcado en amarillo en `web/legal/aviso-legal.html` y `web/legal/privacidad.html` y pedir una revisión rápida a un gestor o abogado antes de cobrar nada.
 
+## Funciones
+
+- **Sectores y subcategorías** (seguridad, sanidad, justicia, educación…): `worker/src/sectores.ts`. Si cambias algo ahí, ejecuta `bun scripts/gen-sectores.ts` para actualizar `web/sectores.js` (un test lo comprueba).
+- **Requisitos y «¿Puedo presentarme?»**: se leen de cada ficha (titulación, edad, carné, catalán, estatura, tasa, pruebas) y se comparan con *Mi perfil* (`web/cumple.js`).
+- **Mis candidaturas**: etapas (interesa → presentada → admitido → examen → aprobado / bolsa), documentos, notas, recordatorio 3 días antes del cierre y avisos si cambia la ficha.
+- **Páginas para Google**: `/plaza/…` (con datos `JobPosting`), `/oposiciones/<sector>/<lugar>`, `/sitemap.xml`, guías, estadísticas, calculadora de sueldos y widget (`/widget.html`).
+- **IA** (Workers AI, sin coste extra en el plan gratuito con límites): resumen de las bases y preguntas en cada ficha.
+- **Avisos**: correo (diario o resumen semanal), boletín semanal, calendario suscrito (.ics) y Telegram.
+- **Catalán**: botón CA/ES en la página principal.
+
+## Telegram (opcional)
+
+1. En Telegram, habla con **@BotFather** → `/newbot` → nombre «Radar de Plazas» → usuario, por ejemplo `RadarPlazasBot`. Copia el token.
+2. GitHub → Settings → Secrets and variables → Actions → secreto `TELEGRAM_BOT_TOKEN` (el token) y, en la pestaña *Variables*, `TELEGRAM_BOT` = `RadarPlazasBot`.
+3. Relanza *Publica la web* y, en la web, Mi cuenta → Administración → *Activar el bot de Telegram*.
+
+## Analítica sin cookies (opcional)
+
+Cloudflare → Workers & Pages → radar-plazas → Metrics → **Web Analytics → Enable**. No usa cookies, así que no hace falta aviso.
+
 ## App de iPhone (cuando quieras)
 
 1. developer.apple.com → Identifiers → **+** → App ID `cat.gadivi.radarplazas`.

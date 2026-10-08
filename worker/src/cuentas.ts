@@ -2,6 +2,7 @@
 // (en la base de datos solo se guarda su huella). Igual que en opos365.
 import { getMeta, setMeta } from "./db";
 import { contacto, correoActivo, enviarCorreo, escHtml, plantilla, sitio } from "./mail";
+import { configurarWebhook, enlaceTelegram } from "./telegram";
 import type { Env } from "./types";
 
 const SESION_DIAS = 365, OTP_MIN = 10, OTP_INTENTOS = 5, MAX_SESIONES = 8;
@@ -29,12 +30,18 @@ const ipDe = (req: Request) => req.headers.get("CF-Connecting-IP") || "0";
 
 // ---------- esquema: las tablas nuevas se crean solas la primera vez ----------
 let ESQUEMA_OK = false;
+const ESQUEMA_VERSION = "2";
 export async function asegurarEsquema(env: Env): Promise<void> {
   if (ESQUEMA_OK) return;
   const db = env.DB;
-  try { await db.prepare("ALTER TABLE alertas ADD COLUMN uid TEXT").run(); } catch (_) { /* ya existe */ }
-  await db.batch([
-    db.prepare("CREATE INDEX IF NOT EXISTS idx_alertas_uid ON alertas(uid)"),
+  const columnas: Array<[string, string]> = [
+    ["alertas", "uid TEXT"],
+    ["ofertas", "subtipo TEXT"], ["ofertas", "nivel INTEGER"], ["ofertas", "requisitos TEXT"], ["ofertas", "historia TEXT"], ["ofertas", "revisada TEXT"], ["ofertas", "ia_resumen TEXT"],
+    ["users", "perfil TEXT"], ["users", "frecuencia TEXT DEFAULT 'diaria'"], ["users", "boletin INTEGER DEFAULT 0"], ["users", "telegram TEXT"], ["users", "cal_token TEXT"],
+    ["marcas", "notas TEXT"], ["marcas", "docs TEXT"], ["marcas", "recordado INTEGER DEFAULT 0"],
+  ];
+  // Primero las tablas (users y marcas pueden no existir aún), luego las columnas nuevas.
+  const tablas = () => db.batch([
     db.prepare("CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, creado TEXT NOT NULL, ultimo TEXT, admin INTEGER DEFAULT 0, plan TEXT DEFAULT 'gratis', avisos_email INTEGER DEFAULT 1, acepta TEXT)"),
     db.prepare("CREATE TABLE IF NOT EXISTS otp (email TEXT PRIMARY KEY, hash TEXT, exp INTEGER, intentos INTEGER, enviado INTEGER)"),
     db.prepare("CREATE TABLE IF NOT EXISTS sesiones (th TEXT PRIMARY KEY, uid TEXT NOT NULL, creada INTEGER, ultima INTEGER)"),
@@ -42,7 +49,18 @@ export async function asegurarEsquema(env: Env): Promise<void> {
     db.prepare("CREATE TABLE IF NOT EXISTS marcas (uid TEXT NOT NULL, oferta_id TEXT NOT NULL, marca TEXT NOT NULL, ts TEXT, PRIMARY KEY (uid, oferta_id))"),
     db.prepare("CREATE TABLE IF NOT EXISTS mensajes (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, email TEXT, mensaje TEXT, fecha TEXT, ip TEXT, leido INTEGER DEFAULT 0)"),
     db.prepare("CREATE TABLE IF NOT EXISTS limites (k TEXT PRIMARY KEY, n INTEGER, dia TEXT)"),
+    db.prepare("CREATE TABLE IF NOT EXISTS ia_uso (k TEXT PRIMARY KEY, n INTEGER, dia TEXT)"),
   ]);
+  await tablas();
+  const meta = await db.prepare("SELECT v FROM meta WHERE k = 'esquema'").first<{ v: string }>().catch(() => null);
+  if (meta?.v !== ESQUEMA_VERSION) {
+    for (const [t, c] of columnas) { try { await db.prepare(`ALTER TABLE ${t} ADD COLUMN ${c}`).run(); } catch (_) { /* ya existe */ } }
+    await db.batch([
+      db.prepare("CREATE INDEX IF NOT EXISTS idx_ofertas_tipo ON ofertas(tipo, subtipo)"),
+      db.prepare("CREATE INDEX IF NOT EXISTS idx_alertas_uid ON alertas(uid)"),
+      db.prepare("INSERT INTO meta (k, v) VALUES ('esquema', ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(ESQUEMA_VERSION),
+    ]);
+  }
   ESQUEMA_OK = true;
 }
 
@@ -207,11 +225,15 @@ export async function rutasCuenta(req: Request, env: Env, path: string, u: URL):
         avisosEmail: await n("SELECT COUNT(*) AS n FROM users WHERE avisos_email = 1"),
         alertas: await n("SELECT COUNT(*) AS n FROM alertas WHERE activa = 1"),
         sinLeer: await n("SELECT COUNT(*) AS n FROM mensajes WHERE leido = 0"),
-        correo: correoActivo(env),
+        correo: correoActivo(env), ia: !!env.AI, telegram: !!env.TELEGRAM_BOT_TOKEN,
         mensajes,
       });
     }
     if (path === "/admin/leidos" && req.method === "POST") { await db.prepare("UPDATE mensajes SET leido = 1 WHERE leido = 0").run(); return json({ ok: true }); }
+    if (path === "/admin/telegram" && req.method === "POST") {
+      if (!env.TELEGRAM_BOT_TOKEN) return json({ error: "Falta el secreto TELEGRAM_BOT_TOKEN" }, 400);
+      return json(await configurarWebhook(env));
+    }
     return json({ error: "No encontrado" }, 404);
   }
   const yo = me!;
@@ -219,12 +241,27 @@ export async function rutasCuenta(req: Request, env: Env, path: string, u: URL):
   if (path === "/auth/logout" && req.method === "POST") { await db.prepare("DELETE FROM sesiones WHERE th = ?").bind(yo.th).run(); return json({ ok: true }); }
   if (path === "/cuenta" && req.method === "GET") {
     const n = await db.prepare("SELECT COUNT(*) AS n FROM alertas WHERE uid = ?").bind(yo.id).first<{ n: number }>();
-    return json({ email: yo.email, admin: !!yo.admin, plan: yo.plan, avisos_email: !!yo.avisos_email, alertas: n?.n ?? 0, limite_alertas: limiteAlertas(env, yo), correo: correoActivo(env) });
+    const ex = await db.prepare("SELECT perfil, frecuencia, boletin, telegram, cal_token FROM users WHERE id = ?").bind(yo.id).first<{ perfil: string | null; frecuencia: string | null; boletin: number | null; telegram: string | null; cal_token: string | null }>();
+    return json({
+      email: yo.email, admin: !!yo.admin, plan: yo.plan, avisos_email: !!yo.avisos_email, alertas: n?.n ?? 0, limite_alertas: limiteAlertas(env, yo), correo: correoActivo(env),
+      perfil: ex?.perfil ? JSON.parse(ex.perfil) : null, frecuencia: ex?.frecuencia || "diaria", boletin: !!ex?.boletin,
+      telegram: !!ex?.telegram, telegram_url: env.TELEGRAM_BOT_TOKEN ? await enlaceTelegram(env, yo.id) : null,
+      calendario: ex?.cal_token ? `${sitio(env)}/api/cal/${yo.id}/${ex.cal_token}.ics` : null, ia: !!env.AI,
+    });
   }
   if (path === "/cuenta" && req.method === "PATCH") {
     const b = await cuerpo();
     if (typeof b.avisos_email === "boolean") await db.prepare("UPDATE users SET avisos_email = ? WHERE id = ?").bind(b.avisos_email ? 1 : 0, yo.id).run();
+    if (b.frecuencia === "diaria" || b.frecuencia === "semanal") await db.prepare("UPDATE users SET frecuencia = ? WHERE id = ?").bind(b.frecuencia, yo.id).run();
+    if (typeof b.boletin === "boolean") await db.prepare("UPDATE users SET boletin = ? WHERE id = ?").bind(b.boletin ? 1 : 0, yo.id).run();
+    if (b.perfil && typeof b.perfil === "object") await db.prepare("UPDATE users SET perfil = ? WHERE id = ?").bind(JSON.stringify(b.perfil).slice(0, 1000), yo.id).run();
+    if (b.telegram === false) await db.prepare("UPDATE users SET telegram = NULL WHERE id = ?").bind(yo.id).run();
     return json({ ok: true });
+  }
+  if (path === "/cuenta/calendario" && req.method === "POST") {
+    const t = rnd(16);
+    await db.prepare("UPDATE users SET cal_token = ? WHERE id = ?").bind(t, yo.id).run();
+    return json({ url: `${sitio(env)}/api/cal/${yo.id}/${t}.ics` });
   }
   if (path === "/cuenta/admin" && req.method === "POST") {
     const b = await cuerpo(), k = await claveAdmin(env);
@@ -234,9 +271,9 @@ export async function rutasCuenta(req: Request, env: Env, path: string, u: URL):
     return json({ ok: true });
   }
   if (path === "/cuenta/datos" && req.method === "GET") {
-    const user = await db.prepare("SELECT email, creado, ultimo, plan, avisos_email, acepta FROM users WHERE id = ?").bind(yo.id).first();
+    const user = await db.prepare("SELECT email, creado, ultimo, plan, avisos_email, acepta, perfil, frecuencia, boletin FROM users WHERE id = ?").bind(yo.id).first();
     const alertas = (await db.prepare("SELECT nombre, filtros, activa, creada FROM alertas WHERE uid = ?").bind(yo.id).all<{ filtros: string }>()).results.map((a) => ({ ...a, filtros: JSON.parse(a.filtros) }));
-    const marcas = (await db.prepare("SELECT m.oferta_id, m.marca, m.ts, o.titulo FROM marcas m LEFT JOIN ofertas o ON o.id = m.oferta_id WHERE m.uid = ?").bind(yo.id).all()).results;
+    const marcas = (await db.prepare("SELECT m.oferta_id, m.marca, m.ts, m.notas, m.docs, o.titulo FROM marcas m LEFT JOIN ofertas o ON o.id = m.oferta_id WHERE m.uid = ?").bind(yo.id).all()).results;
     return new Response(JSON.stringify({ exportado: new Date().toISOString(), cuenta: user, alertas, marcas }, null, 2), {
       headers: { "Content-Type": "application/json; charset=utf-8", "Content-Disposition": 'attachment; filename="radar-plazas-mis-datos.json"', ...cors },
     });

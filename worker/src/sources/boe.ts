@@ -1,6 +1,7 @@
 // BOE · Sección II.B "Oposiciones y concursos" (API de datos abiertos del sumario).
 import { comunidadPorTexto, norm, provinciaDe } from "../geo";
-import { dificultadDe, grupoDe, interinoDe, plazasDe, plazoDesde, sistemaDe, tipoDe } from "../classify";
+import { dificultadDe, grupoDe, interinoDe, plazasDe, plazoDesde, sistemaDe } from "../classify";
+import { clasificar, nivelDe, requisitosDe } from "../sectores";
 import { toText } from "../text";
 import type { Oferta } from "../types";
 
@@ -85,7 +86,7 @@ export function ofertaDesdeBoe(it: BoeItem, publicado: string, ahora: string): O
   } else {
     comunidad = "Estatal";
   }
-  const tipo = tipoDe(it.titulo);
+  const { tipo, subtipo } = clasificar(it.titulo);
   const interino = interinoDe(it.titulo);
   const sistema = sistemaDe(it.titulo);
   const grupo = grupoDe(it.titulo);
@@ -94,7 +95,7 @@ export function ofertaDesdeBoe(it: BoeItem, publicado: string, ahora: string): O
     fuente: "BOE",
     titulo: it.titulo,
     organismo, municipio, provincia, comunidad,
-    tipo, grupo, sistema, interino: interino ? 1 : 0,
+    tipo, subtipo, grupo, sistema, interino: interino ? 1 : 0, nivel: nivelDe(grupo),
     dificultad: dificultadDe({ grupo, sistema, interino, tipo }),
     estado: "abierta",
     plazas: plazasDe(it.titulo),
@@ -123,12 +124,15 @@ export function enriquecerBoe(o: Oferta, xml: string): Partial<Oferta> {
   if (!grupo) for (const [re, g] of SUBESCALA) if (re.test(n)) { grupo = g; break; }
   const sistema = sistemaDe(text) || (o.sistema as string | null) || null;
   const interino = interinoDe(o.titulo + " " + text.slice(0, 600));
-  const tipo = o.tipo && o.tipo !== "otros" ? o.tipo : tipoDe(o.titulo, text);
+  const cls = o.tipo && o.tipo !== "otros" && o.subtipo ? { tipo: o.tipo, subtipo: o.subtipo } : clasificar(o.titulo, text);
+  const tipo = cls.tipo;
   const plazo = o.publicado ? plazoDesde(text, o.publicado) : null;
   const resumen = text.split("\n").find((l) => /convoca|plaza|puesto|proceso selectivo/i.test(l)) || text.split("\n")[0] || "";
   const plazasTxt = n.match(/(\d+|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s+plazas?\s+de\s+([^,.;]+)/);
   const nums: Record<string, number> = { una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10 };
+  const requisitos = requisitosDe(text.slice(0, 15000));
   return {
+    subtipo: cls.subtipo, nivel: nivelDe(grupo, requisitos.titulacion), requisitos: JSON.stringify(requisitos),
     grupo, sistema, tipo, interino: interino ? 1 : 0,
     dificultad: dificultadDe({ grupo, sistema, interino, tipo }),
     plazo_fin: plazo?.fin ?? null,

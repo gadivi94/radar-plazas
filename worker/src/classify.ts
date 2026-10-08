@@ -1,39 +1,14 @@
 // Clasificación por reglas: tipo de puesto, grupo, sistema, interinidad, dificultad y plazo.
 import { norm } from "./geo";
 
-export const TIPOS = {
-  seguridad: "Seguridad y emergencias",
-  administrativo: "Administrativo",
-  subalterno: "Subalterno y conserjería",
-  oficios: "Oficios y mantenimiento",
-  transporte: "Transporte y conducción",
-  sanidad: "Sanidad",
-  educacion: "Educación",
-  social: "Servicios sociales",
-  tecnico: "Técnico superior",
-  otros: "Otros",
-} as const;
-export type Tipo = keyof typeof TIPOS;
+import { clasificar, SECTOR_NOMBRE } from "./sectores";
 
-// Orden importante: lo más específico primero ("auxiliar de policía" antes que "auxiliar").
-const REGLAS: Array<[Tipo, RegExp]> = [
-  ["seguridad", /polic|guardia urbana|guardia civil|guardia municipal|guardia\/vigilant|agente de movilidad|agent de mobilitat|vigilant|vigilante|bomber|mosso|agente civico|agent civic|agents? rurals?|agentes? forestal|proteccion civil|proteccio civil|emergenci|penitenciari|instituciones penitenciarias|execucio penal|socorrista|salvament/],
-  ["transporte", /conductor|conduccio|conduccion|xofer|chofer|maquinista|autobus|atencio al client|atencion al cliente|tmb|metro\b/],
-  ["sanidad", /enfermer|infermer|tcae|auxiliar de enfermeria|celador|zelador|medic|metge|fisioterap|farmac|matron|odontolog|tecnico sanitario|tecnic sanitari|higienista/],
-  ["educacion", /maestr|mestre|profesor|professor|educador infantil|escola bressol|escuela infantil|tecnico de educacion infantil|tecnic d'educacio infantil|docent|monitor|ensenyament/],
-  ["social", /trabajador social|treballador social|educador social|psicolog|auxiliar de la llar|auxiliar de hogar|ayuda a domicilio|integracio social|integracion social|terapeuta/],
-  ["subalterno", /subaltern|conserj|conserge|ordenanza|porter|ujier|uixer|notificador|telefonista|recepcionista/],
-  ["administrativo", /auxiliar administratiu|auxiliar administrativ|administratiu|administrativ|informador|tramitador|gestor de l'oac|oficina d'atencio|atencion ciudadana|atencio ciutadana|cuerpo general auxiliar|auxiliar d'administracio|auxiliar de administracion/],
-  ["oficios", /oficial|operari|operario|peon|peo\b|brigada|jardiner|electricist|fontaner|lampist|manteniment|mantenimiento|netej|limpieza|cuiner|cocinero|cambrer|camarero|mecanic|pintor|paleta|albanil|sepulturer|enterrador/],
-  ["tecnico", /tecnic|tecnico|enginyer|ingenier|arquitect|juridic|letrad|lletrat|economista|informatic|tag\b|secretari|interventor|tresorer|titulat superior|titulado superior|facultatiu|facultativo|investigador|postdoc|veterinari/],
-];
+/** Sectores (antes «tipos»). Las claves antiguas se mantienen para no romper alertas guardadas. */
+export const TIPOS = SECTOR_NOMBRE;
+export type Tipo = string;
 
 export function tipoDe(titulo: string, texto = ""): Tipo {
-  const t = norm(titulo);
-  for (const [tipo, re] of REGLAS) if (re.test(t)) return tipo;
-  const x = norm(texto).slice(0, 2000);
-  for (const [tipo, re] of REGLAS) if (re.test(x)) return tipo;
-  return "otros";
+  return clasificar(titulo, texto).tipo;
 }
 
 export function grupoDe(texto: string): string | null {

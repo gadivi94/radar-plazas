@@ -332,3 +332,164 @@ describe("cuentas por correo", () => {
     expect(DB.raw.query("SELECT COUNT(*) AS n FROM marcas").get()).toEqual({ n: 1 });
   });
 });
+
+describe("sectores y requisitos", () => {
+  test("sector y subcategoría", async () => {
+    const { clasificar } = await import("../src/sectores");
+    const c = (t: string) => { const r = clasificar(t); return `${r.tipo}/${r.subtipo}`; };
+    expect(c("3 places d'Agent de Policia Local")).toBe("seguridad/policia-local");
+    expect(c("Borsa de treball de places d'Agent cívic")).toBe("seguridad/agente-civico");
+    expect(c("1 plaça d'Auxiliar de policia - vigilant")).toBe("seguridad/vigilante");
+    expect(c("Resolución por la que se convocan pruebas selectivas para ingreso en el Cuerpo de Tramitación Procesal y Administrativa")).toBe("justicia/tramitacion");
+    expect(c("Borsa de treball de TCAE")).toBe("sanidad/tcae");
+    expect(c("2 places d'Educador/a infantil per a l'escola bressol")).toBe("educacion/educador-infantil");
+    expect(c("2 places d'Auxiliar administratiu")).toBe("administrativo/aux-administrativo");
+    expect(c("2 places de Peó de brigada")).toBe("oficios/brigada");
+    expect(c("1 plaça de Tècnic/a informàtic")).toBe("tecnico/informatica");
+    expect(c("Convocatoria de Bombero/a")).toBe("seguridad/bomberos");
+    expect(c("Algo raro")).toBe("otros/null");
+  });
+  test("requisitos en catalán", async () => {
+    const { requisitosDe, nivelDeTitulacion } = await import("../src/sectores");
+    const r = requisitosDe(`Requisits: Tenir complerts setze anys. Estar en possessió del permís de conducció de classe B i A2.
+      Acreditar el certificat de nivell C1 de català. Alçada mínima d'1,65. La nacionalitat espanyola.
+      Proves: qüestionari tipus test, proves físiques i psicotècniques, entrevista i revisió mèdica. Drets d'examen: 25,50 euros.`, "Batxillerat o tècnic");
+    expect(r).toMatchObject({ titulacion: "Batxillerat o tècnic", edadMin: 16, carne: ["B", "A2"], catalan: "C1", altura: true, nacionalidad: "es", tasa: 25.5 });
+    expect(r.pruebas).toEqual(["test", "fisica", "psicotecnico", "entrevista", "medico"]);
+    expect(nivelDeTitulacion("Batxillerat o tècnic")).toBe(2);
+    expect(nivelDeTitulacion("Graduat en educació secundària obligatòria (ESO)")).toBe(1);
+    expect(nivelDeTitulacion("Grau universitari en dret")).toBe(4);
+  });
+  test("filtro por subcategoría y nivel", () => {
+    const o = { id: "x", fuente: "CIDO", titulo: "Policia", tipo: "seguridad", subtipo: "policia-local", nivel: 2 } as never;
+    expect(coincide(o, { tipos: ["seguridad"], subtipos: ["policia-local"] }, "2026-10-08")).toBe(true);
+    expect(coincide(o, { tipos: ["seguridad"], subtipos: ["bomberos"] }, "2026-10-08")).toBe(false);
+    expect(coincide(o, { tipos: ["seguridad", "sanidad"], subtipos: ["tcae"] }, "2026-10-08")).toBe(true);
+    expect(coincide(o, { nivelMax: 1 }, "2026-10-08")).toBe(false);
+    expect(coincide(o, { nivelMax: 2 }, "2026-10-08")).toBe(true);
+  });
+});
+
+describe("fichas, sectores, calendario, IA, Telegram y avisos nuevos", () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => { globalThis.fetch = realFetch; });
+  test("todo junto", async () => {
+    const { describirCambio } = await import("../src/run");
+    const DB = fakeD1();
+    const correos: Array<{ to: string[]; subject: string; text: string }> = [];
+    const tg: Array<{ chat_id: string; text: string }> = [];
+    globalThis.fetch = (async (input: RequestInfo, init?: RequestInit) => {
+      const url = String(input);
+      const ok = (b: string) => new Response(b);
+      if (url.includes("api.resend.com")) { correos.push(JSON.parse(String(init?.body))); return ok("{}"); }
+      if (url.includes("api.telegram.org")) { tg.push(JSON.parse(String(init?.body))); return ok("{}"); }
+      if (url.includes("sumario")) return new Response("", { status: 404 });
+      if (url.includes("cido.diba.cat/rss")) return ok(F.CIDO_RSS);
+      if (url.includes("/oposicions/22173139")) return ok(F.CIDO_FICHA_CIVIC);
+      if (url.includes("/oposicions/22300001")) return ok(F.CIDO_FICHA_POLICIA);
+      if (url.includes("cido.diba.cat/oposicions/")) return ok("<html><h2>x</h2>Termini obert</html>");
+      if (url.includes("tmb.cat")) return ok("<html></html>");
+      throw new Error("fetch no esperado " + url);
+    }) as typeof fetch;
+    const ia: unknown[] = [];
+    const env = { DB, ASSETS: { fetch: async () => new Response("web") }, RESEND_API_KEY: "re", TELEGRAM_BOT_TOKEN: "123:abc", TELEGRAM_BOT: "RadarPlazasBot",
+      AI: { run: async (_m: string, input: unknown) => { ia.push(input); return { response: "• Puesto: agente cívico\n• Plazo: consta en la ficha" }; } } } as never;
+    const call = async (path: string, init: RequestInit & { token?: string } = {}) => {
+      const r = await worker.fetch(new Request("https://x" + path, { ...init, headers: { "Content-Type": "application/json", ...(init.token ? { Authorization: "Bearer " + init.token } : {}), ...((init.headers as Record<string, string>) || {}) } }), env);
+      return r;
+    };
+    await ciclo(env, { forzarRecogida: true });
+    const civic = DB.raw.query("SELECT * FROM ofertas WHERE id = 'cido:22173139'").get() as Record<string, unknown>;
+    expect(civic.tipo).toBe("seguridad");
+    expect(civic.subtipo).toBe("agente-civico");
+    expect(typeof civic.requisitos).toBe("string");
+
+    // Ficha pública con datos estructurados para Google
+    const ficha = await call("/plaza/cido/22173139/agent-civic");
+    expect(ficha.status).toBe(200);
+    const html = await ficha.text();
+    expect(html).toContain('"@type":"JobPosting"');
+    expect(html).toContain("Seguir esta plaza");
+    expect((await call("/plaza/cido/999/nada")).status).toBe(404);
+    // Sectores y lugares
+    const sec = await (await call("/oposiciones/seguridad")).text();
+    expect(sec).toContain("Seguridad y emergencias");
+    expect(sec).toContain("/plaza/cido/22173139/");
+    expect((await call("/oposiciones/agente-civico/cataluna")).status).toBe(200);
+    expect((await call("/oposiciones/inventado")).status).toBe(404);
+    expect(await (await call("/oposiciones")).text()).toContain("Policía local");
+    const sm = await (await call("/sitemap.xml")).text();
+    expect(sm).toContain("/plaza/cido/22173139/");
+    expect(sm).toContain("/oposiciones/seguridad/cataluna");
+    // Calendario
+    const ics = await (await call("/api/ics/cido/22173139")).text();
+    expect(ics).toContain("BEGIN:VEVENT");
+    // Estadísticas
+    const st = await (await call("/api/estadisticas")).json() as { abiertas: number; sectores: Array<{ k: string }> };
+    expect(st.abiertas).toBeGreaterThan(0);
+    expect(st.sectores[0].k).toBe("seguridad");
+    // IA: resumen público que se guarda
+    const r1 = await (await call("/api/ia/resumen/cido/22173139")).json() as { resumen: string };
+    expect(r1.resumen).toContain("agente cívico");
+    expect(((await (await call("/api/ia/resumen/cido/22173139")).json()) as { guardado: boolean }).guardado).toBe(true);
+    expect(ia).toHaveLength(1);
+
+    // Cuenta: perfil, frecuencia, boletín, calendario, notas y Telegram
+    await call("/api/auth/start", { method: "POST", body: JSON.stringify({ email: "eva@ejemplo.com" }) });
+    const code = correos.at(-1)!.text.match(/\d{6}/)![0];
+    const tok = ((await (await call("/api/auth/verify", { method: "POST", body: JSON.stringify({ email: "eva@ejemplo.com", code, acepta: true }) })).json()) as { token: string }).token;
+    expect((await call("/api/cuenta", { method: "PATCH", token: tok, body: JSON.stringify({ perfil: { nivel: 2, edad: 30, carne: ["B"], catalan: "C1" }, frecuencia: "semanal", boletin: true }) })).status).toBe(200);
+    const cuenta = await (await call("/api/cuenta", { token: tok })).json() as Record<string, any>;
+    expect(cuenta).toMatchObject({ frecuencia: "semanal", boletin: true, perfil: { nivel: 2 }, ia: true });
+    expect(cuenta.telegram_url).toMatch(/^https:\/\/t\.me\/RadarPlazasBot\?start=[a-f0-9]+_[a-f0-9]{12}$/);
+    const cal = await (await call("/api/cuenta/calendario", { method: "POST", token: tok })).json() as { url: string };
+    // Seguir una plaza con notas y documentos; aparece en el calendario suscrito
+    DB.raw.run("UPDATE ofertas SET plazo_fin = date('now', '+2 days') WHERE id = 'cido:22173139'");
+    expect((await call("/api/ofertas/cido%3A22173139", { method: "PATCH", token: tok, body: JSON.stringify({ marca: "interesa", notas: "Llevar DNI", docs: { dni: true } }) })).status).toBe(200);
+    const mia = (await (await call("/api/ofertas", { token: tok })).json() as { items: Array<Record<string, any>> }).items.find((o) => o.id === "cido:22173139")!;
+    expect(mia).toMatchObject({ marca: "interesa", notas: "Llevar DNI", docs: { dni: true } });
+    expect(mia.ruta).toBe("/plaza/cido/22173139/" + mia.ruta.split("/").pop());
+    const feed = await (await call(new URL(cal.url).pathname)).text();
+    expect(feed).toContain("SUMMARY:Cierra plazo");
+    // IA: preguntas con cuenta
+    const pr = await (await call("/api/ia/pregunta", { method: "POST", token: tok, body: JSON.stringify({ id: "cido:22173139", pregunta: "¿Puedo con la ESO?" }) })).json() as { respuesta: string };
+    expect(pr.respuesta.length).toBeGreaterThan(5);
+    expect((await call("/api/ia/pregunta", { method: "POST", body: JSON.stringify({ id: "cido:22173139", pregunta: "x" }) })).status).toBe(401);
+    // Telegram: vincular con el enlace de Mi cuenta
+    const start = new URL(cuenta.telegram_url).searchParams.get("start")!;
+    const { sha256 } = await import("../src/cuentas");
+    const secret = (await sha256("tg:123:abc")).slice(0, 32);
+    expect((await call("/api/telegram/webhook", { method: "POST", body: JSON.stringify({ message: { chat: { id: 555 }, text: "/start " + start } }) })).status).toBe(403);
+    await call("/api/telegram/webhook", { method: "POST", headers: { "X-Telegram-Bot-Api-Secret-Token": secret }, body: JSON.stringify({ message: { chat: { id: 555 }, text: "/start " + start } }) });
+    expect((DB.raw.query("SELECT telegram FROM users WHERE email = 'eva@ejemplo.com'").get() as { telegram: string }).telegram).toBe("555");
+    expect(tg.at(-1)!.text).toContain("Listo");
+
+    // Recordatorio de plazo (correo + Telegram) una sola vez
+    const antes = correos.length;
+    await ciclo(env, { forzarRecogida: true });
+    const rec = correos.slice(antes).filter((c) => c.subject.startsWith("⏰"));
+    expect(rec).toHaveLength(1);
+    expect(tg.some((m) => m.text.includes("Cierran pronto"))).toBe(true);
+    const n = correos.length;
+    await ciclo(env, { forzarRecogida: true });
+    expect(correos.slice(n).filter((c) => c.subject.startsWith("⏰"))).toHaveLength(0);
+
+    // Resumen semanal y boletín
+    DB.raw.run(`INSERT INTO alertas (id, nombre, filtros, activa, creada, uid) SELECT 'ae', 'Seguridad', '${JSON.stringify({ tipos: ["seguridad"] })}', 1, 'x', id FROM users WHERE email = 'eva@ejemplo.com'`);
+    const m = correos.length;
+    await ciclo(env, { forzarSemanal: true });
+    const subj = correos.slice(m).map((c) => c.subject);
+    expect(subj.some((s) => s.startsWith("Resumen semanal"))).toBe(true);
+    expect(subj.some((s) => s.startsWith("Boletín semanal"))).toBe(true);
+
+    // Cambios en una ficha
+    expect(describirCambio({ plazo_fin: "2026-10-20", estado: "abierta" } as never, { plazo_fin: "2026-10-30", estado: "abierta" })).toBe("nuevo plazo: hasta el 30/10/2026 (antes 20/10/2026)");
+    expect(describirCambio({ plazo_fin: null, estado: "pendiente" } as never, { plazo_fin: null, estado: "abierta" })).toBe("estado: plazo de solicitudes abierto");
+  });
+});
+
+test("web/sectores.js está al día con src/sectores.ts", async () => {
+  const { generar } = await import("../../scripts/gen-sectores");
+  const { readFileSync } = await import("node:fs");
+  expect(readFileSync(new URL("../../web/sectores.js", import.meta.url), "utf8")).toBe(generar());
+});

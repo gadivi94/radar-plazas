@@ -181,6 +181,42 @@ details.crit[open] summary::after{content:"－"}
 .msg small{color:var(--muted)}
 .foot{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--muted)}
 .foot nav{display:flex;flex-wrap:wrap;gap:6px 14px}
+.topb{display:flex;gap:6px;align-items:center;min-width:0}
+.lang{font:600 13px var(--font-mono);border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 10px;cursor:pointer}
+.links{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;font-weight:600}
+.links a{color:var(--accent);text-decoration:none}
+.frow .seg.wrapchips{max-height:none}
+.frow .seg button{max-width:100%}
+.fniv{width:100%;min-width:0;font:600 15px var(--font-body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.cumplo{display:flex;gap:8px;align-items:center;font-size:14px;font-weight:600}
+.cumplo input{width:18px;height:18px;accent-color:var(--accent)}
+.cumplo small{color:var(--muted);font-weight:400}
+.cumplo a{color:var(--accent)}
+#etapas{margin-top:-10px}
+#etapas button small{font-family:var(--font-mono);font-size:11px;opacity:.65;margin-left:3px}
+.tag.ok{border-color:var(--ok);color:var(--ok);background:var(--ok-soft)} .tag.ko{border-color:var(--urgent);color:var(--urgent);background:var(--urgent-soft)}
+.promo{font-size:13px;color:var(--accent);text-decoration:none;font-weight:600}
+.segui{border-top:1px dashed var(--line);padding-top:8px;margin-top:4px;display:flex;flex-direction:column;gap:8px}
+.segui summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--accent)}
+.segui[open]{display:flex}
+.mini-l{display:flex;flex-direction:column;gap:4px;font-size:12px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.mini-l select,.mini-l textarea{font:15px var(--font-body);text-transform:none;letter-spacing:0;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.docs{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:14px;align-items:center}
+.docs label{display:inline-flex;gap:4px;align-items:center}
+.docs input{accent-color:var(--accent)}
+.hist{margin:0;padding-left:18px;font-size:13px;color:var(--muted)}
+.mas{font:600 14px var(--font-body);border:1px dashed var(--line);background:var(--surface);color:var(--fg);border-radius:10px;padding:12px;cursor:pointer}
+.pform{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.pform label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600}
+.pform select,.pform input{font:16px var(--font-body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 8px}
+.mapvista{display:flex;gap:6px}
+#mapEs{display:block;width:100%;height:auto;max-height:68vh;background:var(--sea)}
+#mapEs .prv{fill:var(--land);stroke:var(--border-com);stroke-width:1;cursor:pointer}
+#mapEs .prv.h1{fill:var(--heat1)} #mapEs .prv.h2{fill:var(--heat2)} #mapEs .prv.h3{fill:var(--heat3)}
+#mapEs .prv.sel{stroke:var(--fg);stroke-width:2.5}
+#mapEs .prvn{font:700 15px var(--font-body);fill:var(--fg);text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke:var(--surface);stroke-width:3px;pointer-events:none}
+#mapEs .canarias{fill:none;stroke:var(--line);stroke-dasharray:4 3}
+.tgbtn{font:600 13px var(--font-body);padding:6px 11px;border-radius:6px;border:1px solid #229ED9;color:#229ED9;text-decoration:none}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:14px}
 @media (max-width:420px){.card{grid-template-columns:56px minmax(0,1fr)}.strip b{font-size:26px}}
 @media (prefers-reduced-motion:no-preference){.card{transition:opacity .2s}}
@@ -189,9 +225,10 @@ details.crit[open] summary::after{content:"－"}
 <body>
 <div class="wrap">
   <header>
-    <div class="top"><div class="eyebrow">Toda España · BOE, CIDO y TMB</div><button type="button" class="cuentabtn" id="btnCuenta">Entrar</button></div>
+    <div class="top"><div class="eyebrow">Toda España · BOE, CIDO y TMB</div><div class="topb"><button type="button" class="lang" id="lang">CA</button><button type="button" class="cuentabtn" id="btnCuenta">Entrar</button></div></div>
     <h1>Radar de <span>Plazas</span></h1>
-    <p class="sub">Convocatorias, bolsas e interinos de toda España. Se revisa cada mañana y, con tu cuenta gratuita, las alertas te avisan por correo cuando entra algo que encaja.</p>
+    <p class="sub" data-i18n>Convocatorias, bolsas e interinos de toda España. Se revisa cada mañana y, con tu cuenta gratuita, las alertas te avisan por correo cuando entra algo que encaja.</p>
+    <nav class="links" aria-label="Secciones"><a href="/oposiciones" data-i18n>Por sector</a><a href="/estadisticas.html" data-i18n>Estadísticas</a><a href="/guias/" data-i18n>Guías</a><a href="/sueldos.html" data-i18n>Sueldos</a></nav>
     <div class="lastrun" id="lastrun">Esperando datos…</div>
   </header>
 
@@ -212,554 +249,86 @@ details.crit[open] summary::after{content:"－"}
 
   <section class="strip" aria-label="Resumen">
     <div><b id="sNuevas">–</b><small id="sNuevasL">nuevas esta semana</small></div>
-    <div class="hot"><b id="sCierran">–</b><small>cierran en ≤ 7 días</small></div>
-    <div><b id="sInteresa">–</b><small>me interesan</small></div>
+    <div class="hot"><b id="sCierran">–</b><small data-i18n>cierran en ≤ 7 días</small></div>
+    <div><b id="sInteresa">–</b><small data-i18n>en seguimiento</small></div>
   </section>
 
   <nav class="tabs" id="tabs" aria-label="Vista"></nav>
+  <nav class="seg" id="etapas" aria-label="Etapa" hidden></nav>
   <section class="filtros" aria-label="Filtros">
-    <div class="frow"><span>Tipo</span><div class="seg" id="seg"></div></div>
-    <div class="frow"><span>Dificultad</span><div class="seg" id="fdif"></div></div>
-    <div class="frow"><span>Grupo</span><div class="seg" id="fgrp"></div></div>
-    <div class="frow"><span><label for="lugarsel">Lugar</label></span><select class="lugarsel" id="lugarsel"></select></div>
-    <div class="fpie"><span id="fres"></span><button type="button" id="fclear" hidden>Borrar filtros</button></div>
+    <div class="frow"><span data-i18n>Sector</span><div class="seg" id="fsec"></div></div>
+    <div class="frow" id="fsubRow" hidden><span data-i18n>Subcategoría</span><div class="seg" id="fsub"></div></div>
+    <div class="frow"><span><label for="fniv" data-i18n>Estudios</label></span><select class="fniv" id="fniv"></select></div>
+    <div class="frow"><span data-i18n>Dificultad</span><div class="seg" id="fdif"></div></div>
+    <div class="frow"><span data-i18n>Grupo</span><div class="seg" id="fgrp"></div></div>
+    <div class="frow"><span><label for="lugarsel" data-i18n>Lugar</label></span><select class="lugarsel" id="lugarsel"></select></div>
+    <label class="cumplo"><input type="checkbox" id="soloCumplo"><span data-i18n>Solo las que cumplo</span> <small id="soloNota"></small> <a href="#perfil" onclick="document.getElementById('perfil').open=true">· <span data-i18n>Mi perfil</span></a></label>
+    <div class="fpie"><span id="fres"></span><button type="button" id="fclear" hidden data-i18n>Borrar filtros</button></div>
   </section>
 
   <section class="mapa" aria-label="Mapa de plazas">
     <div class="mapa-head">
-      <h2>Mapa</h2>
-      <div class="zooms" id="zooms">
-        <button type="button" data-zoom="all" aria-pressed="true">Cataluña</button>
-        <button type="button" data-zoom="8">Barcelona</button>
-        <button type="button" data-zoom="17">Girona</button>
-        <button type="button" data-zoom="25">Lleida</button>
-        <button type="button" data-zoom="43">Tarragona</button>
-        <button type="button" data-zoom="in" aria-label="Acercar">＋</button>
-        <button type="button" data-zoom="out" aria-label="Alejar">－</button>
-      </div>
+      <h2 data-i18n>Mapa</h2>
+      <div class="mapvista zooms"><button type="button" data-mapa="cat" aria-pressed="true" data-i18n>Cataluña</button><button type="button" data-mapa="es" aria-pressed="false" data-i18n>España</button></div>
+    </div>
+    <div class="zooms" id="zooms" style="padding:0 14px 8px">
+      <button type="button" data-zoom="all" aria-pressed="true">Todo</button>
+      <button type="button" data-zoom="8">Barcelona</button>
+      <button type="button" data-zoom="17">Girona</button>
+      <button type="button" data-zoom="25">Lleida</button>
+      <button type="button" data-zoom="43">Tarragona</button>
+      <button type="button" data-zoom="in" aria-label="Acercar">＋</button>
+      <button type="button" data-zoom="out" aria-label="Alejar">－</button>
     </div>
     <div class="mapbox">
       <svg id="map" role="img" aria-label="Mapa de Cataluña con las plazas por municipio y comarca"></svg>
+      <svg id="mapEs" role="img" aria-label="Mapa de España con las plazas por provincia" hidden></svg>
       <button type="button" class="toda" id="toda" hidden></button>
       <button type="button" class="fuera" id="fuera" hidden></button>
     </div>
-    <div class="leyenda">
+    <div class="leyenda" id="leyCat">
       <span><i style="background:var(--urgent)"></i>cierra en ≤ 3 días</span>
       <span><i style="background:var(--soon)"></i>≤ 7 días</span>
       <span><i style="background:var(--ok)"></i>más de 7</span>
       <span><i style="background:var(--muted)"></i>sin plazo aún</span>
       <span><i class="sq" style="background:var(--heat2)"></i>comarca con plazas</span>
     </div>
+    <div class="leyenda" id="leyEs" hidden><span><i class="sq" style="background:var(--heat1)"></i>pocas</span><span><i class="sq" style="background:var(--heat2)"></i>bastantes</span><span><i class="sq" style="background:var(--heat3)"></i>muchas plazas</span><span id="mapinfoEs"></span></div>
     <div class="mapinfo" id="mapinfo"><p class="note">Toca un punto para ver las plazas de ese municipio, o una comarca para filtrar la lista. Arrastra para moverte y usa ＋ / － para acercar.</p></div>
-    <div class="credit">Límites: ICGC (vía teslabs / SIRIS Academic)</div>
+    <div class="credit">Límites: ICGC (vía teslabs / SIRIS Academic) e IGN (vía Code for Germany)</div>
   </section>
-
 
   <section class="list" id="list" aria-live="polite">
     <div class="empty">Aquí aparecerán las plazas que encajen con tus criterios. La primera revisión se carga en unos segundos.</div>
   </section>
 
+  <details class="crit" id="perfil">
+    <summary data-i18n>Mi perfil</summary>
+    <div class="crit-body" id="perfilBody"></div>
+  </details>
+
   <details class="crit" id="crit">
-    <summary>Mis alertas</summary>
+    <summary data-i18n>Mis alertas</summary>
     <div class="crit-body" id="critBody"><p class="note">Cargando alertas…</p></div>
   </details>
 
   <details class="crit" id="cuentaBox" hidden>
-    <summary>Mi cuenta</summary>
+    <summary data-i18n>Mi cuenta</summary>
     <div class="cuenta-body" id="cuentaBody"></div>
   </details>
 
   <footer class="foot">
-    <p class="note">Información recopilada de fuentes oficiales (BOE, CIDO de la Diputació de Barcelona y TMB). Radar de Plazas no es un organismo oficial: comprueba siempre requisitos y plazos en la convocatoria publicada.</p>
+    <p class="note" data-i18n>Información recopilada de fuentes oficiales (BOE, CIDO de la Diputació de Barcelona y TMB). Radar de Plazas no es un organismo oficial: comprueba siempre requisitos y plazos en la convocatoria publicada.</p>
+    <nav aria-label="Más"><a href="/oposiciones">Por sector</a><a href="/estadisticas.html">Estadísticas</a><a href="/guias/">Guías</a><a href="/sueldos.html">Sueldos</a><a href="/widget.html">Widget para tu web</a></nav>
     <nav aria-label="Información legal"><a href="legal/aviso-legal.html">Aviso legal</a><a href="legal/privacidad.html">Privacidad</a><a href="legal/cookies.html">Cookies</a><a href="legal/condiciones.html">Condiciones de uso</a><a href="contacto.html">Contacto</a></nav>
     <span>© 2026 @gadivi · Radar de Plazas</span>
   </footer>
 </div>
 <div class="toast" id="toast" hidden></div>
-
 <script src="geo.js"></script>
-<script>
-const TABS=[["nuevas","Nuevas"],["interesa","Me interesa"],["presentada","Presentadas"],["todas","Todas abiertas"],["descartada","Descartadas"]];
-const SEG=[["all","Todas"],["prioritaria","Policía y seguridad"],["facil","Otras"]];
-const SISTEMA={concurso:"Concurso de méritos","concurso-oposicion":"Concurso-oposición",oposicion:"Oposición",bolsa:"Bolsa de trabajo"};
-const TIPOS={seguridad:"Seguridad y emergencias",administrativo:"Administrativo",subalterno:"Subalterno y conserjería",oficios:"Oficios y mantenimiento",transporte:"Transporte",sanidad:"Sanidad",educacion:"Educación",social:"Servicios sociales",tecnico:"Técnico superior",otros:"Otros"};
-const COMUNIDADES=["Andalucía","Aragón","Asturias","Baleares","Canarias","Cantabria","Castilla y León","Castilla-La Mancha","Cataluña","Comunidad Valenciana","Extremadura","Galicia","La Rioja","Madrid","Murcia","Navarra","País Vasco","Ceuta","Melilla","Estatal"];
-const API=(window.RADAR_API||"").replace(/\/$/,"");
-const S={ofertas:[],alertas:null,meta:null,tab:"nuevas",seg:"all",dif:[],grp:[],canWrite:true,busy:new Set(),ses:"",yo:null,adm:null};
-try{const t=localStorage.getItem("rp_tab");if(t)S.tab=t;const g=localStorage.getItem("rp_seg");if(g)S.seg=g;
-  const f=JSON.parse(localStorage.getItem("rp_f")||"{}");S.dif=f.dif||[];S.grp=f.grp||[];
-  S.place=f.place===undefined?{kind:"ccaa",id:"Cataluña"}:f.place;S.ses=localStorage.getItem("rp_ses")||"";}catch(e){S.place={kind:"ccaa",id:"Cataluña"}}
-const DIF=[[1,"Fácil"],[2,"Media"],[3,"Difícil"]];
-const GRUPOS=[["AP","AP"],["C2","C2"],["C1","C1"],["B","B"],["A2","A2"],["A1","A1"],["?","Sin especificar"]];
-function grupoDe(o){const g=(o.grupo||"").toUpperCase();return /^(AP|C2|C1|B|A2|A1)$/.test(g)?g:"?"}
-/* Dificultad orientativa: grupo de titulación, sistema de selección e interinidad. */
-function dificultad(o){
-  if(o.dificultadApi)return o.dificultadApi;
-  const base={AP:1,C2:1,C1:2,B:2,A2:3,A1:3}[grupoDe(o)]??2;
-  const t=`${o.sistema||""} ${o.titulo||""}`.toLowerCase();
-  let d=base;
-  if(/concurso de m[eé]ritos|borsa|bolsa/.test(t))d--;
-  if(/interin|temporal/i.test(o.tipoPersonal||"")||/borsa|bolsa/.test(t))d--;
-  if(/polic|gu[aà]rdia|vigilant/i.test(o.titulo||"")&&!/concurso de m[eé]ritos/i.test(o.sistema||""))d=Math.max(d,2);
-  return Math.min(3,Math.max(1,d));
-}
-function guardarFiltros(){try{localStorage.setItem("rp_f",JSON.stringify({dif:S.dif,grp:S.grp,place:S.place}))}catch(_){}}
-function pasaFiltros(o){
-  if(S.dif.length&&!S.dif.includes(dificultad(o)))return false;
-  if(S.grp.length&&!S.grp.includes(grupoDe(o)))return false;
-  return true;
-}
-
-const $=id=>document.getElementById(id);
-function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
-function today(){const d=new Date();d.setHours(0,0,0,0);return d}
-function daysLeft(o){if(!o.terminiFecha)return null;const d=new Date(o.terminiFecha+"T00:00:00");return Math.round((d-today())/864e5)}
-function isOpen(o){const n=daysLeft(o);return n===null||n>=0}
-function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2200)}
-function fmtDate(iso){if(!iso)return"";const [y,m,d]=iso.split("-");return `${d}/${m}/${y}`}
-
-const SEMANA=Date.now()-7*864e5;
-function esNueva(o){const m=o.marca||"nueva";return S.ses?m==="nueva":Date.parse(o.encontrada||0)>=SEMANA}
-function inTab(o){
-  const m=o.marca||"nueva";
-  if(S.tab==="nuevas")return esNueva(o)&&isOpen(o);
-  if(S.tab==="todas")return m!=="descartada"&&isOpen(o);
-  return m===S.tab;
-}
-function counts(){
-  const c={nuevas:0,interesa:0,presentada:0,todas:0,descartada:0};
-  for(const o of S.ofertas){const m=o.marca||"nueva";
-    if(esNueva(o)&&isOpen(o))c.nuevas++;
-    if(m!=="descartada"&&isOpen(o))c.todas++;
-    if(m==="interesa")c.interesa++; if(m==="presentada")c.presentada++; if(m==="descartada")c.descartada++;}
-  return c;
-}
-function render(){
-  const c=counts();
-  $("tabs").innerHTML=TABS.map(([k,l])=>`<button type="button" data-tab="${k}" aria-pressed="${S.tab===k}">${l}<span class="n">${c[k]}</span></button>`).join("");
-  $("seg").innerHTML=SEG.map(([k,l])=>`<button type="button" data-seg="${k}" aria-pressed="${S.seg===k}">${l}</button>`).join("");
-  const base=S.ofertas.filter(inTab).filter(o=>S.seg==="all"||o.categoria===S.seg);
-  const cuenta=(fn)=>base.filter(fn).length;
-  $("fdif").innerHTML=DIF.map(([v,l])=>`<button type="button" data-dif="${v}" aria-pressed="${S.dif.includes(v)}">${l}<small>${cuenta(o=>dificultad(o)===v)}</small></button>`).join("");
-  $("fgrp").innerHTML=GRUPOS.map(([v,l])=>`<button type="button" data-grp="${v}" aria-pressed="${S.grp.includes(v)}">${l}<small>${cuenta(o=>grupoDe(o)===v)}</small></button>`).join("");
-  $("sNuevas").textContent=c.nuevas;$("sNuevasL").textContent=S.ses?"nuevas sin revisar":"nuevas esta semana";
-  $("sInteresa").textContent=c.interesa;
-  $("sCierran").textContent=S.ofertas.filter(o=>{const n=daysLeft(o);return n!==null&&n>=0&&n<=7&&(o.marca||"nueva")!=="descartada"}).length;
-  if(S.meta){$("lastrun").textContent=`Última revisión: ${new Date(S.meta.fecha).toLocaleString("es-ES",{dateStyle:"medium",timeStyle:"short"})} · ${S.meta.recogidas??0} nuevas · ${S.meta.completadas??0} fichas leídas${S.meta.errores?.length?` · ${S.meta.errores.length} avisos de error`:""}`}
-  S.mapRows=base.filter(pasaFiltros);
-  drawPins();renderInfo();renderLugar();
-  const rows=S.mapRows.filter(lugarActivo)
-    .sort((a,b)=>{const da=daysLeft(a),db=daysLeft(b);if(da===null&&db===null)return 0;if(da===null)return 1;if(db===null)return -1;return da-db});
-  const activos=S.dif.length+S.grp.length+(S.place?1:0)+(S.seg!=="all"?1:0);
-  $("fres").textContent=`${rows.length} ${rows.length===1?"plaza":"plazas"}${activos?" con estos filtros":""}`;
-  $("fclear").hidden=!activos;
-  if(!rows.length){
-    const sinCuenta=!S.ses&&["interesa","presentada","descartada"].includes(S.tab);
-    const msg=sinCuenta?"Entra con tu correo para guardar plazas y verlas aquí en cualquier dispositivo.":{nuevas:S.ses?"No hay plazas nuevas sin revisar. Cuando la revisión diaria encuentre algo, aparecerá aquí y te llegará un aviso.":"No han entrado plazas nuevas esta semana con estos filtros.",
-      interesa:"Marca “Me interesa” en una plaza para guardarla aquí.",presentada:"Cuando te presentes a una plaza, márcala como presentada.",
-      todas:"No hay plazas abiertas que encajen con tus criterios ahora mismo.",descartada:"Nada descartado."}[S.tab]+((S.place||S.dif.length||S.grp.length)?" Prueba a quitar algún filtro.":"");
-    $("list").innerHTML=`<div class="empty">${S.ofertas.length||S.loaded?msg:"Aquí aparecerán las plazas que encajen con tus criterios."}</div>`;return;
-  }
-  $("list").innerHTML=rows.map(card).join("");
-}
-function card(o){
-  const n=daysLeft(o), m=o.marca||"nueva";
-  let due;
-  if(n===null)due=`<div class="due none"><small>${esc(o.estado==="Pendent de termini"?"aún sin":"sin")}</small><small>plazo</small></div>`;
-  else if(n<0)due=`<div class="due none"><small>cerrada</small></div>`;
-  else{const cls=n<=3?"urgent":n<=7?"soon":"";due=`<div class="due ${cls}"><b>${n}</b><small>${n===1?"día":"días"}</small></div>`}
-  const tags=[];
-  if(esNueva(o)&&isOpen(o))tags.push(`<span class="tag new">nueva</span>`);
-  tags.push(`<span class="tag ${o.categoria==="prioritaria"?"prio":""}">${o.categoria==="prioritaria"?"prioritaria":"acceso fácil"}</span>`);
-  const dv=dificultad(o);tags.push(`<span class="tag dif${dv}">${DIF[dv-1][1]}</span>`);
-  if(o.grupo)tags.push(`<span class="tag">${esc(o.grupo)}</span>`);
-  if(o.tipoPersonal)tags.push(`<span class="tag">${esc(o.tipoPersonal)}</span>`);
-  if(o.sistema)tags.push(`<span class="tag">${esc(o.sistema)}</span>`);
-  if(o.terminiFecha)tags.push(`<span class="tag">hasta ${fmtDate(o.terminiFecha)}</span>`);
-  else if(o.terminiTexto)tags.push(`<span class="tag">${esc(o.terminiTexto)}</span>`);
-  if(o.zona)tags.push(`<span class="tag">${esc(o.zona)}</span>`);
-  const dis=S.canWrite&&!S.busy.has(o.id)?"":"disabled";
-  const b=(k,l)=>`<button type="button" data-id="${esc(o.id)}" data-marca="${k}" aria-pressed="${m===k}" ${dis}>${l}</button>`;
-  return `<article class="card ${isOpen(o)?"":"closed"}">${due}<div class="body">
-    <div class="ens">${esc(o.ens)}${o.fuente&&o.fuente!=="CIDO"?" · "+esc(o.fuente):""}</div>
-    <h2 class="titulo"><a href="${esc(o.url)}" target="_blank" rel="noopener">${esc(o.titulo)}</a></h2>
-    <div class="tags">${tags.join("")}</div>
-    <div class="acts">${o.tramiteUrl?`<a class="primary" href="${esc(o.tramiteUrl)}" target="_blank" rel="noopener">Presentar solicitud</a>`:""}
-      <a href="${esc(o.url)}" target="_blank" rel="noopener">Ficha</a>
-      ${b("interesa","Me interesa")}${b("presentada","Presentada")}${b("descartada","Descartar")}</div>
-  </div></article>`;
-}
-function resumenFiltros(f){
-  const p=[];
-  if(f.zonas?.length)p.push(f.zonas.length>4?`${f.zonas.length} municipios`:f.zonas.join(", "));
-  else if(f.comunidades?.length)p.push(f.comunidades.join(", "));else p.push("Toda España");
-  if(f.tipos?.length)p.push(f.tipos.length>4?"varios tipos":f.tipos.map(t=>TIPOS[t]||t).join(", "));
-  if(f.palabras?.length)p.push(`“${f.palabras.slice(0,3).join("”, “")}”${f.palabras.length>3?"…":""}`);
-  if(f.dificultades?.length)p.push(f.dificultades.map(d=>DIF[d-1][1]).join("/"));
-  if(f.grupos?.length)p.push(f.grupos.map(g=>g==="?"?"sin grupo":g).join("/"));
-  return p.join(" · ");
-}
-function filtrosActuales(){
-  const f={soloAbiertas:true};
-  if(S.dif.length)f.dificultades=[...S.dif];
-  if(S.grp.length)f.grupos=[...S.grp];
-  if(S.seg==="prioritaria")f.tipos=["seguridad"];
-  else if(S.seg==="facil")f.tipos=Object.keys(TIPOS).filter(t=>t!=="seguridad");
-  const pl=S.place;
-  if(pl?.kind==="ccaa")f.comunidades=[pl.id];
-  else if(pl?.kind==="muni")f.zonas=[pl.id];
-  else if(pl?.kind==="com")f.zonas=GEO.munis.filter(m=>m[1]===pl.id).map(m=>m[0]);
-  else if(pl?.kind==="prov"){f.comunidades=["Cataluña"];f.zonas=GEO.munis.filter(m=>m[2]===pl.id).map(m=>m[0])}
-  return f;
-}
-function renderCrit(){
-  const box=$("critBody"),al=S.alertas;
-  if(!S.ses){box.innerHTML=`<div class="cta"><p class="note">Crea una cuenta gratis con tu correo y te avisamos por email cada vez que salga una plaza que encaje con tus filtros (lugar, tipo, dificultad y grupo).</p><button type="button" class="linkbtn" data-acceso="alertas">Crear cuenta gratis</button></div>`;return}
-  if(!al){box.innerHTML=`<p class="note">Cargando alertas…</p>`;return}
-  const max=S.yo?.limite_alertas??3,lleno=al.length>=max&&!S.yo?.admin;
-  box.innerHTML=`<p class="note">Cada mañana se revisan el BOE, el CIDO y TMB. Si sale una plaza que encaja con una alerta activa, ${S.yo?.avisos_email===false?"la verás aquí (tienes los avisos por correo desactivados en Mi cuenta)":`te llega un correo a <b>${esc(S.yo?.email||"tu correo")}</b>`}.</p>
-    ${al.map(a=>`<div class="alerta"><div><b>${esc(a.nombre)}</b><span class="note">${esc(resumenFiltros(a.filtros||{}))}</span></div>
-      <button type="button" data-al-on="${esc(a.id)}" aria-pressed="${!!a.activa}">${a.activa?"Activa":"Pausada"}</button>
-      <button type="button" data-al-del="${esc(a.id)}">${S.borrando===a.id?"¿Borrar?":"Borrar"}</button></div>`).join("")||'<p class="note">Aún no tienes alertas.</p>'}
-    ${lleno?`<p class="note">Has llegado al máximo de ${max} alertas de la cuenta gratuita. Borra una para crear otra.</p>`:`<div><h3>Nueva alerta con los filtros de arriba</h3><p class="note">${esc(resumenFiltros(filtrosActuales()))}</p>
-    <form class="add" id="nuevaAlerta"><input id="nombreAlerta" placeholder="Nombre (ej.: Policía local Girona)" autocomplete="off" required maxlength="80"><button type="submit">Crear</button></form>
-    ${S.yo&&!S.yo.admin?`<p class="note">${al.length} de ${max} alertas de la cuenta gratuita.</p>`:""}</div>`}`;
-}
-function renderCuenta(){
-  const box=$("cuentaBox"),btn=$("btnCuenta");
-  btn.textContent=S.yo?S.yo.email:"Entrar";btn.classList.toggle("in",!!S.yo);
-  box.hidden=!S.yo;if(!S.yo)return;
-  const y=S.yo,ad=S.adm;
-  $("cuentaBody").innerHTML=`<p class="note">Has entrado como <b>${esc(y.email)}</b> · ${y.admin?"administración":"cuenta gratuita"}.</p>
-    <label class="check"><input type="checkbox" id="avisosEmail" ${y.avisos_email?"checked":""}><span>Recibir por correo las plazas nuevas de mis alertas</span></label>
-    <div class="acts"><button type="button" id="misDatos">Descargar mis datos</button><button type="button" id="salir">Cerrar sesión</button><button type="button" class="peligro" id="borrarCuenta">${S.borrarCuenta?"Toca otra vez para borrarlo todo":"Borrar mi cuenta"}</button></div>
-    <p class="note">Borrar la cuenta elimina al momento tus alertas, marcas y correo. ¿Dudas? <a href="contacto.html">Escríbenos</a>.</p>
-    ${y.admin?"":`<button type="button" class="linkish" id="soyAdmin" style="opacity:.6">Tengo una clave de administración</button>`}
-    ${ad?`<div class="adm"><h3>Administración</h3><div class="nums"><span><b>${ad.usuarios}</b>usuarios</span><span><b>${ad.nuevos7}</b>nuevos esta semana</span><span><b>${ad.alertas}</b>alertas activas</span><span><b>${ad.sinLeer}</b>mensajes sin leer</span></div>
-      ${ad.correo?"":`<p class="note">⚠️ El envío de correos aún no está activado (falta RESEND_API_KEY).</p>`}
-      ${(ad.mensajes||[]).slice(0,10).map(m=>`<div class="msg ${m.leido?"":"nuevo"}"><small>${esc(new Date(m.fecha).toLocaleString("es-ES",{dateStyle:"short",timeStyle:"short"}))} · ${esc(m.nombre||"")} &lt;<a href="mailto:${esc(m.email)}">${esc(m.email)}</a>&gt;</small><div style="white-space:pre-wrap">${esc(m.mensaje)}</div></div>`).join("")}
-      ${ad.sinLeer?`<button type="button" class="linkish" id="leidos">Marcar mensajes como leídos</button>`:""}</div>`:""}`;
-}
-function abrirAcceso(motivo){
-  const f=$("acceso");f.hidden=false;
-  if(motivo)$("accesoMotivo").textContent=motivo;
-  $("accesoErr").textContent="";
-  f.scrollIntoView({behavior:"smooth",block:"start"});
-  setTimeout(()=>($("fCodigo").hidden?$("email"):$("codigo")).focus({preventScroll:true}),300);
-}
-document.addEventListener("click",async e=>{
-  const t=e.target.closest("button");if(!t)return;
-  if(t.id==="btnCuenta"){if(S.yo){const c=$("cuentaBox");c.open=true;c.scrollIntoView({behavior:"smooth"})}else abrirAcceso();return}
-  if(t.dataset.acceso){abrirAcceso("Crea tu cuenta gratis para recibir alertas por correo. Te enviamos un código de 6 cifras, sin contraseñas.");return}
-  if(t.id==="accesoX"){$("acceso").hidden=true;return}
-  if(t.id==="otroEmail"){$("fCodigo").hidden=true;$("fEmail").hidden=false;$("accesoErr").textContent="";$("email").focus();return}
-  if(t.id==="salir"){try{await api("/auth/logout",{method:"POST"})}catch(_){}cerrarSesion();toast("Sesión cerrada");return}
-  if(t.id==="borrarCuenta"){if(!S.borrarCuenta){S.borrarCuenta=true;renderCuenta();return}
-    try{await api("/cuenta",{method:"DELETE"});cerrarSesion();toast("Cuenta borrada")}catch(err){toast(err.message)}S.borrarCuenta=false;return}
-  if(t.id==="misDatos"){try{const r=await fetch(`${API}/api/cuenta/datos`,{headers:{Authorization:`Bearer ${S.ses}`}});const blob=await r.blob();
-    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="radar-plazas-mis-datos.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}catch(err){toast("No se pudo descargar")}return}
-  if(t.id==="soyAdmin"){const clave=prompt("Clave de administración");if(!clave)return;
-    try{await api("/cuenta/admin",{method:"POST",body:JSON.stringify({clave:clave.trim()})});toast("Ahora eres administrador");await cargar()}catch(err){toast(err.message)}return}
-  if(t.id==="leidos"){try{await api("/admin/leidos",{method:"POST"});S.adm=await api("/admin/resumen");renderCuenta()}catch(err){toast(err.message)}return}
-  if(t.dataset.tab){S.tab=t.dataset.tab;try{localStorage.setItem("rp_tab",S.tab)}catch(_){}render();return}
-  if(t.dataset.seg){S.seg=t.dataset.seg;try{localStorage.setItem("rp_seg",S.seg)}catch(_){}render();return}
-  if(t.dataset.dif){const v=+t.dataset.dif;S.dif=S.dif.includes(v)?S.dif.filter(x=>x!==v):[...S.dif,v];guardarFiltros();render();return}
-  if(t.dataset.grp){const v=t.dataset.grp;S.grp=S.grp.includes(v)?S.grp.filter(x=>x!==v):[...S.grp,v];guardarFiltros();render();return}
-  if(t.id==="fclear"){S.dif=[];S.grp=[];S.place=null;S.seg="all";try{localStorage.setItem("rp_seg","all")}catch(_){}guardarFiltros();setVB({...FULL});render();return}
-  if(t.dataset.zoom){
-    const z=t.dataset.zoom;
-    if(z==="in")zoomAt(0.6);else if(z==="out")zoomAt(1/0.6);else if(z==="all")setVB({...FULL});else zoomProv(+z);
-    if(z!=="in"&&z!=="out")for(const b of document.querySelectorAll("#zooms [data-zoom]"))if(b.dataset.zoom!=="in"&&b.dataset.zoom!=="out")b.setAttribute("aria-pressed",String(b===t));
-    return}
-  if(t.id==="toda"){S.sel={kind:"toda"};drawPins();renderInfo();return}
-  if(t.id==="fuera"){$("lugarsel").focus();toast("Elige la comunidad en el desplegable Lugar");return}
-  if(t.dataset.place){
-    if(t.dataset.place==="clear")S.place=null;
-    else if(S.sel&&S.sel.kind!=="toda")S.place={kind:S.sel.kind,id:S.sel.id};
-    guardarFiltros();
-    render();
-    if(S.place)$("list").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});
-    return}
-  if(t.dataset.marca){
-    if(!S.ses){abrirAcceso("Crea tu cuenta gratis para guardar plazas y verlas en cualquier dispositivo.");return}
-    const id=t.dataset.id,o=S.ofertas.find(x=>x.id===id);if(!o||S.busy.has(id))return;
-    const next=(o.marca===t.dataset.marca)?"visto":t.dataset.marca;
-    S.busy.add(id);render();
-    try{await api(`/ofertas/${encodeURIComponent(id)}`,{method:"PATCH",body:JSON.stringify({marca:next})});o.marca=next;toast({interesa:"Guardada en Me interesa",presentada:"Marcada como presentada",descartada:"Descartada",visto:"Marca quitada"}[next])}
-    catch(err){toast(err.message||"No se pudo guardar. Inténtalo de nuevo.")}
-    finally{S.busy.delete(id);render()}
-    return}
-  if(t.dataset.alOn){const a=S.alertas.find(x=>x.id===t.dataset.alOn);if(!a)return;
-    try{await api(`/alertas/${a.id}`,{method:"PUT",body:JSON.stringify({activa:!a.activa})});a.activa=a.activa?0:1;toast(a.activa?"Alerta activada":"Alerta pausada")}catch(err){toast(err.message)}
-    renderCrit();return}
-  if(t.dataset.alDel){const id=t.dataset.alDel;
-    if(S.borrando!==id){S.borrando=id;renderCrit();return}
-    try{await api(`/alertas/${id}`,{method:"DELETE"});S.alertas=S.alertas.filter(x=>x.id!==id);toast("Alerta borrada")}catch(err){toast(err.message)}
-    S.borrando=null;renderCrit();return}
-});
-document.addEventListener("change",async e=>{
-  if(e.target.id==="avisosEmail"){const v=e.target.checked;try{await api("/cuenta",{method:"PATCH",body:JSON.stringify({avisos_email:v})});S.yo.avisos_email=v;toast(v?"Avisos por correo activados":"Avisos por correo desactivados");renderCrit()}catch(err){e.target.checked=!v;toast(err.message)}}
-});
-document.addEventListener("submit",async e=>{
-  if(e.target.id==="fEmail"){e.preventDefault();const email=$("email").value.trim(),btn=e.target.querySelector("button");btn.disabled=true;$("accesoErr").textContent="";
-    try{const r=await api("/auth/start",{method:"POST",body:JSON.stringify({email})});S.email=email;S.nuevo=!!r.nuevo;
-      $("emailVis").textContent=email;$("aceptaBox").hidden=!S.nuevo;$("fEmail").hidden=true;$("fCodigo").hidden=false;$("codigo").value="";$("codigo").focus()}
-    catch(err){$("accesoErr").textContent=err.message}finally{btn.disabled=false}return}
-  if(e.target.id==="fCodigo"){e.preventDefault();const code=$("codigo").value.replace(/\D/g,"");$("accesoErr").textContent="";
-    if(S.nuevo&&!$("acepta").checked){$("accesoErr").textContent="Para crear la cuenta, marca que aceptas las condiciones y la privacidad.";return}
-    let clave="";try{clave=localStorage.getItem("rp_key")||""}catch(_){}
-    try{const r=await api("/auth/verify",{method:"POST",body:JSON.stringify({email:S.email,code,acepta:$("acepta").checked,...(clave?{clave}:{})})});
-      S.ses=r.token;try{localStorage.setItem("rp_ses",r.token);if(r.admin)localStorage.removeItem("rp_key")}catch(_){}
-      $("acceso").hidden=true;$("fCodigo").hidden=true;$("fEmail").hidden=false;S.tab=S.tab||"nuevas";
-      toast(S.nuevo?"Cuenta creada. ¡Bienvenido!":"Has entrado");await cargar()}
-    catch(err){if(err.acepta===false)$("aceptaBox").hidden=false;$("accesoErr").textContent=err.message}return}
-  if(e.target.id==="nuevaAlerta"){e.preventDefault();const nombre=$("nombreAlerta").value.trim();if(!nombre)return;
-    try{await api("/alertas",{method:"POST",body:JSON.stringify({nombre,filtros:filtrosActuales()})});toast("Alerta creada");S.alertas=await api("/alertas")}catch(err){toast(err.message)}
-    renderCrit()}
-});
-// ---------- Mapa ----------
-const PROV_NOM={8:"Barcelona",17:"Girona",25:"Lleida",43:"Tarragona"};
-const COM_NOM=Object.fromEntries(GEO.comarques.map(c=>[c.id,c.nom]));
-const nn=s=>(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/’/g,"'").replace(/^(el|la|els|les)\s+|^l'/,"").trim();
-const MUNI=new Map(GEO.munis.map(m=>[nn(m[0]),{nom:m[0],com:m[1],prov:m[2],x:m[3],y:m[4]}]));
-function muniDe(o){
-  if(o.comunidad&&o.comunidad!=="Cataluña")return null;
-  let m=MUNI.get(nn(o.zona));if(m)return m;
-  const e=(o.ens||"").match(/^Ajuntament (?:de l'|de la |dels |de les |del |de |d')([^-–]+?)(?:\s+[-–].*)?$/i);
-  if(e&&(m=MUNI.get(nn(e[1]))))return m;
-  const p=(o.titulo||"").match(/\(([^()]+)\)\s*$/);
-  if(p&&(m=MUNI.get(nn(p[1]))))return m;
-  return null;
-}
-const FULL={x:-12,y:-12,w:1024,h:GEO.h+24};
-let VB={...FULL};
-const svg=$("map");
-const NS="http://www.w3.org/2000/svg";
-function initMap(){
-  const lbl=(t,x,y,size)=>`<text class="provlbl" x="${x}" y="${y}" font-size="${size}">${t}</text>`;
-  svg.innerHTML=`<g id="lyr-com">${GEO.comarques.map(c=>`<path class="com" data-com="${c.id}" d="${c.d}"><title>${esc(c.nom)}</title></path>`).join("")}</g>
-    <path class="b-com" d="${GEO.com}"/><path class="b-prov" d="${GEO.prov}"/><path class="b-out" d="${GEO.outer}"/>
-    <g id="provlbls">${lbl("Lleida",150,330,26)}${lbl("Girona",760,250,26)}${lbl("Barcelona",470,560,26)}${lbl("Tarragona",210,760,26)}</g>
-    <g id="pins"></g>`;
-  setVB(FULL);
-}
-function setVB(v){
-  const asp=FULL.h/FULL.w;
-  v.w=Math.min(FULL.w*1.2,Math.max(60,v.w)); v.h=v.w*asp;
-  v.x=Math.min(FULL.x+FULL.w-v.w*0.3,Math.max(FULL.x-v.w*0.7,v.x)); v.y=Math.min(FULL.y+FULL.h-v.h*0.3,Math.max(FULL.y-v.h*0.7,v.y));
-  VB=v; svg.setAttribute("viewBox",`${v.x} ${v.y} ${v.w} ${v.h}`);
-  svg.style.touchAction=v.w<FULL.w*0.98?"none":"pan-y";
-  drawPins();
-}
-function unit(){return VB.w/(svg.clientWidth||600)}
-function zoomAt(f,cx,cy){
-  if(cx==null){cx=VB.x+VB.w/2;cy=VB.y+VB.h/2}
-  const w=VB.w*f,h=VB.h*f;
-  setVB({x:cx-(cx-VB.x)*f,y:cy-(cy-VB.y)*f,w,h});
-}
-function zoomProv(code){
-  const ms=GEO.munis.filter(m=>m[2]===code);
-  const xs=ms.map(m=>m[3]),ys=ms.map(m=>m[4]);
-  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
-  const w=Math.max(x1-x0,(y1-y0)*FULL.w/FULL.h)*1.15;
-  setVB({x:(x0+x1)/2-w/2,y:(y0+y1)/2-w*FULL.h/FULL.w/2,w,h:0});
-}
-function urgClass(n){return n===null?"none":n<=3?"urgent":n<=7?"soon":"ok"}
-S.mapRows=[];S.sel=null;
-function grupos(){
-  const pins=new Map(),coms=new Map(),toda=[];let fuera=0;
-  for(const o of S.mapRows){
-    if(o.comunidad&&o.comunidad!=="Cataluña"){fuera++;continue}
-    const m=muniDe(o);
-    if(!m){toda.push(o);continue}
-    if(!pins.has(m.nom))pins.set(m.nom,{m,items:[]});
-    pins.get(m.nom).items.push(o);
-    coms.set(m.com,(coms.get(m.com)||0)+1);
-  }
-  return {pins,coms,toda,fuera};
-}
-function drawPins(){
-  if(!svg.firstChild)return;
-  const {pins,coms,toda,fuera}=grupos();
-  const fb=$("fuera");fb.hidden=!fuera;fb.textContent=`${fuera} fuera de Cataluña`;
-  for(const p of svg.querySelectorAll(".com")){
-    const n=coms.get(+p.dataset.com)||0;
-    p.setAttribute("class","com"+(n>=3?" h3":n===2?" h2":n===1?" h1":"")+(S.sel?.kind==="com"&&S.sel.id===+p.dataset.com?" sel":""));
-  }
-  const u=unit(),zoomed=VB.w<FULL.w*0.6;
-  // Las plazas más grandes y urgentes primero, para que sus etiquetas tengan prioridad.
-  const arr=[...pins.values()].map(g=>{
-    const ds=g.items.map(daysLeft).filter(d=>d!==null&&d>=0);
-    return {...g,near:ds.length?Math.min(...ds):null,r:(8+3*Math.sqrt(g.items.length-1))*u};
-  }).sort((a,b)=>b.items.length-a.items.length||(a.near??999)-(b.near??999));
-  const cajas=arr.map(g=>({x0:g.m.x-g.r,x1:g.m.x+g.r,y0:g.m.y-g.r,y1:g.m.y+g.r}));
-  const choca=b=>cajas.some(c=>b.x0<c.x1&&b.x1>c.x0&&b.y0<c.y1&&b.y1>c.y0);
-  const html=arr.map(g=>{
-    const {m,items,near,r}=g;
-    const sel=S.sel?.kind==="muni"&&S.sel.id===m.nom;
-    const w=m.nom.length*6.6*u,hh=14*u;
-    let lbl="";
-    for(const lado of [1,-1]){
-      const x=lado>0?m.x+r+3*u:m.x-r-3*u-w;
-      const box={x0:x,x1:x+w,y0:m.y-hh/2,y1:m.y+hh/2};
-      if(box.x1>VB.x+VB.w||box.x0<VB.x)continue;
-      if(!sel&&choca(box))continue;
-      cajas.push(box);
-      lbl=`<text x="${lado>0?x:x+w}" y="${m.y+4*u}" font-size="${12*u}" stroke-width="${3*u}" text-anchor="${lado>0?"start":"end"}">${esc(m.nom)}</text>`;
-      break;
-    }
-    return `<g class="pin ${urgClass(near)}${sel?" sel":""}" data-muni="${esc(m.nom)}" tabindex="0" role="button" aria-label="${esc(m.nom)}: ${items.length} plaza${items.length>1?"s":""}">
-      <circle cx="${m.x}" cy="${m.y}" r="${r}"/>
-      ${items.length>1?`<text class="n" x="${m.x}" y="${m.y}" font-size="${11*u}">${items.length}</text>`:""}${lbl}</g>`;
-  });
-  // Se pintan de abajo arriba para que los puntos del sur no tapen a los del norte.
-  $("pins").innerHTML=html.map((h,i)=>[h,arr[i].m.y]).sort((a,b)=>a[1]-b[1]).map(x=>x[0]).join("");
-  const t=$("toda");
-  if(toda.length){t.hidden=false;t.textContent=`+${toda.length} válida${toda.length>1?"s":""} en toda Cataluña`}else t.hidden=true;
-  for(const lbl of svg.querySelectorAll(".provlbl"))lbl.setAttribute("font-size",String(Math.min(26,13*u)));
-  $("provlbls").style.display=VB.w<FULL.w*0.45?"none":"";
-}
-function miniRow(o){
-  const n=daysLeft(o),c=urgClass(n);
-  return `<a class="mini" href="${esc(o.url)}" target="_blank" rel="noopener"><b class="${c}">${n===null?"sin<br>plazo":n}</b><span>${esc(o.titulo)}<br><small class="note">${esc(o.ens)}${o.terminiFecha?" · hasta "+fmtDate(o.terminiFecha):o.terminiTexto?" · "+esc(o.terminiTexto):""}</small></span></a>`;
-}
-function renderInfo(){
-  const box=$("mapinfo"),sel=S.sel;
-  if(!sel){box.innerHTML=`<p class="note">Toca un punto para ver las plazas de ese municipio, o una comarca para filtrar la lista. Arrastra para moverte y usa ＋ / － para acercar.</p>`;return}
-  const {pins,toda}=grupos();
-  if(sel.kind==="muni"){
-    const g=pins.get(sel.id);
-    if(!g){S.sel=null;return renderInfo()}
-    box.innerHTML=`<h3>${esc(g.m.nom)}</h3><p class="note sub">${esc(COM_NOM[g.m.com]||"")} · provincia de ${PROV_NOM[g.m.prov]} · ${g.items.length} plaza${g.items.length>1?"s":""}</p>
-      ${g.items.map(miniRow).join("")}<button type="button" class="linkbtn" data-place="muni">Ver en la lista</button>`;
-  }else if(sel.kind==="com"){
-    const items=S.mapRows.filter(o=>muniDe(o)?.com===sel.id);
-    const munis=new Set(items.map(o=>muniDe(o).nom));
-    box.innerHTML=`<h3>${esc(COM_NOM[sel.id])}</h3><p class="note sub">${items.length?`${items.length} plaza${items.length>1?"s":""} en ${munis.size} municipio${munis.size>1?"s":""}`:"No hay plazas en esta comarca con la vista actual."}</p>
-      ${items.slice(0,6).map(miniRow).join("")}${items.length?`<button type="button" class="linkbtn" data-place="com">Ver en la lista</button>`:""}`;
-  }else{
-    box.innerHTML=`<h3>Toda Cataluña</h3><p class="note sub">Plazas que no dependen de un municipio concreto.</p>${toda.map(miniRow).join("")}`;
-  }
-}
-function lugarActivo(o){
-  if(!S.place)return true;
-  if(S.place.kind==="ccaa")return (o.comunidad||"Cataluña")===S.place.id;
-  if(o.comunidad&&o.comunidad!=="Cataluña")return false;
-  const m=muniDe(o);
-  if(S.place.kind==="toda")return !m;
-  if(!m)return S.place.kind==="prov"; // las plazas válidas en toda Cataluña se ven en cualquier provincia
-  return S.place.kind==="muni"?m.nom===S.place.id:S.place.kind==="com"?m.com===S.place.id:m.prov===S.place.id;
-}
-function placeKey(p){return p?`${p.kind}:${p.id}`:""}
-function renderLugar(){
-  const sel=$("lugarsel");
-  const base=S.ofertas.filter(inTab).filter(o=>S.seg==="all"||o.categoria===S.seg).filter(pasaFiltros);
-  const porProv=new Map(),porCom=new Map(),porMuni=new Map();let toda=0;
-  for(const o of base){if(o.comunidad&&o.comunidad!=="Cataluña")continue;const m=muniDe(o);if(!m){toda++;continue}
-    porProv.set(m.prov,(porProv.get(m.prov)||0)+1);porCom.set(m.com,(porCom.get(m.com)||0)+1);porMuni.set(m.nom,(porMuni.get(m.nom)||0)+1)}
-  const opt=(v,l,n)=>`<option value="${esc(v)}">${esc(l)}${n!=null?` (${n})`:""}</option>`;
-  const byName=(a,b)=>a[0].localeCompare(b[0],"ca");
-  const porCcaa=new Map();for(const o of base){const c=o.comunidad||"Cataluña";porCcaa.set(c,(porCcaa.get(c)||0)+1)}
-  let h=opt("","Toda España",base.length);
-  h+=`<optgroup label="Comunidades">${COMUNIDADES.filter(c=>c==="Cataluña"||porCcaa.get(c)).map(c=>opt("ccaa:"+c,c==="Estatal"?"Estatal (toda España)":c,porCcaa.get(c)||0)).join("")}</optgroup>`;
-  h+=`<optgroup label="Provincias de Cataluña">${[8,17,25,43].map(c=>opt("prov:"+c,PROV_NOM[c],porProv.get(c)||0)).join("")}</optgroup>`;
-  if(porCom.size)h+=`<optgroup label="Comarcas con plazas">${[...porCom].map(([c,n])=>[COM_NOM[c],c,n]).sort(byName).map(([l,c,n])=>opt("com:"+c,l,n)).join("")}</optgroup>`;
-  if(porMuni.size)h+=`<optgroup label="Localidades con plazas">${[...porMuni].sort(byName).map(([l,n])=>opt("muni:"+l,l,n)).join("")}</optgroup>`;
-  if(toda)h+=`<optgroup label="Sin municipio">${opt("toda:1","Válidas en toda Cataluña",toda)}</optgroup>`;
-  // Si el lugar elegido ya no tiene plazas con los filtros actuales, se mantiene como opción para poder quitarlo.
-  const k=placeKey(S.place);
-  if(k&&!h.includes(`value="${esc(k)}"`))h+=opt(k,(S.place.kind==="muni"||S.place.kind==="ccaa"?S.place.id:S.place.kind==="com"?COM_NOM[S.place.id]:PROV_NOM[S.place.id])||"Lugar elegido",0);
-  sel.innerHTML=h;sel.value=k;
-}
-$("lugarsel").addEventListener("change",e=>{
-  const v=e.target.value;
-  if(!v){S.place=null;setVB({...FULL})}
-  else{const [kind,id]=v.split(/:(.*)/s);S.place={kind,id:kind==="muni"||kind==="ccaa"?id:kind==="toda"?"1":+id};
-    if(kind==="ccaa")setVB({...FULL});
-    if(kind==="prov")zoomProv(+id);
-    else if(kind==="muni"){const m=MUNI.get(nn(id));if(m){const w=FULL.w*0.3;setVB({x:m.x-w/2,y:m.y-w*FULL.h/FULL.w/2,w,h:0});S.sel={kind:"muni",id}}}
-    else if(kind==="com"){const ms=GEO.munis.filter(m=>m[1]===+id),xs=ms.map(m=>m[3]),ys=ms.map(m=>m[4]);
-      const w=Math.max(Math.max(...xs)-Math.min(...xs),(Math.max(...ys)-Math.min(...ys))*FULL.w/FULL.h)*1.6+40;
-      setVB({x:(Math.max(...xs)+Math.min(...xs))/2-w/2,y:(Math.max(...ys)+Math.min(...ys))/2-w*FULL.h/FULL.w/2,w,h:0});S.sel={kind:"com",id:+id}}}
-  guardarFiltros();render();
-});
-// Arrastrar, pellizcar y rueda
-const ptrs=new Map();let drag=null,moved=false;
-function toSvg(e){const r=svg.getBoundingClientRect();return {x:VB.x+(e.clientX-r.left)/r.width*VB.w,y:VB.y+(e.clientY-r.top)/r.height*VB.h,r}}
-svg.addEventListener("pointerdown",e=>{
-  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=false;
-  if(ptrs.size===1)drag={x:e.clientX,y:e.clientY,vb:{...VB}};
-  if(e.pointerType==="mouse"||VB.w<FULL.w*0.98||ptrs.size>1){try{svg.setPointerCapture(e.pointerId)}catch(_){}}
-});
-svg.addEventListener("pointermove",e=>{
-  if(!ptrs.has(e.pointerId))return;
-  const prev=ptrs.get(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
-  if(ptrs.size===2){
-    const [a,b]=[...ptrs.values()];const pa=e.pointerId===[...ptrs.keys()][0]?prev:a,pb=e.pointerId===[...ptrs.keys()][1]?prev:b;
-    const d0=Math.hypot(pa.x-pb.x,pa.y-pb.y),d1=Math.hypot(a.x-b.x,a.y-b.y);
-    if(d0>0&&d1>0){const c=toSvg({clientX:(a.x+b.x)/2,clientY:(a.y+b.y)/2});zoomAt(d0/d1,c.x,c.y)}
-    moved=true;return;
-  }
-  if(!drag)return;
-  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
-  if(Math.hypot(dx,dy)>6)moved=true;
-  if(!moved)return;
-  if(e.pointerType!=="mouse"&&VB.w>=FULL.w*0.98)return; // en el móvil, sin zoom, se deja hacer scroll a la página
-  svg.classList.add("dragging");
-  const r=svg.getBoundingClientRect();
-  setVB({x:drag.vb.x-dx/r.width*drag.vb.w,y:drag.vb.y-dy/r.height*drag.vb.h,w:drag.vb.w,h:0});
-});
-function endPtr(e){
-  ptrs.delete(e.pointerId);svg.classList.remove("dragging");
-  if(ptrs.size===0){
-    if(!moved&&e.type==="pointerup"){
-      const pin=e.target.closest?.("[data-muni]"),com=e.target.closest?.("[data-com]");
-      if(pin)S.sel={kind:"muni",id:pin.dataset.muni};else if(com)S.sel={kind:"com",id:+com.dataset.com};else S.sel=null;
-      drawPins();renderInfo();
-    }
-    drag=null;
-  }else if(ptrs.size===1){const [p]=ptrs.values();drag={x:p.x,y:p.y,vb:{...VB}}}
-}
-svg.addEventListener("pointerup",endPtr);svg.addEventListener("pointercancel",endPtr);
-svg.addEventListener("wheel",e=>{e.preventDefault();const c=toSvg(e);zoomAt(e.deltaY>0?1.2:1/1.2,c.x,c.y)},{passive:false});
-svg.addEventListener("dblclick",e=>{const c=toSvg(e);zoomAt(0.5,c.x,c.y)});
-svg.addEventListener("keydown",e=>{const pin=e.target.closest?.("[data-muni]");if(pin&&(e.key==="Enter"||e.key===" ")){e.preventDefault();S.sel={kind:"muni",id:pin.dataset.muni};drawPins();renderInfo()}});
-window.addEventListener("resize",()=>drawPins());
-initMap();
-
-async function api(path,init={}){
-  const h={"Content-Type":"application/json",...(init.headers||{})};if(S.ses)h.Authorization=`Bearer ${S.ses}`;
-  const r=await fetch(`${API}/api${path}`,{...init,headers:h});
-  const b=await r.json().catch(()=>({}));
-  if(r.status===401&&b.sesion===false&&S.ses&&!path.startsWith("/auth/")){cerrarSesion();toast("Tu sesión ha caducado. Vuelve a entrar.")}
-  if(!r.ok){const e=new Error(b.error||`Error ${r.status}`);Object.assign(e,b);throw e}
-  return b;
-}
-function cerrarSesion(){S.ses="";S.yo=null;S.adm=null;S.alertas=null;try{localStorage.removeItem("rp_ses")}catch(_){}
-  for(const o of S.ofertas)o.marca="nueva";render();renderCrit();renderCuenta();cargar()}
-function adaptar(o){
-  const cat=o.comunidad==="Cataluña";
-  return {...o,ens:o.organismo||o.fuente,tramiteUrl:o.tramite_url,terminiFecha:o.plazo_fin,terminiTexto:o.plazo_texto,
-    zona:o.municipio||(cat?"Toda Cataluña":o.provincia||o.comunidad),
-    categoria:o.tipo==="seguridad"?"prioritaria":"facil",
-    sistema:SISTEMA[o.sistema]||o.sistema||"",tipoPersonal:o.interino?"Interino / bolsa":"",
-    estado:o.estado==="pendiente"?"Pendent de termini":o.estado,dificultadApi:o.dificultad||null};
-}
-async function cargar(){
-  try{
-    const [o,e]=await Promise.all([api("/ofertas"),api("/estado")]);
-    S.loaded=true;S.ofertas=o.items.map(adaptar);S.meta=e.ultima_ejecucion;
-    if(S.ses){
-      const [a,y]=await Promise.all([api("/alertas"),api("/cuenta")]);S.alertas=a;S.yo=y;
-      S.adm=y.admin?await api("/admin/resumen").catch(()=>null):null;
-    }
-    render();renderCrit();renderCuenta();
-  }catch(err){$("lastrun").textContent=`No se pudieron cargar las plazas: ${err.message}`}
-}
-render();renderCrit();renderCuenta();cargar();
-document.addEventListener("visibilitychange",()=>{if(!document.hidden)cargar()});
-setInterval(()=>{if(!document.hidden)cargar()},5*60_000);
-
-</script>
+<script src="espana.js"></script>
+<script src="sectores.js"></script>
+<script src="cumple.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

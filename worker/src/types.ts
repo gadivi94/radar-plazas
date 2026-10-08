@@ -10,6 +10,11 @@ export interface Env {
   SITE_URL?: string;          // https://radaropos.com
   ALERTAS_GRATIS?: string;    // alertas permitidas con la cuenta gratuita
   OTP_PEPPER?: string;        // secreto opcional para los códigos
+  TELEGRAM_BOT_TOKEN?: string;// secreto opcional: avisos por Telegram (@BotFather)
+  TELEGRAM_BOT?: string;      // nombre del bot, sin @
+  AI?: { run: (model: string, input: unknown) => Promise<unknown> }; // Workers AI (resúmenes y preguntas)
+  IA_MODELO?: string;
+  IA_DIARIAS?: string;        // preguntas a la IA por usuario y día
 }
 
 export interface Oferta {
@@ -21,6 +26,12 @@ export interface Oferta {
   provincia?: string | null;
   comunidad?: string | null;
   tipo?: string | null;
+  subtipo?: string | null;
+  nivel?: number | null;          // estudios mínimos: 0 sin titulación … 4 universitarios
+  requisitos?: string | null;     // JSON (ver sectores.ts → Requisitos)
+  historia?: string | null;       // JSON [{fecha, texto}] con los cambios detectados
+  revisada?: string | null;       // última vez que se releyó la ficha
+  ia_resumen?: string | null;
   grupo?: string | null;
   sistema?: string | null;
   dificultad?: number | null;

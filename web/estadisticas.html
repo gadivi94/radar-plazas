@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estadísticas de oposiciones y bolsas · Radar de Plazas</title>
+<meta name="description" content="Cuántas convocatorias de empleo público hay abiertas en España por sector, comunidad y provincia, cuántas salen cada mes y qué municipios convocan más plazas de policía local.">
+<link rel="canonical" href="https://radaropos.com/estadisticas.html">
+<meta name="theme-color" content="#0d6b6b">
+<link rel="icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="/legal/legal.css">
+<link rel="stylesheet" href="/paginas.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="marca" href="/">Radar de <span>Plazas</span></a><a class="volver" href="/">Todas las plazas →</a></div>
+  <main>
+    <h1>Estadísticas de oposiciones y bolsas</h1>
+
+    <p>Datos calculados a partir de todo lo que Radar de Plazas recoge cada mañana del BOE, del CIDO y de TMB.</p>
+    <div class="kpis" id="kpis"><p class="note">Cargando…</p></div>
+    <h2>Convocatorias abiertas por provincia</h2>
+    <div id="mapa"></div>
+    <p class="note">Las de ámbito estatal no aparecen en el mapa. Canarias, en el recuadro.</p>
+    <h2>Por sector</h2><div id="sec"></div>
+    <h2>Las subcategorías con más plazas</h2><div id="sub"></div>
+    <h2>Por comunidad</h2><div id="ccaa"></div>
+    <h2>Convocatorias por mes</h2><div id="mes"></div>
+    <h2>Municipios que más convocan policía local</h2><div id="pol"></div>
+    <p class="note" id="act"></p>
+    <p class="nota">Radar de Plazas empezó a recoger datos en octubre de 2026: el histórico crecerá con el tiempo. Las cifras de aspirantes por plaza y notas de corte no se publican de forma abierta y uniforme, por eso aún no aparecen.</p>
+  </main>
+  <footer><nav aria-label="Más"><a href="/oposiciones">Por sector</a><a href="/estadisticas.html">Estadísticas</a><a href="/guias/">Guías</a><a href="/sueldos.html">Sueldos</a><a href="/widget.html">Widget</a><a href="/legal/aviso-legal.html">Aviso legal</a><a href="/legal/privacidad.html">Privacidad</a><a href="/contacto.html">Contacto</a></nav><span>© 2026 @gadivi · Radar de Plazas</span></footer>
+</div>
+<script src="/espana.js"></script>
+<script>
+const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const barras=(rows,href)=>{const m=Math.max(1,...rows.map(r=>r.n));return `<div class="barras">${rows.map(r=>`<div class="barra"><span>${href?`<a href="${href(r)}">${esc(r.nombre||r.k)}</a>`:esc(r.nombre||r.k)}</span><i style="width:${Math.max(2,r.n/m*100)}%"></i><b>${r.n}</b></div>`).join("")}</div>`};
+const MESES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const slug=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const NORM=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+fetch("/api/estadisticas").then(r=>r.json()).then(d=>{
+  $("kpis").innerHTML=`<div><b>${d.abiertas}</b>convocatorias abiertas</div><div><b>${d.plazasAbiertas||"—"}</b>plazas en ellas</div><div><b>${d.ultimos7}</b>nuevas en 7 días</div><div><b>${d.historico}</b>recogidas desde ${d.desde?new Date(d.desde).toLocaleDateString("es-ES",{month:"long",year:"numeric"}):"el inicio"}</div>`;
+  $("sec").innerHTML=barras(d.sectores,r=>"/oposiciones/"+r.k);
+  $("sub").innerHTML=barras(d.subtipos,r=>"/oposiciones/"+r.k);
+  $("ccaa").innerHTML=barras(d.comunidades.filter(r=>r.k!=="?"),r=>"/?lugar="+encodeURIComponent(r.k));
+  $("mes").innerHTML=barras(d.meses.map(r=>({k:r.k,nombre:MESES[+r.k.slice(5)-1]+" "+r.k.slice(0,4),n:r.n})));
+  $("pol").innerHTML=d.policia.length?barras(d.policia.map(r=>({k:r.k,n:r.n,nombre:r.k+(r.plazas?` · ${r.plazas} plazas`:"")}))):'<p class="note">Aún no hay datos suficientes.</p>';
+  const porProv=new Map(d.provincias.map(r=>[NORM(r.k),r.n])),max=Math.max(1,...d.provincias.map(r=>r.n));
+  $("mapa").innerHTML=`<svg viewBox="0 0 ${ESP.w} ${ESP.h}" role="img" aria-label="Mapa de España con las convocatorias abiertas por provincia">${ESP.provs.map(p=>{const n=porProv.get(NORM(p.n))||0;const op=n?0.25+0.75*n/max:0;return `<path d="${p.d}" style="fill:${n?`color-mix(in srgb, var(--accent) ${Math.round(op*100)}%, var(--bg))`:"var(--bg)"}"><title>${esc(p.n)}: ${n}</title></path>`}).join("")}${ESP.provs.filter(p=>porProv.get(NORM(p.n))).map(p=>`<text x="${p.x}" y="${p.y}" text-anchor="middle" font-size="16" font-weight="700" style="fill:var(--fg);paint-order:stroke;stroke:var(--surface);stroke-width:3px">${porProv.get(NORM(p.n))}</text>`).join("")}<rect x="2" y="${ESP.h-200}" width="330" height="190" fill="none" stroke="var(--line)" stroke-dasharray="4 3"/></svg>`;
+  $("act").textContent="Actualizado: "+new Date(d.actualizado).toLocaleString("es-ES",{dateStyle:"medium",timeStyle:"short"});
+}).catch(()=>{$("kpis").innerHTML='<p class="note">No se han podido cargar las estadísticas.</p>'});
+</script>
+<style>#mapa svg{width:100%;height:auto;display:block}#mapa path{stroke:var(--line);stroke-width:1}</style>
+</body>
+</html>

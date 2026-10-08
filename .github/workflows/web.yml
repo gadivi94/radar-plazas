@@ -52,13 +52,19 @@ jobs:
           fi
           rm -f p.json
 
-      - name: Pasa la clave de correo (Resend) a Cloudflare
+      - name: Pasa los secretos (Resend, Telegram) a Cloudflare
         env:
-          RESEND: ${{ secrets.RESEND_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_BOT: ${{ vars.TELEGRAM_BOT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.CF_ACCOUNT_ID }}
         run: |
-          if [ -z "$RESEND" ]; then echo "::notice::Sin RESEND_API_KEY: la web funciona, pero aún no se envían códigos ni avisos por correo."; exit 0; fi
-          printf '%s' "$RESEND" | tr -d '[:space:]' | CLOUDFLARE_API_TOKEN="$CF_TOKEN" npx --yes wrangler@4 pages secret put RESEND_API_KEY --project-name="$PROYECTO"
+          for k in RESEND_API_KEY TELEGRAM_BOT_TOKEN; do
+            v="${!k}"
+            if [ -z "$v" ]; then echo "::notice::Sin $k (opcional)."; continue; fi
+            printf '%s' "$v" | tr -d '[:space:]' | CLOUDFLARE_API_TOKEN="$CF_TOKEN" npx --yes wrangler@4 pages secret put "$k" --project-name="$PROYECTO"
+          done
+          if [ -n "$TELEGRAM_BOT" ]; then sed -i "s/^TELEGRAM_BOT = \".*\"/TELEGRAM_BOT = \"${TELEGRAM_BOT#@}\"/" wrangler.toml; fi
 
       - name: Publica
         uses: cloudflare/wrangler-action@v3

@@ -11,6 +11,8 @@ for (const f of ["www/index.html", "www/contacto.html"]) {
   html = html.replace("<script", `<script>window.RADAR_API=${JSON.stringify(API)};</script>\n<script`);
   // En la app, el manifiesto y los iconos van por ruta relativa.
   html = html.replaceAll('href="/manifest.webmanifest"', 'href="manifest.webmanifest"').replaceAll('href="/icon-512.png"', 'href="icon-512.png"');
+  // Las páginas que genera el servidor (sectores, fichas, guías…) se abren en la web.
+  html = html.replace(/href="\/(oposiciones|estadisticas\.html|guias\/|sueldos\.html|widget\.html)/g, `href="${API}/$1`);
   writeFileSync(f, html);
 }
 console.log(`www/ listo · API: ${API}`);

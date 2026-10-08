@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora de sueldo de funcionario 2026 · Radar de Plazas</title>
+<meta name="description" content="Calcula el sueldo bruto anual orientativo de un funcionario en 2026 según el grupo (A1, A2, B, C1, C2, AP), el nivel de complemento de destino, el complemento específico y los trienios.">
+<link rel="canonical" href="https://radaropos.com/sueldos.html">
+<meta name="theme-color" content="#0d6b6b">
+<link rel="icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="/legal/legal.css">
+<link rel="stylesheet" href="/paginas.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="marca" href="/">Radar de <span>Plazas</span></a><a class="volver" href="/">Todas las plazas →</a></div>
+  <main>
+    <h1>Calculadora de sueldo de funcionario 2026</h1>
+
+    <p>Calcula un sueldo <b>bruto orientativo</b> con las cuantías de 2026 para el personal funcionario (sueldo base, trienios y complemento de destino, Ministerio de Hacienda). El complemento específico cambia mucho entre administraciones y puestos (en policía local suele ser alto): ponlo si lo conoces por la relación de puestos de trabajo.</p>
+    <div class="form">
+      <label>Grupo <select id="g"><option>A1</option><option>A2</option><option>B</option><option selected>C1</option><option>C2</option><option value="AP">AP / E</option></select></label>
+      <label>Nivel de complemento de destino <select id="n"></select></label>
+      <label>Complemento específico (€/mes) <input id="ce" type="number" inputmode="decimal" min="0" step="10" value="500"></label>
+      <label>Trienios <input id="t" type="number" inputmode="numeric" min="0" max="15" value="0"></label>
+    </div>
+    <p class="resultado" id="r"></p>
+    <p class="note" id="rm"></p>
+    <table id="det"></table>
+    <p class="nota">Cálculo orientativo antes de impuestos y cotizaciones. No incluye complementos de productividad, turnicidad, nocturnidad u otros pluses, ni las particularidades de cada comunidad o ayuntamiento. Cuantías 2026 de sueldo base, trienios y complemento de destino según el Real Decreto-ley 14/2025 (fuente: Secretaría de Estado de Presupuestos y Gastos).</p>
+  </main>
+  <footer><nav aria-label="Más"><a href="/oposiciones">Por sector</a><a href="/estadisticas.html">Estadísticas</a><a href="/guias/">Guías</a><a href="/sueldos.html">Sueldos</a><a href="/widget.html">Widget</a><a href="/legal/aviso-legal.html">Aviso legal</a><a href="/legal/privacidad.html">Privacidad</a><a href="/contacto.html">Contacto</a></nav><span>© 2026 @gadivi · Radar de Plazas</span></footer>
+</div>
+<script>
+const SB={"A1": [1387.24, 53.39, 856.05, 32.96], "A2": [1199.52, 43.54, 874.83, 31.74], "B": [1048.55, 38.2, 906.26, 33.03], "C1": [900.63, 32.96, 778.42, 28.45], "C2": [749.58, 22.44, 742.75, 22.2], "AP": [686.07, 16.9, 686.07, 16.9]},CD={"30": 1211.77, "29": 1086.89, "28": 1041.22, "27": 995.47, "26": 873.38, "25": 774.86, "24": 729.14, "23": 683.48, "22": 637.73, "21": 592.11, "20": 550.01, "19": 521.94, "18": 493.86, "17": 465.75, "16": 437.73, "15": 409.59, "14": 381.57, "13": 353.44, "12": 325.35, "11": 297.24, "10": 269.2},NIV={"A1": [22, 30, 24], "A2": [16, 26, 20], "B": [16, 24, 18], "C1": [11, 22, 16], "C2": [10, 18, 14], "AP": [10, 14, 12]};
+const $=id=>document.getElementById(id),eur=n=>n.toLocaleString("es-ES",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+function niveles(){const g=$("g").value,[a,b,d]=NIV[g];$("n").innerHTML=Array.from({length:b-a+1},(_,i)=>a+i).reverse().map(n=>`<option ${n===d?"selected":""}>${n}</option>`).join("")}
+function calc(){const g=$("g").value,[sb,tr,psb,ptr]=SB[g],n=+$("n").value,cd=CD[n]||0,ce=+$("ce").value||0,t=+$("t").value||0;
+  const mes=sb+tr*t+cd+ce, extra=psb+ptr*t+cd+ce, anual=mes*12+extra*2;
+  $("r").textContent=eur(anual)+" brutos al año";$("rm").textContent=`≈ ${eur(anual/12)} al mes en 12 pagas · ${eur(mes)} en mes normal y ${eur(extra)} en cada paga extra`;
+  $("det").innerHTML=`<tr><th>Sueldo base</th><td>${eur(sb)}/mes</td></tr><tr><th>Trienios (${t})</th><td>${eur(tr*t)}/mes</td></tr><tr><th>Complemento de destino (nivel ${n})</th><td>${eur(cd)}/mes</td></tr><tr><th>Complemento específico</th><td>${eur(ce)}/mes</td></tr><tr><th>Pagas extra (junio y diciembre)</th><td>${eur(extra)} cada una</td></tr>`;
+  try{history.replaceState(null,"","#"+g)}catch(e){}}
+const h=location.hash.slice(1);if(SB[h])$("g").value=h;niveles();calc();
+$("g").addEventListener("change",()=>{niveles();calc()});for(const id of ["n","ce","t"])$(id).addEventListener("input",calc);
+</script>
+</body>
+</html>
