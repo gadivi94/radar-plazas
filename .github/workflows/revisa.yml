@@ -1,11 +1,11 @@
 # Radar de Plazas · Revisión de fuentes (BOE, CIDO, TMB)
-# Cada 15 minutos entre las 8:00 y las 12:45 (hora de Madrid en verano). La 1.ª del día recoge;
+# Cada 10 minutos todo el día. La 1.ª vuelta desde las 8:00 recoge; todas confirman las plazas abiertas del CIDO;
 # las siguientes leen fichas por tandas y preparan los avisos. También se puede lanzar a mano.
 name: Revisa plazas
 
 on:
   schedule:
-    - cron: '*/15 6-10 * * *'
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 jobs:

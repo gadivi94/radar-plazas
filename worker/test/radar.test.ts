@@ -635,3 +635,28 @@ describe("entrar con Google, nombre y ajustes sincronizados", () => {
     expect(y2.body.ajustes).toEqual({ t: 200, km: 25 });
   });
 });
+
+describe("CIDO: estado real de la ficha", () => {
+  test("proceso resuelto tras una tabla larga: cerrado aunque el menú diga «Termini obert»", async () => {
+    const { enriquecerCido, estadoFicha, ofertasDesdeFeed } = await import("../src/sources/cido");
+    const filas = Array.from({ length: 40 }, (_, i) => `<tr><td>${String(i % 28 + 1).padStart(2, "0")}/05/2026</td><td>BOPB</td><td>0</td><td>Modificació oferta pública ${i}</td></tr>`).join("");
+    const html = `<html><body><nav><a>Termini obert</a><a>Pendent de termini</a><a>Resolt</a></nav>
+<div>Ajuntament de Premià de Mar</div><h2>5 places d'Agent de la Policia Local</h2>
+<dl><dt>Identificador</dt><dd>20240808O75</dd><dt>Finalització de presentació de sol·licituds</dt><dd>17/06/2026</dd>
+<dt>Data de la prova</dt><dd>31/07/2026</dd><dt>Sistema de selecció</dt><dd>Oposició o prova</dd>
+<dt>Grup de titulació o assimilat</dt><dd>C1 - Batxillerat</dd></dl>
+<table>${filas}<tr><td>02/10/2026</td><td>TA</td><td>0</td><td>Resolució de la convocatòria</td></tr></table>
+<div class="estat"><span></span>Resolt</div><button>Guarda</button><footer>Termini obert · Objectius de Desenvolupament Sostenible</footer></body></html>`;
+    const o = { id: "cido:18062704", fuente: "CIDO", titulo: "5 places d'Agent de la Policia Local", estado: "revisar", tipo: "seguridad", subtipo: "policia-local" } as never;
+    const e = enriquecerCido(o, html, "2026-10-08");
+    expect(e.estado).toBe("cerrada");
+    expect(e.plazo_fin).toBe("2026-06-17");
+    // Sin etiqueta de estado: manda la fecha
+    expect(enriquecerCido(o, html.replace("Resolt</div>", "</div>"), "2026-10-08").estado).toBe("cerrada");
+    expect(enriquecerCido(o, html.replace("Resolt</div>", "</div>").replace("17/06/2026", "17/11/2026"), "2026-10-08").estado).toBe("abierta");
+    expect(estadoFicha("… tabla … Termini obert Guarda Resolt")).toBe("abierta");
+    // Solo el feed «obertes» da por abierta una plaza; el resto queda por revisar (no se muestra)
+    expect(ofertasDesdeFeed(F.CIDO_RSS, AHORA, true)[0].estado).toBe("abierta");
+    expect(ofertasDesdeFeed(F.CIDO_RSS, AHORA)[0].estado).toBe("revisar");
+  });
+});

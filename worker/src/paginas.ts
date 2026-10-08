@@ -78,7 +78,7 @@ export async function paginaPlaza(env: Env, fuente: string, code: string): Promi
   const ruta = rutaPlaza(o);
   const abierta = estadoActual(o, hoy) !== "cerrada" && (!o.plazo_fin || o.plazo_fin >= hoy);
   const relacionadas = (await env.DB.prepare(
-    `SELECT * FROM ofertas WHERE id != ? AND tipo = ? AND COALESCE(subtipo,'') = COALESCE(?, '') AND (plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado != 'cerrada')
+    `SELECT * FROM ofertas WHERE id != ? AND tipo = ? AND COALESCE(subtipo,'') = COALESCE(?, '') AND (plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado NOT IN ('cerrada','revisar'))
      ORDER BY CASE WHEN comunidad = ? THEN 0 ELSE 1 END, CASE WHEN plazo_fin IS NULL THEN 1 ELSE 0 END, plazo_fin LIMIT 6`,
   ).bind(o.id, o.tipo || "otros", o.subtipo, hoy, o.comunidad || "").all<Oferta>()).results;
 
@@ -171,7 +171,7 @@ export async function paginaPlaza(env: Env, fuente: string, code: string): Promi
 
 export async function paginaSector(env: Env, clave?: string, lugar?: string): Promise<Response | null> {
   const hoy = hoyMadrid();
-  const ABIERTA = "(plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado != 'cerrada')";
+  const ABIERTA = "(plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado NOT IN ('cerrada','revisar'))";
 
   if (!clave) {
     const filas = (await env.DB.prepare(`SELECT COALESCE(tipo,'otros') AS t, subtipo AS s, COUNT(*) AS n FROM ofertas WHERE ${ABIERTA} GROUP BY t, s`).bind(hoy).all<{ t: string; s: string | null; n: number }>()).results;
@@ -221,7 +221,7 @@ export async function paginaSector(env: Env, clave?: string, lugar?: string): Pr
 export async function sitemap(env: Env): Promise<Response> {
   const hoy = hoyMadrid();
   const web = sitio(env);
-  const filas = (await env.DB.prepare("SELECT id, titulo, tipo, subtipo, comunidad, provincia, encontrada FROM ofertas WHERE (plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado != 'cerrada') LIMIT 20000").bind(hoy).all<Oferta>()).results;
+  const filas = (await env.DB.prepare("SELECT id, titulo, tipo, subtipo, comunidad, provincia, encontrada FROM ofertas WHERE (plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado NOT IN ('cerrada','revisar')) LIMIT 20000").bind(hoy).all<Oferta>()).results;
   const urls = new Map<string, string | undefined>();
   for (const r of ["/", "/oposiciones", "/estadisticas.html", "/sueldos.html", "/guias/", "/guias/interino-y-bolsa.html", "/guias/grupos-y-titulacion.html", "/guias/como-presentar-solicitud.html", "/guias/tipos-de-pruebas.html", "/guias/glosario.html", "/contacto.html", "/quienes-somos.html"]) urls.set(r, undefined);
   for (const s of [...ORDEN_SECTORES, "otros"]) urls.set(`/oposiciones/${s}`, undefined);

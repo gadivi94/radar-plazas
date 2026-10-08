@@ -26,6 +26,7 @@ export function hoyMadrid(d = new Date()): string {
 
 export function estadoActual(o: Oferta, hoy = hoyMadrid()): string {
   if (o.plazo_fin && o.plazo_fin < hoy) return "cerrada";
+  if (o.estado === "revisar") return "cerrada";
   return o.estado || "abierta";
 }
 

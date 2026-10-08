@@ -74,11 +74,11 @@ async function api(req: Request, env: Env, u: URL, yo: Usuario | null): Promise<
     const rows = yo
       ? (await env.DB.prepare(
         `SELECT o.*, m.marca AS mi_marca, m.notas AS mi_notas, m.docs AS mi_docs FROM ofertas o LEFT JOIN marcas m ON m.oferta_id = o.id AND m.uid = ?
-         WHERE ((o.plazo_fin IS NULL OR o.plazo_fin >= ?) AND (o.estado IS NULL OR o.estado != 'cerrada')) OR m.marca IN ('interesa','presentada','admitido','examen','aprobado','bolsa')
+         WHERE ((o.plazo_fin IS NULL OR o.plazo_fin >= ?) AND (o.estado IS NULL OR o.estado NOT IN ('cerrada','revisar'))) OR m.marca IN ('interesa','presentada','admitido','examen','aprobado','bolsa')
          ORDER BY CASE WHEN o.plazo_fin IS NULL THEN 1 ELSE 0 END, o.plazo_fin ASC LIMIT 5000`,
       ).bind(yo.id, hoy).all<ConMarca>()).results
       : (await env.DB.prepare(
-        `SELECT * FROM ofertas WHERE (plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado != 'cerrada')
+        `SELECT * FROM ofertas WHERE (plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado NOT IN ('cerrada','revisar'))
          ORDER BY CASE WHEN plazo_fin IS NULL THEN 1 ELSE 0 END, plazo_fin ASC LIMIT 5000`,
       ).bind(hoy).all<Oferta>()).results;
     const f = filtrosDesdeQuery(u);
@@ -202,7 +202,7 @@ async function api(req: Request, env: Env, u: URL, yo: Usuario | null): Promise<
     const pr = perfil.prefs || {};
     const filas = (await env.DB.prepare(
       `SELECT id, titulo, organismo, municipio, provincia, comunidad, tipo, subtipo, grupo, nivel, dificultad, interino, sistema, plazo_fin, lat, lon FROM ofertas
-       WHERE (plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado != 'cerrada') LIMIT 6000`,
+       WHERE (plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado NOT IN ('cerrada','revisar')) LIMIT 6000`,
     ).bind(hoy).all<Oferta>()).results;
     const punto: [number, number] | null = pr.lat && pr.lon ? [pr.lon, pr.lat] : null;
     const km = pr.movilidad && /^\d+$/.test(pr.movilidad) ? Number(pr.movilidad) : null;

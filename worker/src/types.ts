@@ -42,7 +42,7 @@ export interface Oferta {
   sistema?: string | null;
   dificultad?: number | null;
   interino?: number | boolean | null;
-  estado?: "abierta" | "pendiente" | "cerrada" | null;
+  estado?: "abierta" | "pendiente" | "cerrada" | "revisar" | null; // revisar: aún sin confirmar en la ficha oficial (no se muestra)
   plazo_fin?: string | null;
   plazo_texto?: string | null;
   plazo_aprox?: number | boolean | null;

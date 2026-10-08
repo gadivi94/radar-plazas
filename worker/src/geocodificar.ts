@@ -8,7 +8,7 @@ const pausa = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export async function geocodificar(env: Env, max = 12, hoy = new Date().toISOString().slice(0, 10)): Promise<number> {
   const filas = (await env.DB.prepare(
     `SELECT DISTINCT municipio, provincia FROM ofertas WHERE lat IS NULL AND municipio IS NOT NULL AND comunidad IS NOT NULL AND comunidad NOT IN ('Cataluña','Estatal')
-       AND (plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado != 'cerrada') LIMIT ?`,
+       AND (plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado NOT IN ('cerrada','revisar')) LIMIT ?`,
   ).bind(hoy, max).all<{ municipio: string; provincia: string | null }>()).results;
   let hechas = 0;
   for (const f of filas) {

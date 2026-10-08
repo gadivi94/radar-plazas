@@ -4,7 +4,7 @@ import type { Env } from "./types";
 
 export async function estadisticas(env: Env, hoy: string) {
   const db = env.DB;
-  const abiertas = "(plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado != 'cerrada')";
+  const abiertas = "(plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado NOT IN ('cerrada','revisar'))";
   const q = async <T>(sql: string, ...b: unknown[]) => (await db.prepare(sql).bind(...b).all<T>()).results;
   const [tot] = await q<{ n: number; plazas: number }>(`SELECT COUNT(*) AS n, COALESCE(SUM(plazas),0) AS plazas FROM ofertas WHERE ${abiertas}`, hoy);
   const [hist] = await q<{ n: number; desde: string }>("SELECT COUNT(*) AS n, MIN(encontrada) AS desde FROM ofertas");

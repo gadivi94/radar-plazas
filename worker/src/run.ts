@@ -4,7 +4,7 @@ import { actualizar, alertasActivas, getMeta, insertarNuevas, setMeta } from "./
 import { coincide, estadoActual, hoyMadrid, type Filtros } from "./filters";
 import { enviarPush } from "./push";
 import { enriquecerBoe, fetchSumario, itemsSeccion2B, ofertaDesdeBoe } from "./sources/boe";
-import { CIDO_FEEDS, enriquecerCido, fetchFeed, ofertasDesdeFeed } from "./sources/cido";
+import { CIDO_FEEDS, CIDO_OBERTES, enriquecerCido, fetchFeed, ofertasDesdeFeed } from "./sources/cido";
 import { ofertasTmb, TMB_URL } from "./sources/tmb";
 import { recogerEmpresas } from "./sources/transporte";
 import { geocodificar } from "./geocodificar";
@@ -59,7 +59,8 @@ export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSe
       }
     } catch (e) { res.errores.push(String(e)); }
     for (const feed of CIDO_FEEDS) {
-      try { nuevas.push(...ofertasDesdeFeed(await fetchFeed(feed), ahora)); presupuesto--; }
+      if (feed === CIDO_OBERTES) continue; // se lee en cada vuelta (abajo)
+      try { nuevas.push(...ofertasDesdeFeed(await fetchFeed(feed), ahora, false)); presupuesto--; }
       catch (e) { res.errores.push(String(e)); }
     }
     try {
@@ -75,12 +76,33 @@ export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSe
     // Lo que una empresa ya no muestra se da por cerrado; lo que vuelve a aparecer, se reabre.
     for (const [empresa, ids] of emp.leidas) {
       const fuera = ids.length ? ` AND id NOT IN (${ids.map(() => "?").join(",")})` : "";
-      await env.DB.prepare(`UPDATE ofertas SET estado = 'cerrada' WHERE id LIKE ? AND (estado IS NULL OR estado != 'cerrada')${fuera}`).bind(`tr:${empresa}:%`, ...ids).run();
+      await env.DB.prepare(`UPDATE ofertas SET estado = 'cerrada' WHERE id LIKE ? AND (estado IS NULL OR estado NOT IN ('cerrada','revisar'))${fuera}`).bind(`tr:${empresa}:%`, ...ids).run();
       if (ids.length) await env.DB.prepare(`UPDATE ofertas SET estado = 'abierta' WHERE estado = 'cerrada' AND id IN (${ids.map(() => "?").join(",")})`).bind(...ids).run();
     }
     await setMeta(env, "ultima_recogida", hoy);
     try { await limpieza(env); } catch (e) { res.errores.push("limpieza: " + String(e)); }
   }
+
+  // Una vez: todo lo del CIDO se vuelve a leer con la lectura nueva del estado (la antigua daba por abiertas plazas resueltas)
+  if ((await getMeta(env, "cido_estado")) !== "2") {
+    try {
+      await env.DB.prepare("UPDATE ofertas SET estado = 'revisar', detalle_ok = 0 WHERE fuente = 'CIDO' AND (estado IS NULL OR estado != 'cerrada')").run();
+      await setMeta(env, "cido_estado", "2");
+    } catch (e) { res.errores.push("cido_estado: " + String(e).slice(0, 80)); }
+  }
+
+  // 1b · Plazas del CIDO con el plazo abierto ahora mismo (feed «obertes», en cada vuelta): se dan de alta,
+  // se confirman las que estaban por revisar y las que ya no salen, si no tienen fecha, vuelven a revisarse.
+  try {
+    const abiertas = ofertasDesdeFeed(await fetchFeed(CIDO_OBERTES), ahora, true); presupuesto--;
+    const ids = abiertas.map((o) => o.id);
+    if (ids.length > 20) {
+      res.recogidas += await insertarNuevas(env, abiertas);
+      const lista = JSON.stringify(ids);
+      await env.DB.prepare(`UPDATE ofertas SET estado = 'abierta' WHERE id IN (SELECT value FROM json_each(?)) AND (estado IS NULL OR estado IN ('revisar','pendiente')) AND (plazo_fin IS NULL OR plazo_fin >= ?)`).bind(lista, hoy).run();
+      await env.DB.prepare(`UPDATE ofertas SET estado = 'revisar' WHERE fuente = 'CIDO' AND estado = 'abierta' AND plazo_fin IS NULL AND detalle_ok = 0 AND id NOT IN (SELECT value FROM json_each(?))`).bind(lista).run();
+    }
+  } catch (e) { res.errores.push("CIDO obertes: " + String(e).slice(0, 100)); }
 
   // Coordenadas de las plazas catalanas ya guardadas (una vez)
   if ((await getMeta(env, "coordcat")) !== "1") {
@@ -100,10 +122,11 @@ export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSe
   // 3 · Completar fichas (primero las que encajan con alguna alerta) y revisar las que la gente sigue
   const alertas = (await alertasActivas(env)).map((a) => ({ ...a, f: JSON.parse(a.filtros) as Filtros }));
   const pend = (await env.DB.prepare(
-    "SELECT * FROM ofertas WHERE detalle_ok = 0 AND detalle_url IS NOT NULL ORDER BY encontrada DESC LIMIT 400",
+    "SELECT * FROM ofertas WHERE detalle_ok = 0 AND detalle_url IS NOT NULL ORDER BY CASE estado WHEN 'abierta' THEN 0 WHEN 'pendiente' THEN 1 ELSE 2 END, publicado DESC, encontrada DESC LIMIT 400",
   ).all<Oferta>()).results;
   const prioridad = (o: Oferta) => (alertas.some((a) => coincide(o, { ...a.f, grupos: undefined, dificultades: undefined, nivelMax: undefined }, hoy)) ? 0 : 1);
-  pend.sort((a, b) => prioridad(a) - prioridad(b));
+  const rango = (o: Oferta) => (o.estado === "abierta" ? 0 : o.estado === "pendiente" ? 1 : 2) * 2 + prioridad(o);
+  pend.sort((a, b) => rango(a) - rango(b));
   // Fichas del CIDO guardadas por alguien y sin revisar en 3 días: estado, plazos y novedades
   const seguidas = (await env.DB.prepare(
     `SELECT o.* FROM ofertas o WHERE o.fuente = 'CIDO' AND o.detalle_ok = 1 AND o.detalle_url IS NOT NULL
@@ -127,7 +150,7 @@ export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSe
         const r = await fetch(o.detalle_url!, { headers: { ...UA, Accept: o.fuente === "BOE" ? "application/xml" : "text/html" }, signal: ctrl.signal }).finally(() => clearTimeout(to));
         if (!r.ok) { await actualizar(env, o.id, revision ? { revisada: ahora } : { detalle_ok: r.status === 404 ? 1 : 0 }); continue; }
         const body = await r.text();
-        const extra: Partial<Oferta> = o.fuente === "BOE" ? enriquecerBoe(o, body) : enriquecerCido(o, body);
+        const extra: Partial<Oferta> = o.fuente === "BOE" ? enriquecerBoe(o, body) : enriquecerCido(o, body, hoy);
         const texto = revision ? describirCambio(o, extra) : null;
         if (texto) {
           extra.historia = JSON.stringify([...JSON.parse(o.historia || "[]"), { fecha: ahora, texto }].slice(-20));
@@ -157,7 +180,7 @@ export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSe
 
   // 4 · Avisos de plazas nuevas: ya completadas (o con más de 3 h esperando ficha) y aún no avisadas
   const candidatas = (await env.DB.prepare(
-    `SELECT * FROM ofertas WHERE notificada = 0 AND (detalle_ok = 1 OR (julianday('now') - julianday(encontrada)) * 24 > 3)`,
+    `SELECT * FROM ofertas WHERE notificada = 0 AND (estado IS NULL OR estado NOT IN ('revisar','cerrada')) AND (detalle_ok = 1 OR (julianday('now') - julianday(encontrada)) * 24 > 3)`,
   ).all<Oferta>()).results;
   // El administrador (y las alertas antiguas sin dueño) por push o por la tarea diaria de Claude (meta.avisos_pendientes);
   // cada cuenta recibe un único correo con todo lo suyo (o nada si eligió el resumen semanal).
@@ -221,7 +244,7 @@ export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSe
     await setMeta(env, "ultimo_semanal", semana);
     const desde = new Date(Date.now() - 7 * 864e5).toISOString();
     const semanales = (await env.DB.prepare(
-      "SELECT * FROM ofertas WHERE encontrada >= ? AND (plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado != 'cerrada')",
+      "SELECT * FROM ofertas WHERE encontrada >= ? AND (plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado NOT IN ('cerrada','revisar'))",
     ).bind(desde, hoy).all<Oferta>()).results;
     for (const u of usuarios.values()) {
       if (u.frecuencia === "semanal" && u.avisos_email) {
