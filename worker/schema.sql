@@ -75,7 +75,11 @@ CREATE TABLE IF NOT EXISTS users (
   frecuencia   TEXT DEFAULT 'diaria',      -- diaria | semanal
   boletin      INTEGER DEFAULT 0,          -- boletín semanal de plazas destacadas
   telegram     TEXT,                       -- chat_id
-  cal_token    TEXT                        -- calendario suscrito
+  cal_token    TEXT,                       -- calendario suscrito
+  nombre       TEXT,                       -- cómo quiere que la saludemos
+  ajustes      TEXT,                       -- JSON sincronizado entre dispositivos {t, filtros, km, lang, tab, chat…}
+  google_sub   TEXT,                       -- cuenta de Google enlazada
+  apple_sub    TEXT                        -- cuenta de Apple enlazada
 );
 CREATE TABLE IF NOT EXISTS otp (email TEXT PRIMARY KEY, hash TEXT, exp INTEGER, intentos INTEGER, enviado INTEGER);
 CREATE TABLE IF NOT EXISTS sesiones (th TEXT PRIMARY KEY, uid TEXT NOT NULL, creada INTEGER, ultima INTEGER);

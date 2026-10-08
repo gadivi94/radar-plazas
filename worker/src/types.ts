@@ -12,6 +12,8 @@ export interface Env {
   OTP_PEPPER?: string;        // secreto opcional para los códigos
   TELEGRAM_BOT_TOKEN?: string;// secreto opcional: avisos por Telegram (@BotFather)
   TELEGRAM_BOT?: string;      // nombre del bot, sin @
+  GOOGLE_CLIENT_IDS?: string; // IDs de cliente OAuth de Google (web primero, luego iOS), separados por comas
+  APPLE_CLIENT_IDS?: string;  // bundle de la app iOS y Services ID de la web, separados por comas
   AI?: { run: (model: string, input: unknown) => Promise<unknown> }; // Workers AI (resúmenes y preguntas)
   IA_MODELO?: string;
   IA_DIARIAS?: string;

@@ -586,3 +586,52 @@ describe("ubicación y tutor", () => {
     expect(sistema).not.toContain("Tècnic superior");
   });
 });
+
+describe("entrar con Google, nombre y ajustes sincronizados", () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => { globalThis.fetch = realFetch; });
+  test("token firmado de Google, enlace por correo, nombre y ajustes con hora", async () => {
+    const DB = fakeD1();
+    const par = (await crypto.subtle.generateKey({ name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" }, true, ["sign", "verify"])) as CryptoKeyPair;
+    const jwk = (await crypto.subtle.exportKey("jwk", par.publicKey)) as JsonWebKey;
+    globalThis.fetch = (async (input: RequestInfo) => {
+      if (String(input).includes("googleapis.com/oauth2/v3/certs")) return new Response(JSON.stringify({ keys: [{ kid: "k1", kty: "RSA", n: jwk.n, e: jwk.e }] }));
+      throw new Error("fetch no esperado " + input);
+    }) as typeof fetch;
+    const b64 = (x: string | Uint8Array) => Buffer.from(x).toString("base64url");
+    const firmar = async (pl: Record<string, unknown>) => {
+      const cab = b64(JSON.stringify({ alg: "RS256", kid: "k1" })), cue = b64(JSON.stringify(pl));
+      const sig = new Uint8Array(await crypto.subtle.sign("RSASSA-PKCS1-v1_5", par.privateKey, new TextEncoder().encode(cab + "." + cue)));
+      return `${cab}.${cue}.${b64(sig)}`;
+    };
+    const CID = "123-abc.apps.googleusercontent.com";
+    const env = { DB, ASSETS: { fetch: async () => new Response("web") }, GOOGLE_CLIENT_IDS: CID } as never;
+    const call = async (path: string, init: RequestInit & { token?: string } = {}) => {
+      const r = await worker.fetch(new Request("https://x/api" + path, { ...init, headers: { "Content-Type": "application/json", ...(init.token ? { Authorization: "Bearer " + init.token } : {}) } }), env);
+      return { status: r.status, body: (await r.json().catch(() => null)) as Record<string, any> };
+    };
+    expect((await call("/auth/config")).body.google).toBe(CID);
+    const exp = Math.floor(Date.now() / 1000) + 600;
+    const bueno = await firmar({ iss: "https://accounts.google.com", aud: CID, sub: "g-1", email: "Gabi@Gmail.com", email_verified: true, given_name: "Gabriel", exp });
+    // Otro cliente o token manipulado: rechazado
+    expect((await call("/auth/social", { method: "POST", body: JSON.stringify({ proveedor: "google", token: await firmar({ iss: "https://accounts.google.com", aud: "otro", sub: "g-1", email: "a@b.c", exp }), acepta: true }) })).status).toBe(401);
+    expect((await call("/auth/social", { method: "POST", body: JSON.stringify({ proveedor: "google", token: bueno.slice(0, -4) + "AAAA", acepta: true }) })).status).toBe(401);
+    // Nuevo: hay que aceptar las condiciones
+    expect((await call("/auth/social", { method: "POST", body: JSON.stringify({ proveedor: "google", token: bueno }) })).body.acepta).toBe(false);
+    const ok = await call("/auth/social", { method: "POST", body: JSON.stringify({ proveedor: "google", token: bueno, acepta: true }) });
+    expect(ok.status).toBe(200);
+    expect(ok.body.nuevo).toBe(true);
+    const yo = await call("/cuenta", { token: ok.body.token });
+    expect(yo.body).toMatchObject({ email: "gabi@gmail.com", nombre: "Gabriel", google: true });
+    // Segundo dispositivo: misma cuenta
+    const otra = await call("/auth/social", { method: "POST", body: JSON.stringify({ proveedor: "google", token: bueno }) });
+    expect(otra.body.nuevo).toBe(false);
+    // Nombre y ajustes: gana el cambio más reciente
+    await call("/cuenta", { method: "PATCH", token: ok.body.token, body: JSON.stringify({ nombre: "Gabi <b>", ajustes: { t: 200, km: 25 } }) });
+    const viejo = await call("/cuenta", { method: "PATCH", token: otra.body.token, body: JSON.stringify({ ajustes: { t: 100, km: 5 } }) });
+    expect(viejo.body.ajustes.km).toBe(25);
+    const y2 = await call("/cuenta", { token: otra.body.token });
+    expect(y2.body.nombre).toBe("Gabi b");
+    expect(y2.body.ajustes).toEqual({ t: 200, km: 25 });
+  });
+});

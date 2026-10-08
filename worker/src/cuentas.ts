@@ -30,14 +30,14 @@ const ipDe = (req: Request) => req.headers.get("CF-Connecting-IP") || "0";
 
 // ---------- esquema: las tablas nuevas se crean solas la primera vez ----------
 let ESQUEMA_OK = false;
-const ESQUEMA_VERSION = "3";
+const ESQUEMA_VERSION = "4";
 export async function asegurarEsquema(env: Env): Promise<void> {
   if (ESQUEMA_OK) return;
   const db = env.DB;
   const columnas: Array<[string, string]> = [
     ["alertas", "uid TEXT"],
     ["ofertas", "subtipo TEXT"], ["ofertas", "nivel INTEGER"], ["ofertas", "requisitos TEXT"], ["ofertas", "historia TEXT"], ["ofertas", "revisada TEXT"], ["ofertas", "ia_resumen TEXT"],
-    ["users", "perfil TEXT"], ["users", "frecuencia TEXT DEFAULT 'diaria'"], ["users", "boletin INTEGER DEFAULT 0"], ["users", "telegram TEXT"], ["users", "cal_token TEXT"],
+    ["users", "perfil TEXT"], ["users", "frecuencia TEXT DEFAULT 'diaria'"], ["users", "boletin INTEGER DEFAULT 0"], ["users", "telegram TEXT"], ["users", "cal_token TEXT"], ["users", "nombre TEXT"], ["users", "ajustes TEXT"], ["users", "google_sub TEXT"], ["users", "apple_sub TEXT"],
     ["ofertas", "lat REAL"], ["ofertas", "lon REAL"],
     ["marcas", "notas TEXT"], ["marcas", "docs TEXT"], ["marcas", "recordado INTEGER DEFAULT 0"],
   ];
@@ -142,6 +142,42 @@ export async function rutasCuenta(req: Request, env: Env, path: string, u: URL):
     return json({ ok: true, nuevo: !existe });
   }
 
+  if (path === "/auth/config" && req.method === "GET") {
+    const g = lista(env.GOOGLE_CLIENT_IDS), a = lista(env.APPLE_CLIENT_IDS);
+    return json({ google: g.find((x) => /apps\.googleusercontent\.com$/.test(x) && !/ios/i.test(x)) || g[0] || null, googleIos: g.find((x) => /ios/i.test(x)) || null, apple: a.find((x) => /web|\.service/i.test(x)) || null });
+  }
+
+  // Entrar con Google o Apple: se comprueba el id_token con sus claves públicas y se enlaza la cuenta por correo
+  if (path === "/auth/social" && req.method === "POST") {
+    const b = await cuerpo();
+    const prov = b.proveedor === "apple" ? "apple" : b.proveedor === "google" ? "google" : null;
+    if (!prov) return json({ error: "Proveedor no válido" }, 400);
+    let d: { sub: string; email: string; nombre: string };
+    try { d = await verificarIdToken(env, prov, String(b.token || "")); }
+    catch (e) { return json({ error: `No se ha podido comprobar la cuenta de ${prov === "google" ? "Google" : "Apple"}. Vuelve a probar.`, detalle: String(e).slice(0, 80) }, 401); }
+    const col = prov === "google" ? "google_sub" : "apple_sub";
+    let user = await db.prepare(`SELECT id, admin, email, nombre FROM users WHERE ${col} = ?`).bind(d.sub).first<{ id: string; admin: number; email: string; nombre: string | null }>();
+    if (!user && d.email) user = await db.prepare("SELECT id, admin, email, nombre FROM users WHERE email = ?").bind(d.email).first();
+    const fecha = new Date().toISOString(), nombre = String(b.nombre || d.nombre || "").trim().slice(0, 40) || null;
+    let nuevo = false;
+    if (!user) {
+      if (!d.email) return json({ error: "Tu cuenta no comparte el correo. Entra con tu correo electrónico." }, 400);
+      if (b.acepta !== true) return json({ error: "Para crear la cuenta tienes que aceptar las condiciones de uso y la política de privacidad.", acepta: false }, 400);
+      user = { id: rnd(12), admin: 0, email: d.email, nombre };
+      await db.prepare(`INSERT INTO users (id, email, creado, ultimo, acepta, nombre, ${col}) VALUES (?, ?, ?, ?, ?, ?, ?)`).bind(user.id, d.email, fecha, fecha, fecha, nombre, d.sub).run();
+      nuevo = true;
+    } else {
+      await db.prepare(`UPDATE users SET ultimo = ?, ${col} = ?, nombre = COALESCE(nombre, ?) WHERE id = ?`).bind(fecha, d.sub, nombre, user.id).run();
+    }
+    const k = await claveAdmin(env);
+    if (k && typeof b.clave === "string" && b.clave === k && !user.admin) {
+      await db.prepare("UPDATE users SET admin = 1, plan = 'pro' WHERE id = ?").bind(user.id).run();
+      await adoptarDatosAntiguos(env, user.id);
+      user.admin = 1;
+    }
+    return json({ ok: true, token: await abrirSesion(env, user.id), email: user.email, admin: !!user.admin, nuevo });
+  }
+
   if (path === "/auth/verify" && req.method === "POST") {
     const b = await cuerpo();
     const email = normEmail(b.email), code = String(b.code || "").replace(/\D/g, "");
@@ -155,6 +191,7 @@ export async function rutasCuenta(req: Request, env: Env, path: string, u: URL):
     }
     let user = await db.prepare("SELECT id, admin FROM users WHERE email = ?").bind(email).first<{ id: string; admin: number }>();
     const fecha = new Date().toISOString();
+    b.yaExistia = !!user;
     if (!user) {
       if (b.acepta !== true) return json({ error: "Para crear la cuenta tienes que aceptar las condiciones de uso y la política de privacidad.", acepta: false }, 400);
       user = { id: rnd(12), admin: 0 };
@@ -168,10 +205,7 @@ export async function rutasCuenta(req: Request, env: Env, path: string, u: URL):
       await adoptarDatosAntiguos(env, user.id);
       user.admin = 1;
     }
-    const token = rnd(32);
-    await db.prepare("DELETE FROM sesiones WHERE uid = ? AND th NOT IN (SELECT th FROM sesiones WHERE uid = ? ORDER BY ultima DESC LIMIT ?)").bind(user.id, user.id, MAX_SESIONES - 1).run();
-    await db.prepare("INSERT INTO sesiones (th, uid, creada, ultima) VALUES (?, ?, ?, ?)").bind(await sha256("ses:" + token), user.id, ahora, ahora).run();
-    return json({ ok: true, token, email, admin: !!user.admin });
+    return json({ ok: true, token: await abrirSesion(env, user.id), email, admin: !!user.admin, nuevo: !b.yaExistia });
   }
 
   if (path === "/contacto" && req.method === "POST") {
@@ -243,12 +277,13 @@ export async function rutasCuenta(req: Request, env: Env, path: string, u: URL):
   if (path === "/auth/logout" && req.method === "POST") { await db.prepare("DELETE FROM sesiones WHERE th = ?").bind(yo.th).run(); return json({ ok: true }); }
   if (path === "/cuenta" && req.method === "GET") {
     const n = await db.prepare("SELECT COUNT(*) AS n FROM alertas WHERE uid = ?").bind(yo.id).first<{ n: number }>();
-    const ex = await db.prepare("SELECT perfil, frecuencia, boletin, telegram, cal_token FROM users WHERE id = ?").bind(yo.id).first<{ perfil: string | null; frecuencia: string | null; boletin: number | null; telegram: string | null; cal_token: string | null }>();
+    const ex = await db.prepare("SELECT perfil, frecuencia, boletin, telegram, cal_token, nombre, ajustes, google_sub, apple_sub FROM users WHERE id = ?").bind(yo.id).first<{ perfil: string | null; frecuencia: string | null; boletin: number | null; telegram: string | null; cal_token: string | null; nombre: string | null; ajustes: string | null; google_sub: string | null; apple_sub: string | null }>();
     return json({
       email: yo.email, admin: !!yo.admin, plan: yo.plan, avisos_email: !!yo.avisos_email, alertas: n?.n ?? 0, limite_alertas: limiteAlertas(env, yo), correo: correoActivo(env),
       perfil: ex?.perfil ? JSON.parse(ex.perfil) : null, frecuencia: ex?.frecuencia || "diaria", boletin: !!ex?.boletin,
       telegram: !!ex?.telegram, telegram_url: env.TELEGRAM_BOT_TOKEN ? await enlaceTelegram(env, yo.id) : null,
       calendario: ex?.cal_token ? `${sitio(env)}/api/cal/${yo.id}/${ex.cal_token}.ics` : null, ia: !!env.AI,
+      nombre: ex?.nombre || null, ajustes: ex?.ajustes ? JSON.parse(ex.ajustes) : null, google: !!ex?.google_sub, apple: !!ex?.apple_sub,
     });
   }
   if (path === "/cuenta" && req.method === "PATCH") {
@@ -262,6 +297,16 @@ export async function rutasCuenta(req: Request, env: Env, path: string, u: URL):
       await db.prepare("UPDATE users SET perfil = ? WHERE id = ?").bind(txt, yo.id).run();
     }
     if (b.telegram === false) await db.prepare("UPDATE users SET telegram = NULL WHERE id = ?").bind(yo.id).run();
+    if (typeof b.nombre === "string") await db.prepare("UPDATE users SET nombre = ? WHERE id = ?").bind(b.nombre.replace(/[<>]/g, "").trim().slice(0, 40) || null, yo.id).run();
+    if (b.ajustes && typeof b.ajustes === "object") {
+      const txt = JSON.stringify(b.ajustes);
+      if (txt.length > 12000) return json({ error: "Los ajustes son demasiado largos." }, 400);
+      // Gana la versión más reciente (cada dispositivo manda la hora a la que cambió algo)
+      const prev = await db.prepare("SELECT ajustes FROM users WHERE id = ?").bind(yo.id).first<{ ajustes: string | null }>();
+      const tPrev = prev?.ajustes ? Number(JSON.parse(prev.ajustes).t || 0) : 0;
+      if (Number(b.ajustes.t || 0) >= tPrev) await db.prepare("UPDATE users SET ajustes = ? WHERE id = ?").bind(txt, yo.id).run();
+      else return json({ ok: true, ajustes: JSON.parse(prev!.ajustes!) });
+    }
     return json({ ok: true });
   }
   if (path === "/cuenta/calendario" && req.method === "POST") {
@@ -277,7 +322,7 @@ export async function rutasCuenta(req: Request, env: Env, path: string, u: URL):
     return json({ ok: true });
   }
   if (path === "/cuenta/datos" && req.method === "GET") {
-    const user = await db.prepare("SELECT email, creado, ultimo, plan, avisos_email, acepta, perfil, frecuencia, boletin FROM users WHERE id = ?").bind(yo.id).first();
+    const user = await db.prepare("SELECT email, nombre, creado, ultimo, plan, avisos_email, acepta, perfil, ajustes, frecuencia, boletin FROM users WHERE id = ?").bind(yo.id).first();
     const alertas = (await db.prepare("SELECT nombre, filtros, activa, creada FROM alertas WHERE uid = ?").bind(yo.id).all<{ filtros: string }>()).results.map((a) => ({ ...a, filtros: JSON.parse(a.filtros) }));
     const marcas = (await db.prepare("SELECT m.oferta_id, m.marca, m.ts, m.notas, m.docs, o.titulo FROM marcas m LEFT JOIN ofertas o ON o.id = m.oferta_id WHERE m.uid = ?").bind(yo.id).all()).results;
     return new Response(JSON.stringify({ exportado: new Date().toISOString(), cuenta: user, alertas, marcas }, null, 2), {
@@ -295,4 +340,43 @@ export async function rutasCuenta(req: Request, env: Env, path: string, u: URL):
     return json({ ok: true });
   }
   return json({ error: "No encontrado" }, 404);
+}
+
+// ---------- sesiones y entrada con Google / Apple ----------
+async function abrirSesion(env: Env, uid: string): Promise<string> {
+  const db = env.DB, ahora = Date.now(), token = rnd(32);
+  await db.prepare("DELETE FROM sesiones WHERE uid = ? AND th NOT IN (SELECT th FROM sesiones WHERE uid = ? ORDER BY ultima DESC LIMIT ?)").bind(uid, uid, MAX_SESIONES - 1).run();
+  await db.prepare("INSERT INTO sesiones (th, uid, creada, ultima) VALUES (?, ?, ?, ?)").bind(await sha256("ses:" + token), uid, ahora, ahora).run();
+  return token;
+}
+const lista = (s?: string) => String(s || "").split(",").map((x) => x.trim()).filter(Boolean);
+const JWKS_URL = { google: "https://www.googleapis.com/oauth2/v3/certs", apple: "https://appleid.apple.com/auth/keys" } as const;
+const JWKS: Record<string, { t: number; keys: Array<{ kid: string; kty: string; n: string; e: string }> }> = {};
+const b64u = (s: string) => { s = s.replace(/-/g, "+").replace(/_/g, "/"); s += "=".repeat((4 - (s.length % 4)) % 4); return Uint8Array.from(atob(s), (c) => c.charCodeAt(0)); };
+async function clavesJwks(prov: "google" | "apple", fresca = false) {
+  const c = JWKS[prov];
+  if (!fresca && c && Date.now() - c.t < 6 * 3600_000) return c.keys;
+  const r = await fetch(JWKS_URL[prov], { headers: { Accept: "application/json" } });
+  const d = (await r.json()) as { keys?: Array<{ kid: string; kty: string; n: string; e: string }> };
+  JWKS[prov] = { t: Date.now(), keys: d.keys || [] };
+  return JWKS[prov].keys;
+}
+export async function verificarIdToken(env: Env, prov: "google" | "apple", token: string): Promise<{ sub: string; email: string; nombre: string }> {
+  const partes = token.split(".");
+  if (partes.length !== 3) throw new Error("formato");
+  const dec = (x: string) => JSON.parse(new TextDecoder().decode(b64u(x)));
+  const cab = dec(partes[0]), pl = dec(partes[1]);
+  if (cab.alg !== "RS256") throw new Error("alg");
+  let k = (await clavesJwks(prov)).find((x) => x.kid === cab.kid);
+  if (!k) k = (await clavesJwks(prov, true)).find((x) => x.kid === cab.kid);
+  if (!k) throw new Error("kid");
+  const key = await crypto.subtle.importKey("jwk", { kty: k.kty, n: k.n, e: k.e, alg: "RS256", ext: true }, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+  if (!(await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, b64u(partes[2]), new TextEncoder().encode(partes[0] + "." + partes[1])))) throw new Error("firma");
+  if (!(pl.exp > Date.now() / 1000 - 60)) throw new Error("caducado");
+  const iss = prov === "google" ? ["https://accounts.google.com", "accounts.google.com"] : ["https://appleid.apple.com"];
+  if (!iss.includes(pl.iss)) throw new Error("iss");
+  const auds = lista(prov === "google" ? env.GOOGLE_CLIENT_IDS : env.APPLE_CLIENT_IDS), aud = Array.isArray(pl.aud) ? pl.aud : [pl.aud];
+  if (!aud.some((a: string) => auds.includes(a))) throw new Error("aud");
+  if (pl.email_verified === false || pl.email_verified === "false") throw new Error("correo sin verificar");
+  return { sub: String(pl.sub || ""), email: pl.email ? normEmail(pl.email) : "", nombre: String(pl.given_name || pl.name || "").trim() };
 }

@@ -56,10 +56,10 @@ const normTxt=s=>(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().t
 // ---------- Estado ----------
 const S={q:"",m3:false,clasico:false,ofertas:[],alertas:null,meta:null,tab:"nuevas",sec:"",subs:[],niv:null,solo:false,dif:[],grp:[],etapa:"",busy:new Set(),ses:"",yo:null,adm:null,perfil:null,mapa:"cat",abiertos:new Set()};
 try{S.tab=ls.get("rp_tab","nuevas");if(!TABS.some(x=>x[0]===S.tab))S.tab="nuevas";
-  const f=JSON.parse(ls.get("rp_f","{}"));S.dif=f.dif||[];S.grp=f.grp||[];S.sec=f.sec||"";S.subs=f.subs||[];S.niv=f.niv??null;S.solo=!!f.solo;
-  S.place=f.place===undefined?{kind:"ccaa",id:"Cataluña"}:f.place;S.ses=ls.get("rp_ses","");S.perfil=JSON.parse(ls.get("rp_perfil","null"));S.mapa=ls.get("rp_mapa","cat");
+  leerFiltros(JSON.parse(ls.get("rp_f","{}")));S.ses=ls.get("rp_ses","");S.perfil=JSON.parse(ls.get("rp_perfil","null"));S.mapa=ls.get("rp_mapa","cat");
 }catch(e){S.place={kind:"ccaa",id:"Cataluña"}}
-function guardarFiltros(){ls.set("rp_f",JSON.stringify({dif:S.dif,grp:S.grp,place:S.place,sec:S.sec,subs:S.subs,niv:S.niv,solo:S.solo}))}
+function leerFiltros(f){S.dif=f.dif||[];S.grp=f.grp||[];S.sec=f.sec||"";S.subs=f.subs||[];S.niv=f.niv??null;S.solo=!!f.solo;S.place=f.place===undefined?{kind:"ccaa",id:"Cataluña"}:f.place}
+function guardarFiltros(){ls.set("rp_f",JSON.stringify({dif:S.dif,grp:S.grp,place:S.place,sec:S.sec,subs:S.subs,niv:S.niv,solo:S.solo}));marcarCambio()}
 
 function grupoDe(o){const g=(o.grupo||"").toUpperCase();return /^(AP|C2|C1|B|A2|A1)$/.test(g)?g:"?"}
 function dificultad(o){return o.dificultad||2}
@@ -551,12 +551,14 @@ function guardarPerfil(){
 }
 function renderCuenta(){
   const box=$("cuentaBox"),btn=$("btnCuenta");
-  btn.textContent=S.yo?S.yo.email:t("Entrar");btn.classList.toggle("in",!!S.yo);
+  btn.textContent=S.yo?(S.yo.nombre||S.yo.email):t("Entrar");btn.classList.toggle("in",!!S.yo);
   box.hidden=!S.yo;if(!S.yo)return;
   const y=S.yo,ad=S.adm;
   const cal=y.calendario?`<p class="note">📅 Tus plazas en el calendario del móvil: <a href="${esc(y.calendario.replace(/^https:/,"webcal:"))}">Suscribirme</a> · <button type="button" class="linkish" data-copiar="${esc(y.calendario)}">Copiar enlace</button></p>`:`<button type="button" id="crearCal">📅 Ver mis plazas en el calendario del móvil</button>`;
   const tg=y.telegram_url?(y.telegram?`<p class="note">✅ Telegram conectado. <button type="button" class="linkish" id="tgOff">Desconectar</button></p>`:`<a class="tgbtn" href="${esc(y.telegram_url)}" target="_blank" rel="noopener">✈️ Recibir avisos por Telegram</a>`):"";
-  $("cuentaBody").innerHTML=`<p class="note">Has entrado como <b>${esc(y.email)}</b> · ${y.admin?"administración":"cuenta gratuita"}.</p>
+  const vias=["correo",y.google?"Google":"",y.apple?"Apple":""].filter(Boolean).join(", ");
+  $("cuentaBody").innerHTML=`<form id="fNombre" class="add nombre"><label for="nombreIn">Cómo quieres que te saludemos</label><input id="nombreIn" maxlength="40" autocomplete="given-name" placeholder="Tu nombre" value="${esc(y.nombre||"")}"><button type="submit">Guardar</button></form>
+    <p class="note">Has entrado como <b>${esc(y.email)}</b> · ${y.admin?"administración":"cuenta gratuita"} · puedes entrar con ${esc(vias)}. Tus filtros, perfil, alertas, plazas seguidas y la conversación con el tutor se sincronizan en todos tus dispositivos.</p>
     <label class="check"><input type="checkbox" id="avisosEmail" ${y.avisos_email?"checked":""}><span>Recibir por correo las plazas nuevas de mis alertas, los cambios en las que sigo y el aviso 3 días antes de que cierren</span></label>
     <label class="mini-l">Frecuencia de las alertas <select id="frecuencia"><option value="diaria" ${y.frecuencia!=="semanal"?"selected":""}>Cada día que haya novedades</option><option value="semanal" ${y.frecuencia==="semanal"?"selected":""}>Resumen semanal (lunes)</option></select></label>
     <label class="check"><input type="checkbox" id="boletin" ${y.boletin?"checked":""}><span>Boletín semanal con las plazas destacadas de toda España</span></label>
@@ -594,7 +596,7 @@ async function compartir(o){
 // ---------- Eventos ----------
 document.addEventListener("click",async e=>{
   const tg=e.target.closest("button");if(!tg)return;
-  if(tg.id==="lang"){LANG=LANG==="ca"?"es":"ca";ls.set("rp_lang",LANG);traducirEstatico();render();renderCrit();renderCuenta();renderPerfil();return}
+  if(tg.id==="lang"){LANG=LANG==="ca"?"es":"ca";ls.set("rp_lang",LANG);marcarCambio();renderSaludo();traducirEstatico();render();renderCrit();renderCuenta();renderPerfil();return}
   if(tg.id==="btnCuenta"){if(S.yo){const c=$("cuentaBox");c.open=true;c.scrollIntoView({behavior:"smooth"})}else abrirAcceso();return}
   if(tg.dataset.acceso){abrirAcceso("Crea tu cuenta gratis para recibir alertas por correo. Te enviamos un código de 6 cifras, sin contraseñas.");return}
   if(tg.id==="accesoX"){$("acceso").hidden=true;return}
@@ -616,7 +618,7 @@ document.addEventListener("click",async e=>{
   if(tg.dataset.copiar){try{await navigator.clipboard.writeText(tg.dataset.copiar);toast("Enlace copiado")}catch(_){prompt("Copia el enlace",tg.dataset.copiar)}return}
   if(tg.id==="soyAdmin"){const clave=prompt("Clave de administración");if(!clave)return;
     try{await api("/cuenta/admin",{method:"POST",body:JSON.stringify({clave:clave.trim()})});toast("Ahora eres administrador");await cargar()}catch(err){toast(err.message)}return}
-  if(tg.dataset.tab){S.tab=tg.dataset.tab;S.mostrar=0;ls.set("rp_tab",S.tab);render();return}
+  if(tg.dataset.tab){S.tab=tg.dataset.tab;S.mostrar=0;ls.set("rp_tab",S.tab);marcarCambio();render();return}
   if(tg.dataset.etapa!==undefined&&tg.closest("#etapas")){S.etapa=tg.dataset.etapa;render();return}
   if(tg.dataset.sec!==undefined){S.sec=S.sec===tg.dataset.sec?"":tg.dataset.sec;S.subs=[];S.mostrar=0;guardarFiltros();render();return}
   if(tg.dataset.sub){const v=tg.dataset.sub;S.subs=S.subs.includes(v)?S.subs.filter(x=>x!==v):[...S.subs,v];guardarFiltros();render();return}
@@ -676,9 +678,7 @@ document.addEventListener("submit",async e=>{
     if(S.nuevo&&!$("acepta").checked){$("accesoErr").textContent="Para crear la cuenta, marca que aceptas las condiciones y la privacidad.";return}
     const clave=ls.get("rp_key","");
     try{const r=await api("/auth/verify",{method:"POST",body:JSON.stringify({email:S.email,code,acepta:$("acepta").checked,...(clave?{clave}:{})})});
-      S.ses=r.token;ls.set("rp_ses",r.token);if(r.admin)ls.del("rp_key");
-      $("acceso").hidden=true;$("fCodigo").hidden=true;$("fEmail").hidden=false;
-      toast(S.nuevo?"Cuenta creada. ¡Bienvenido!":"Has entrado");await cargar();await seguirPendiente()}
+      $("fCodigo").hidden=true;$("fEmail").hidden=false;await trasEntrar(r)}
     catch(err){if(err.acepta===false)$("aceptaBox").hidden=false;$("accesoErr").textContent=err.message}return}
   if(e.target.id==="nuevaAlerta"){e.preventDefault();const nombre=$("nombreAlerta").value.trim();if(!nombre)return;
     try{await api("/alertas",{method:"POST",body:JSON.stringify({nombre,filtros:filtrosActuales()})});toast("Alerta creada");S.alertas=await api("/alertas");S.yo&&(S.yo.alertas=S.alertas.length)}catch(err){toast(err.message)}
@@ -694,7 +694,7 @@ async function api(path,init={}){
   if(!r.ok){const er=new Error(b.error||`Error ${r.status}`);Object.assign(er,b);throw er}
   return b;
 }
-function cerrarSesion(){S.ses="";S.yo=null;S.adm=null;S.alertas=null;ls.del("rp_ses");
+function cerrarSesion(){S.ses="";S.yo=null;S.adm=null;S.alertas=null;ls.del("rp_ses");renderSaludo();
   for(const o of S.ofertas)o.marca="nueva";render();renderCrit();renderCuenta();cargar()}
 function adaptar(o){
   const cat=o.comunidad==="Cataluña";
@@ -708,12 +708,12 @@ async function cargar(){
     S.loaded=true;S.ofertas=o.items.map(adaptar);S.meta=e.ultima_ejecucion;
     try{ls.set("rp_cache",JSON.stringify({t:Date.now(),items:o.items.slice(0,800),meta:e.ultima_ejecucion}))}catch(_){}
     if(S.ses){
-      const [a,y]=await Promise.all([api("/alertas"),api("/cuenta")]);S.alertas=a;S.yo=y;
+      const [a,y]=await Promise.all([api("/alertas"),api("/cuenta")]);S.alertas=a;S.yo=y;sincronizar(y.ajustes);
       if(y.perfil&&(!S.perfil||JSON.stringify(y.perfil)!==JSON.stringify(S.perfil))){S.perfil=y.perfil;ls.set("rp_perfil",JSON.stringify(y.perfil));renderPerfil()}
       else if(!y.perfil&&S.perfil)api("/cuenta",{method:"PATCH",body:JSON.stringify({perfil:S.perfil})}).catch(()=>{});
       S.adm=y.admin?await api("/admin/resumen").catch(()=>null):null;
     }
-    render();renderCrit();renderCuenta();
+    render();renderCrit();renderCuenta();renderSaludo();
   }catch(err){
     // Sin conexión: lo último que se cargó en este dispositivo
     const c=JSON.parse(ls.get("rp_cache","null")||"null");
@@ -833,7 +833,7 @@ document.addEventListener("click",e=>{
 });
 $("cpIn").addEventListener("input",e=>{const v=e.target.value.replace(/\D/g,"");e.target.value=v;if(v.length===5)buscarCP(v)});
 $("kmSel").value=String(S.km);
-$("kmSel").addEventListener("change",e=>{S.km=+e.target.value;ls.set("rp_km",String(S.km));if(S.place?.kind==="cerca"){S.place.km=S.km;guardarFiltros();render();if(S.m3)Mapa3D.enfocar(S.place)}});
+$("kmSel").addEventListener("change",e=>{S.km=+e.target.value;ls.set("rp_km",String(S.km));marcarCambio();if(S.place?.kind==="cerca"){S.place.km=S.km;guardarFiltros();render();if(S.m3)Mapa3D.enfocar(S.place)}});
 // En el buscador, 5 cifras = código postal
 $("q").addEventListener("keydown",e=>{if(e.key==="Enter"&&/^\d{5}$/.test(e.target.value.trim())){e.preventDefault();const cp=e.target.value.trim();e.target.value="";S.q="";buscarCP(cp)}});
 $("q").addEventListener("input",e=>{const v=e.target.value.trim();if(/^\d{5}$/.test(v)){e.target.value="";clearTimeout(tq);S.q="";buscarCP(v)}});
@@ -843,7 +843,7 @@ if(S.place?.kind==="cerca")cargarDatosMapa().then(()=>render());
 const ESTILOS=["En la calle","En una oficina","Atendiendo a personas","Con las manos","Con tecnología","Cuidando de otros","Conduciendo","Con horario fijo"];
 const SUGERENCIAS=["¿Por dónde empiezo?","Quiero trabajar cuanto antes","¿Qué oposición me conviene preparar?","¿Qué hay cerca de casa?","¿Qué estudios me abrirían más puertas?"];
 S.chat=JSON.parse((()=>{try{return sessionStorage.getItem("rp_chat")}catch(_){return null}})()||"[]");
-function guardarChat(){try{sessionStorage.setItem("rp_chat",JSON.stringify(S.chat.slice(-20)))}catch(_){}}
+function guardarChat(){try{sessionStorage.setItem("rp_chat",JSON.stringify(S.chat.slice(-20)))}catch(_){}marcarCambio()}
 function md(t){
   let h=esc(t).replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>")
     .replace(/\[([^\]]+)\]\((\/[^)\s]+|https:\/\/radaropos\.com[^)\s]*)\)/g,(m,txt,u)=>`<a href="${u.startsWith("/")?API+u:u}">${txt}</a>`);
@@ -905,3 +905,136 @@ $("tutorQ").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.pr
 
 // El botón flotante del tutor solo aparece cuando el mapa ya no se ve (así no tapa sus botones)
 if("IntersectionObserver" in window)new IntersectionObserver(es=>{for(const e of es)$("tutorBtn").classList.toggle("fuera",e.isIntersecting)},{threshold:0.05}).observe($("hero"));
+
+// ---------- Saludo y bienvenida ----------
+function nombreSaludo(){const y=S.yo;if(!y)return "";if(y.nombre)return y.nombre;
+  const m=(y.email||"").split("@")[0].replace(/[0-9]+/g,"").replace(/[._-]+/g," ").trim();return m?m.replace(/\b\w/g,c=>c.toUpperCase()).split(" ")[0]:""}
+function franja(){const h=new Date().getHours();return h<6?"noche":h<13?"dia":h<20?"tarde":"noche"}
+const SALUDOS={es:{dia:"Buenos días",tarde:"Buenas tardes",noche:"Buenas noches"},ca:{dia:"Bon dia",tarde:"Bona tarda",noche:"Bona nit"}};
+function novedadesParaTi(){
+  const desde=S.vistoPrev||0;if(!desde)return null;
+  return S.ofertas.filter(o=>o.encontrada&&Date.parse(o.encontrada)>desde&&(!S.perfil||!window.RadarCumple||(RadarCumple.cumple(o,S.perfil)||{}).estado!=="no")).length;
+}
+function renderSaludo(){
+  const box=$("saludo");if(!box)return;
+  if(!S.yo){box.hidden=true;box.innerHTML="";return}
+  const n=nombreSaludo(),sal=(SALUDOS[LANG]||SALUDOS.es)[franja()],ca=LANG==="ca";
+  if(S.bienvenida){
+    box.hidden=false;box.className="saludo bienvenida";
+    box.innerHTML=`<button type="button" class="x" id="saludoX" aria-label="Cerrar">✕</button>
+      <h2>${ca?"Et donem la benvinguda":"Te damos la bienvenida"}${S.yo.nombre?", "+esc(S.yo.nombre):""} 👋</h2>
+      <p>${ca?"Ja tens el teu compte de Radar de Places. Tres passos i et trobem les places que t'encaixen:":"Ya tienes tu cuenta de Radar de Plazas. Tres pasos y te encontramos las plazas que encajan contigo:"}</p>
+      ${S.yo.nombre?"":`<form id="fNombre2" class="add"><input id="nombreIn2" maxlength="40" autocomplete="given-name" placeholder="${ca?"Com et dius?":"¿Cómo te llamas?"}" aria-label="${ca?"El teu nom":"Tu nombre"}"><button type="submit">${ca?"Desa":"Guardar"}</button></form>`}
+      <ol><li><button type="button" class="linkish" data-ir="perfil">${ca?"Completa el teu perfil":"Completa tu perfil"}</button> · ${ca?"estudis, idiomes i interessos":"estudios, idiomas e intereses"}</li>
+      <li><button type="button" class="linkish" data-ir="alertas">${ca?"Crea una alerta":"Crea una alerta"}</button> · ${ca?"t'avisem per correu":"te avisamos por correo"}</li>
+      <li><button type="button" class="linkish" data-abrir-tutor>${ca?"Parla amb el tutor IA":"Habla con el tutor IA"}</button> · ${ca?"et guia segons els teus gustos":"te guía según tus gustos"}</li></ol>`;
+    return;
+  }
+  const nov=novedadesParaTi();
+  box.hidden=false;box.className="saludo";
+  box.innerHTML=`<p class="hola">${sal}${n?", <b>"+esc(n)+"</b>":""} 👋</p>`+
+    (nov!=null?`<p class="nov">${nov?`${ca?"Hi ha":"Hay"} <b>${nov}</b> ${nov===1?(ca?"plaça nova":"plaza nueva"):(ca?"places noves":"plazas nuevas")} ${S.perfil?(ca?"per a tu ":"para ti "):""}${ca?"des de la teva última visita":"desde tu última visita"} <button type="button" class="linkish" data-ir="nuevas">${ca?"Veure-les":"Verlas"}</button>`:(ca?"No hi ha places noves des de la teva última visita. Et seguim buscant.":"No hay plazas nuevas desde tu última visita. Seguimos buscando por ti.")}</p>`:"")+
+    (S.yo.nombre?"":`<p class="nov"><button type="button" class="linkish" data-ir="nombre">${ca?"Digue'ns com et dius":"Dinos cómo te llamas"}</button></p>`);
+}
+setInterval(()=>{if(!document.hidden&&S.yo&&!S.bienvenida)renderSaludo()},10*60_000);
+async function guardarNombre(v){
+  v=String(v||"").trim().slice(0,40);
+  try{await api("/cuenta",{method:"PATCH",body:JSON.stringify({nombre:v})});S.yo.nombre=v||null;renderCuenta();renderSaludo();toast(v?`${LANG==="ca"?"Encantats":"Encantados"}, ${v}`:"Nombre borrado")}catch(err){toast(err.message)}
+}
+document.addEventListener("submit",e=>{
+  if(e.target.id==="fNombre"){e.preventDefault();guardarNombre($("nombreIn").value)}
+  if(e.target.id==="fNombre2"){e.preventDefault();guardarNombre($("nombreIn2").value)}
+});
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.id==="saludoX"){S.bienvenida=false;ls.set("rp_bienv","1");marcarCambio();renderSaludo();return}
+  const ir=b.dataset.ir;if(!ir)return;
+  if(ir==="perfil"){const d=$("perfil");d.open=true;d.scrollIntoView({behavior:"smooth"})}
+  else if(ir==="alertas"){const d=$("crit");if(d){d.open=true;d.scrollIntoView({behavior:"smooth"})}}
+  else if(ir==="nombre"){const d=$("cuentaBox");d.open=true;d.scrollIntoView({behavior:"smooth"});setTimeout(()=>$("nombreIn")&&$("nombreIn").focus(),400)}
+  else if(ir==="nuevas"){S.tab="nuevas";ls.set("rp_tab","nuevas");render();const l=$("lista")||$("resultados");(l||document.querySelector(".barra")).scrollIntoView({behavior:"smooth"})}
+});
+
+// ---------- Después de entrar (código, Google o Apple) ----------
+async function trasEntrar(r){
+  S.ses=r.token;ls.set("rp_ses",r.token);if(r.admin)ls.del("rp_key");
+  $("acceso").hidden=true;
+  S.bienvenida=!!r.nuevo;
+  toast(r.nuevo?"Cuenta creada":"Has entrado");
+  await cargar();await seguirPendiente();
+  renderSaludo();if(r.nuevo)$("saludo").scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+// ---------- Entrar con Google o Apple ----------
+let OAUTH=null;
+function cargarScript(src){return new Promise((ok,ko)=>{if(document.querySelector(`script[src="${src}"]`)){ok();return}const s=document.createElement("script");s.src=src;s.async=true;s.onload=ok;s.onerror=()=>ko(new Error("No se pudo cargar "+src));document.head.appendChild(s)})}
+async function prepararSocial(){
+  const box=$("accesoSocial");if(!box)return;
+  try{OAUTH=OAUTH||await api("/auth/config")}catch(_){return}
+  const N=window.RADAR_NATIVO;
+  const hayG=N?!!(N.google&&OAUTH.googleIos):!!OAUTH.google, hayA=N?!!N.apple:!!OAUTH.apple;
+  if(!hayG&&!hayA)return;
+  box.hidden=false;$("appleBtn").hidden=!hayA;
+  const g=$("gBtn");
+  if(hayG&&N){g.innerHTML=`<button type="button" class="oabtn" id="gNativo"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.4h6.5c-.3 1.5-1.1 2.7-2.4 3.6v3h3.9c2.2-2.1 3.5-5.1 3.5-8.7z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-2.9l-3.9-3c-1.1.7-2.5 1.2-4.1 1.2-3.1 0-5.8-2.1-6.7-5H1.2v3.1C3.2 21.3 7.3 24 12 24z"/><path fill="#FBBC05" d="M5.3 14.3c-.5-1.5-.5-3.1 0-4.6V6.6H1.2c-1.6 3.2-1.6 7 0 10.2l4.1-2.5z"/><path fill="#EA4335" d="M12 4.7c1.8 0 3.3.6 4.6 1.8l3.4-3.4C17.9 1.2 15.2 0 12 0 7.3 0 3.2 2.7 1.2 6.6l4.1 3.1c.9-2.9 3.6-5 6.7-5z"/></svg>Continuar con Google</button>`;return}
+  if(hayG&&!g.dataset.listo){
+    try{await cargarScript("https://accounts.google.com/gsi/client");
+      google.accounts.id.initialize({client_id:OAUTH.google,callback:r=>entrarSocial("google",r.credential),ux_mode:"popup",itp_support:true,use_fedcm_for_button:true});
+      google.accounts.id.renderButton(g,{theme:"outline",size:"large",shape:"pill",text:"continue_with",locale:LANG,width:Math.min(360,g.clientWidth||320)});
+      g.dataset.listo="1"}
+    catch(_){g.innerHTML=""}
+  }
+}
+async function entrarSocial(prov,token,nombre){
+  $("accesoErr").textContent="";
+  try{const clave=ls.get("rp_key","");
+    const r=await api("/auth/social",{method:"POST",body:JSON.stringify({proveedor:prov,token,nombre,acepta:true,...(clave?{clave}:{})})});
+    await trasEntrar(r)}
+  catch(err){$("accesoErr").textContent=err.message}
+}
+async function entrarApple(){
+  const N=window.RADAR_NATIVO;
+  try{
+    if(N&&N.apple){const r=await N.apple();if(r&&r.idToken)entrarSocial("apple",r.idToken,r.nombre);return}
+    await cargarScript("https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/es_ES/appleid.auth.js");
+    AppleID.auth.init({clientId:OAUTH.apple,scope:"name email",redirectURI:location.origin+"/",usePopup:true});
+    const r=await AppleID.auth.signIn();const u=r.user&&r.user.name;
+    entrarSocial("apple",r.authorization.id_token,u&&u.firstName);
+  }catch(err){if(!/cancel|popup_closed/i.test(String(err&&(err.error||err.message||err))))$("accesoErr").textContent="No se ha podido entrar con Apple. Vuelve a probar."}
+}
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.id==="appleBtn"){entrarApple();return}
+  if(b.id==="gNativo"){try{const r=await window.RADAR_NATIVO.google();if(r&&r.idToken)entrarSocial("google",r.idToken,r.nombre)}catch(err){if(!/cancel/i.test(String(err&&err.message||err)))$("accesoErr").textContent="No se ha podido entrar con Google. Vuelve a probar."}}
+});
+
+// ---------- Sincronización entre dispositivos ----------
+// Filtros, distancia, idioma, pestaña y la conversación con el tutor viajan con la cuenta. Gana el cambio más reciente.
+var tSync=null;
+function marcarCambio(){ls.set("rp_aj_t",String(Date.now()));if(!S.ses)return;clearTimeout(tSync);tSync=setTimeout(subirAjustes,1200)}
+function ajustesLocales(){return {t:+ls.get("rp_aj_t","0")||0,f:JSON.parse(ls.get("rp_f","{}")||"{}"),km:S.km,lang:LANG,tab:S.tab,chat:(S.chat||[]).slice(-12),visto:+ls.get("rp_visto","0")||0,bienvenida:ls.get("rp_bienv","")==="1"}}
+async function subirAjustes(){
+  if(!S.ses)return;const a=ajustesLocales();if(!a.t)a.t=Date.now();
+  try{const r=await api("/cuenta",{method:"PATCH",body:JSON.stringify({ajustes:a})});if(r.ajustes)aplicarAjustes(r.ajustes)}catch(_){}
+}
+function aplicarAjustes(a){
+  ls.set("rp_aj_t",String(a.t||0));
+  if(a.f){ls.set("rp_f",JSON.stringify(a.f));leerFiltros(a.f)}
+  if(a.km){S.km=+a.km||25;ls.set("rp_km",String(S.km));if($("kmSel"))$("kmSel").value=String(S.km)}
+  if(a.tab&&TABS.some(x=>x[0]===a.tab)){S.tab=a.tab;ls.set("rp_tab",a.tab)}
+  if(a.lang&&a.lang!==LANG){LANG=a.lang;ls.set("rp_lang",LANG);traducirEstatico()}
+  if(Array.isArray(a.chat)&&a.chat.length>=(S.chat||[]).length){S.chat=a.chat;try{sessionStorage.setItem("rp_chat",JSON.stringify(S.chat))}catch(_){}}
+  if(a.visto)ls.set("rp_visto",String(Math.max(a.visto,+ls.get("rp_visto","0")||0)));
+  if(a.bienvenida){ls.set("rp_bienv","1");S.bienvenida=false}
+  if(window.Mapa3D&&S.m3)Mapa3D.enfocar(S.place);
+}
+function sincronizar(srv){
+  const tl=+ls.get("rp_aj_t","0")||0;
+  if(srv&&(srv.t||0)>tl)aplicarAjustes(srv);
+  // Última visita: se anota una vez por apertura de la app
+  if(!S.vistoHecho){S.vistoHecho=true;S.vistoPrev=Math.max(+ls.get("rp_visto","0")||0,srv&&srv.visto||0);ls.set("rp_visto",String(Date.now()));marcarCambio();return}
+  if(!srv||tl>(srv.t||0))subirAjustes();
+}
+S.bienvenida=false;
+const abrirAccesoAntes=abrirAcceso;
+abrirAcceso=function(m){abrirAccesoAntes(m);prepararSocial()};

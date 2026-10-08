@@ -13,6 +13,7 @@
   // Cinco tramos bien distintos (de pocas a muchas plazas) y colores de plazo para los municipios
   const TRAMOS_CLARO=["#fde8a8","#f7b267","#ec7a52","#c4456b","#6a2c8c"];
   const TRAMOS_OSCURO=["#7a6a2c","#b8743a","#d0634a","#c4456b","#9a62c9"];
+  const CSS_ETQ=".m3-et{display:flex;gap:5px;align-items:baseline;white-space:nowrap;font:600 12.5px/1.15 var(--font-body);color:var(--fg);background:var(--surface);background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--line);border-radius:8px;padding:3px 8px;box-shadow:0 1px 3px rgba(0,0,0,.14);cursor:pointer;transition:opacity .15s}.m3-et b{font:700 14px/1 var(--font-display);color:var(--accent);font-variant-numeric:tabular-nums}.m3-et.cero{opacity:.8;font-weight:500;font-size:11.5px;padding:2px 6px;color:var(--muted)}.m3-et.elegida{background:var(--fg);color:var(--surface);border-color:var(--fg)}.m3-et.elegida b{color:var(--surface)}.m3-et.tenue{background:none;border:0;box-shadow:none;padding:0;font:700 11px/1 var(--font-body);letter-spacing:.12em;color:var(--muted);opacity:.85;pointer-events:none;text-shadow:0 0 3px var(--surface),0 0 3px var(--surface)}.m3-mk{position:relative;width:calc(var(--r)*2);height:calc(var(--r)*2);padding:0;border:0;background:none;cursor:pointer}.m3-mk i{position:absolute;inset:0;border-radius:50%;background:var(--c);border:2px solid var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.3);color:#fff;font:700 12.5px/1 var(--font-display);font-style:normal;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;text-shadow:0 1px 1px rgba(0,0,0,.35)}.m3-mk.grupo i{box-shadow:0 0 0 1.5px var(--surface),0 0 0 3px var(--c),0 2px 4px rgba(0,0,0,.3)}.m3-mk.elegida i{border:3px solid var(--fg)}.m3-mk span{position:absolute;white-space:nowrap;font:600 12.5px/1 var(--font-body);color:var(--fg);background:var(--surface);background:color-mix(in srgb,var(--surface) 90%,transparent);padding:3px 6px;border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,.14);pointer-events:none;transition:opacity .15s}.m3-mk span small{font-weight:700;color:var(--muted);font-size:11.5px}.m3-mk span.der{left:calc(100% + 3px);top:50%;transform:translateY(-50%)}.m3-mk span.izq{right:calc(100% + 3px);top:50%;transform:translateY(-50%)}.m3-mk span.arr{bottom:calc(100% + 3px);left:50%;transform:translateX(-50%)}.m3-mk span.aba{top:calc(100% + 3px);left:50%;transform:translateX(-50%)}.m3-mk.elegida span{background:var(--fg);color:var(--surface)}.m3-zoom .m3-mk span,.m3-zoom .m3-et{opacity:0}";
   let map=null,D=null,opts=null,modo="comunidades",filas=[],lugar=null,etiquetas=[],popup=null,listo=false,yo=null,tramos=[1,2,3,4,5];
   try{modo=localStorage.getItem("rp_m3")||"comunidades"}catch(_){}
 
@@ -23,27 +24,35 @@
   function colores(){return {mar:css("--sea"),tierra:css("--land"),borde:css("--border-com"),fg:css("--fg"),surface:css("--surface"),
     urgente:css("--urgent"),pronto:css("--soon"),ok:css("--ok"),gris:css("--muted")}}
   const colorTramo=()=>{const p=paleta(),c=colores();return ["match",["coalesce",["feature-state","t"],0],1,p[0],2,p[1],3,p[2],4,p[3],5,p[4],c.tierra]};
-  function estilo(){const c=colores();return{version:8,
-    sources:{prov:{type:"geojson",data:D.provincias,promoteId:"n"},
-      pts:{type:"geojson",data:{type:"FeatureCollection",features:[]},cluster:true,clusterRadius:42,clusterMaxZoom:10,
-        clusterProperties:{n:["+",["get","n"]],d:["min",["get","d"]]}},
+  // Límites: segmentos compartidos entre provincias; si las dos son de comunidades distintas, es frontera de comunidad
+  let LIM=null;
+  function limites(){
+    if(LIM)return LIM;
+    const seg=new Map();
+    for(const f of D.provincias.features){const c=f.properties.c;
+      for(const pol of f.geometry.coordinates)for(const ring of pol)for(let i=0;i<ring.length-1;i++){
+        const a=ring[i],b=ring[i+1],ka=a[0]+","+a[1],kb=b[0]+","+b[1];if(ka===kb)continue;
+        const k=ka<kb?ka+"|"+kb:kb+"|"+ka,e=seg.get(k);if(e){e.n++;e.cs.add(c)}else seg.set(k,{a,b,n:1,cs:new Set([c])})}}
+    const cc=[],pr=[];for(const e of seg.values()){if(e.n<2)continue;(e.cs.size>1?cc:pr).push([e.a,e.b])}
+    const fc=l=>({type:"FeatureCollection",features:[{type:"Feature",properties:{},geometry:{type:"MultiLineString",coordinates:l}}]});
+    return LIM={ccaa:fc(cc),prov:fc(pr)};
+  }
+  function estilo(){const c=colores(),L=limites();return{version:8,
+    sources:{prov:{type:"geojson",data:D.provincias,promoteId:"n"},limCcaa:{type:"geojson",data:L.ccaa},limProv:{type:"geojson",data:L.prov},
       radio:{type:"geojson",data:{type:"FeatureCollection",features:[]}}},
     light:{anchor:"map",position:[1.3,210,40],intensity:0.3},
     layers:[
       {id:"fondo",type:"background",paint:{"background-color":c.mar}},
       {id:"relieve",type:"fill-extrusion",source:"prov",paint:{"fill-extrusion-color":colorTramo(),
         "fill-extrusion-height":["*",["coalesce",["feature-state","t"],0],["coalesce",["feature-state","k"],0]],"fill-extrusion-opacity":0.97,"fill-extrusion-vertical-gradient":false}},
-      {id:"borde",type:"line",source:"prov",paint:{"line-color":c.borde,"line-width":0.6,"line-opacity":0.8}},
-      {id:"sel",type:"line",source:"prov",filter:["==",["get","n"],""],paint:{"line-color":c.fg,"line-width":2.6}},
+      {id:"costa",type:"line",source:"prov",paint:{"line-color":c.borde,"line-width":0.7,"line-opacity":0.7}},
+      {id:"lim-prov",type:"line",source:"limProv",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":c.fg,"line-opacity":0.35,
+        "line-width":["interpolate",["linear"],["zoom"],4,0.5,7,1,10,1.6],"line-dasharray":[3,2]}},
+      {id:"lim-ccaa",type:"line",source:"limCcaa",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":c.fg,"line-opacity":0.75,
+        "line-width":["interpolate",["linear"],["zoom"],4,1.1,7,2,10,3]}},
+      {id:"sel",type:"line",source:"prov",filter:["==",["get","n"],""],layout:{"line-join":"round"},paint:{"line-color":c.fg,"line-width":3}},
       {id:"radio-f",type:"fill",source:"radio",paint:{"fill-color":c.fg,"fill-opacity":0.06}},
       {id:"radio-l",type:"line",source:"radio",paint:{"line-color":c.fg,"line-width":1.6,"line-dasharray":[2,2]}},
-      {id:"grupos",type:"circle",source:"pts",filter:["has","point_count"],paint:{
-        "circle-color":c.fg,"circle-opacity":0.88,"circle-stroke-color":c.surface,"circle-stroke-width":2,
-        "circle-radius":["interpolate",["linear"],["get","n"],2,14,10,18,50,24,200,30]}},
-      {id:"puntos",type:"circle",source:"pts",filter:["!",["has","point_count"]],paint:{
-        "circle-color":["case",["<",["get","d"],0],c.gris,["<=",["get","d"],3],c.urgente,["<=",["get","d"],7],c.pronto,c.ok],
-        "circle-stroke-color":c.surface,"circle-stroke-width":2,
-        "circle-radius":["interpolate",["linear"],["get","n"],1,8,5,12,20,17]}},
     ]}}
 
   // ---------- recuento ----------
@@ -80,7 +89,7 @@
     const {porProv,porCcaa,porMuni,estatal}=contar(),c=colores();
     const fuente=modo==="comunidades"?[...porCcaa.values()]:[...porProv.values()];
     tramos=calcularTramos(fuente);
-    const z=map.getZoom(),k=Math.min(9000,Math.max(1200,4200*Math.pow(2,(5.5-z)*0.8)))*(modo==="municipios"?0:1);
+    const z=map.getZoom(),k=Math.min(6000,Math.max(800,2600*Math.pow(2,(5.5-z)*0.8)))*(modo==="municipios"?0:1);
     for(const f of D.provincias.features){
       const n=f.properties.n,cc=f.properties.c;
       const v=modo==="comunidades"?(porCcaa.get(cc)||0):(porProv.get(NORM(n))||0);
@@ -95,9 +104,6 @@
     else if(sel.kind==="provES")filtro=["==",["get","n"],sel.id];
     else if(sel.kind==="prov")filtro=["==",["get","n"],CAT_PROV[sel.id]||""];
     map.setFilter("sel",filtro);
-    // Municipios (agrupados por cercanía)
-    const feats=modo==="municipios"?[...porMuni.values()].map(g=>({type:"Feature",properties:{nom:g.nom,cat:g.cat?1:0,n:g.n,d:g.d===999?-1:g.d},geometry:{type:"Point",coordinates:[g.lon,g.lat]}})):[];
-    map.getSource("pts").setData({type:"FeatureCollection",features:feats});
     // Radio alrededor de un código postal o de tu ubicación
     map.getSource("radio").setData(sel.kind==="cerca"?{type:"FeatureCollection",features:[circulo(sel.lon,sel.lat,sel.km)]}:{type:"FeatureCollection",features:[]});
     if(yo){yo.remove();yo=null}
@@ -109,38 +115,99 @@
     return {type:"Feature",properties:{},geometry:{type:"Polygon",coordinates:[pts]}}}
 
   // ---------- etiquetas sin solapes ----------
+  // Cada zona lleva su nombre y su número; si no cabe, solo el número; si tampoco, nada (se ve al acercar).
+  // Los municipios que se pisan se juntan con el más grande de alrededor: «Barcelona +12».
+  let lienzo=null;
+  function ancho(txt,font){lienzo=lienzo||document.createElement("canvas").getContext("2d");lienzo.font=font;return Math.ceil(lienzo.measureText(txt).width)}
+  const choca=(b,occ)=>{for(const o of occ)if(b[0]<o[2]&&b[2]>o[0]&&b[1]<o[3]&&b[3]>o[1])return o;return null};
+  const fmt=n=>Number(n).toLocaleString("es-ES");
+  function colorPlazo(d,c){return d<0?c.gris:d<=3?c.urgente:d<=7?c.pronto:c.ok}
   function etiquetar(){
     if(!listo)return;
     for(const e of etiquetas)e.remove();etiquetas=[];
-    const {porProv,porCcaa}=contar();
-    let items=[];
-    if(modo==="comunidades")for(const [cc,n] of porCcaa){const p=D.ccaa[cc];if(p)items.push({ll:p,txt:String(n),tit:`${cc}: ${n} plazas`,peso:n})}
-    else if(modo==="provincias")for(const f of D.provincias.features){const n=porProv.get(NORM(f.properties.n));const p=D.centros[f.properties.n];if(n&&p)items.push({ll:p,txt:String(n),tit:`${f.properties.n}: ${n} plazas`,peso:n,nom:f.properties.n})}
-    else{
-      // Números dentro de cada grupo o punto (los puntos de 1 plaza no llevan número)
-      const vistos=new Set();
-      for(const f of map.querySourceFeatures("pts")){
-        const p=f.properties,id=p.cluster?"c"+p.cluster_id:"m"+p.nom;if(vistos.has(id))continue;vistos.add(id);
-        if(!p.cluster&&p.n<2)continue;
-        items.push({ll:f.geometry.coordinates,txt:String(p.n),tit:p.cluster?`${p.n} plazas en ${p.point_count} municipios`:`${p.nom}: ${p.n} plazas`,peso:p.n,dentro:true});
+    const {porProv,porCcaa,porMuni}=contar(),c=colores();
+    const w=map.getCanvas().clientWidth,h=map.getCanvas().clientHeight,ocupadas=[];
+    const fNom="600 12.5px "+css("--font-body"),fCero="500 11.5px "+css("--font-body"),fNum="700 14px "+css("--font-display");
+    const dentro=p=>p.x>=-4&&p.y>=-4&&p.x<=w+4&&p.y<=h+4;
+    const sel=lugar||{};
+    const poner=(ll,el,cls)=>{etiquetas.push(new maplibregl.Marker({element:el,anchor:"center",className:cls}).setLngLat(ll).addTo(map))};
+    // Etiqueta de zona (comunidad o provincia)
+    const zona=(it,tenue)=>{
+      const p0=map.project(it.ll);if(!dentro(p0))return false;
+      const f=it.n||tenue?fNom:fCero,wn=ancho(it.nom,f),wc=it.n?ancho(fmt(it.n),fNum):0,hh=it.n?22:19;
+      const opciones=tenue?[[wn+4,0]]:it.n?[[wn+wc+22,1],[wc+16,2]]:[[wn+12,1]];
+      const desp=tenue?[[0,0]]:[[0,0],[0,-20],[0,20],[-26,0],[26,0],[-22,-18],[22,18],[22,-18],[-22,18]];
+      for(const [ww,tipo] of opciones)for(const [dx,dy] of desp){
+        const p={x:p0.x+dx,y:p0.y+dy};
+        const caja=[p.x-ww/2-2,p.y-hh/2-2,p.x+ww/2+2,p.y+hh/2+2];if(caja[0]<0||caja[2]>w||caja[1]<0||caja[3]>h||choca(caja,ocupadas))continue;
+        ocupadas.push(caja);
+        const el=document.createElement(tenue?"div":"button");el.className="m3-et"+(tenue?" tenue":"")+(it.sel?" elegida":"")+(it.n?"":" cero");
+        el.innerHTML=(tipo!==2?`<span>${esc(it.nom)}</span>`:"")+(it.n&&!tenue?`<b>${fmt(it.n)}</b>`:"");
+        el.title=`${it.nom}: ${it.n||0} ${it.n==1?"plaza":"plazas"}`;
+        if(!tenue){el.type="button";el.setAttribute("aria-label",el.title);el.addEventListener("click",ev=>{ev.stopPropagation();elegirZona(it.props)})}
+        etiquetas.push(new maplibregl.Marker({element:el,anchor:"center",offset:[dx,dy]}).setLngLat(it.ll).addTo(map));return true;
       }
+      return false;
+    };
+    if(modo==="comunidades"||modo==="provincias"){
+      let items=[];
+      if(modo==="comunidades"){const vistas=new Set();
+        for(const f of D.provincias.features){const cc=f.properties.c;if(vistas.has(cc)||!D.ccaa[cc])continue;vistas.add(cc);
+          items.push({ll:D.ccaa[cc],nom:cc,n:porCcaa.get(cc)||0,props:f.properties,sel:sel.kind==="ccaa"&&sel.id===cc})}}
+      else for(const f of D.provincias.features){const pn=f.properties.n,p=D.centros[pn];if(!p)continue;
+        items.push({ll:p,nom:pn,n:porProv.get(NORM(pn))||0,props:f.properties,sel:(sel.kind==="provES"&&sel.id===pn)||(sel.kind==="prov"&&CAT_PROV[sel.id]===pn)||(sel.kind==="ccaa"&&sel.id===f.properties.c&&false)})}
+      items.sort((a,b)=>(b.sel-a.sel)||(b.n-a.n));
+      for(const it of items)zona(it,false);
+      return;
     }
-    items.sort((a,b)=>b.peso-a.peso);
-    const ocupadas=[],w=map.getCanvas().clientWidth,h=map.getCanvas().clientHeight;
-    for(const it of items){
-      const p=map.project(it.ll),ancho=it.dentro?0:Math.max(26,10+9*it.txt.length+(it.nom&&modo==="provincias"?0:0)),alto=it.dentro?0:24;
-      if(p.x<0||p.y<0||p.x>w||p.y>h)continue;
-      if(!it.dentro){const caja=[p.x-ancho/2-3,p.y-alto/2-3,p.x+ancho/2+3,p.y+alto/2+3];
-        if(ocupadas.some(o=>caja[0]<o[2]&&caja[2]>o[0]&&caja[1]<o[3]&&caja[3]>o[1]))continue;ocupadas.push(caja)}
-      const el=document.createElement("div");el.className="m3-lbl"+(it.dentro?" dentro":"");el.textContent=it.txt;el.title=it.tit;
-      etiquetas.push(new maplibregl.Marker({element:el,anchor:"center"}).setLngLat(it.ll).addTo(map));
+    // ----- municipios -----
+    const lista=[...porMuni.values()].map(g=>({...g,p:map.project([g.lon,g.lat]),sel:(sel.kind==="muni"&&g.cat&&sel.id===g.nom)||(sel.kind==="muniES"&&!g.cat&&sel.id===g.nom)}))
+      .filter(g=>dentro(g.p)).sort((a,b)=>(b.sel-a.sel)||(b.n-a.n));
+    const grupos=[];
+    for(const g of lista){
+      const r=Math.max(g.n>1?7+String(g.n).length*3.6:6.5,Math.min(16,6+Math.sqrt(g.n)*1.4)),x=g.p.x,y=g.p.y;
+      const R=r+5,punto=[x-R,y-R,x+R,y+R];
+      const otro=choca(punto,ocupadas);
+      if(otro&&otro.g&&!g.sel){const G=otro.g;G.n+=g.n;G.extra++;if(G.extra<4)G.otros.push(g.nom);if(g.d<G.d)G.d=g.d;continue}
+      if(otro&&!g.sel)continue;
+      const G={g,n:g.n,d:g.d,extra:0,otros:[],r,lado:null};
+      // Nombre a la derecha, izquierda, arriba o abajo; si no cabe, solo el punto
+      const wl=ancho(g.nom,fNom)+ancho(" +99",fNom)+14,hl=20;
+      for(const [lado,caja] of [["der",[x+R,y-hl/2,x+R+wl,y+hl/2]],["izq",[x-R-wl,y-hl/2,x-R,y+hl/2]],["arr",[x-wl/2,y-R-hl,x+wl/2,y-R]],["aba",[x-wl/2,y+R,x+wl/2,y+R+hl]]]){
+        if(caja[0]<0||caja[2]>w||caja[1]<0||caja[3]>h)continue;
+        if(choca(caja,ocupadas))continue;
+        G.lado=lado;ocupadas.push(Object.assign(caja,{g:G}));break;
+      }
+      ocupadas.push(Object.assign(punto,{g:G}));grupos.push(G);
+      if(grupos.length>=160)break;
     }
+    for(const G of grupos){
+      const g=G.g,el=document.createElement("button");el.type="button";
+      const n=G.n,rr=Math.min(G.r+4,Math.max(G.r,n>1?7+String(n).length*3.6:6.5));
+      el.className="m3-mk"+(G.extra?" grupo":"")+(g.sel?" elegida":"");
+      el.style.setProperty("--r",rr+"px");el.style.setProperty("--c",colorPlazo(G.d===999?-1:G.d,c));
+      el.innerHTML=`<i>${n>1?fmt(n):""}</i>`+(G.lado?`<span class="${G.lado}">${esc(g.nom)}${G.extra?` <small>+${G.extra}</small>`:""}</span>`:"");
+      el.title=G.extra?`${n} plazas en ${g.nom}, ${G.otros.join(", ")}${G.extra>G.otros.length?` y ${G.extra-G.otros.length} más`:""} · toca para acercar`:`${g.nom}: ${n} ${n==1?"plaza":"plazas"}`;
+      el.setAttribute("aria-label",el.title);
+      el.addEventListener("click",ev=>{ev.stopPropagation();popup&&popup.remove();
+        if(G.extra)map.easeTo({center:[g.lon,g.lat],zoom:Math.min(12,map.getZoom()+1.6),duration:lento()?0:700});
+        else opts.alElegir&&opts.alElegir({kind:g.cat?"muni":"muniES",id:g.nom})});
+      poner([g.lon,g.lat],el);
+    }
+    // Nombres de provincia de fondo donde quede sitio
+    for(const f of D.provincias.features){const pn=f.properties.n,p=D.centros[pn];if(p)zona({ll:p,nom:pn.toUpperCase(),n:porProv.get(NORM(pn))||0},true)}
+  }
+  const esc=s=>String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[m]);
+  function elegirZona(q){
+    popup&&popup.remove();
+    if(modo==="comunidades"){cambiarModo("provincias");opts.alElegir&&opts.alElegir({kind:"ccaa",id:q.c})}
+    else{if(modo==="provincias")cambiarModo("municipios");opts.alElegir&&opts.alElegir(CAT_COD[q.n]?{kind:"prov",id:CAT_COD[q.n]}:{kind:"provES",id:q.n})}
   }
   function leyenda(estatal){
     const box=opts.leyenda;if(!box)return;
     const c=colores(),p=paleta();
     if(modo==="municipios"){
-      box.innerHTML=`<span><i style="background:${c.urgente}"></i>cierra en 3 días o menos</span><span><i style="background:${c.pronto}"></i>en 7 días o menos</span><span><i style="background:${c.ok}"></i>más tiempo</span><span><i style="background:${c.gris}"></i>sin plazo</span><span><i class="grupo"></i>varios municipios: toca para acercar</span>`;
+      box.innerHTML=`<span><i style="background:${c.urgente}"></i>cierra en 3 días o menos</span><span><i style="background:${c.pronto}"></i>en 7 días o menos</span><span><i style="background:${c.ok}"></i>más tiempo</span><span><i style="background:${c.gris}"></i>sin plazo</span><span><b>+3</b> = y 3 municipios cercanos · toca para acercar</span>`;
     }else{
       const {porProv,porCcaa}=contar(),vals=modo==="comunidades"?[...porCcaa.values()]:[...porProv.values()],max=Math.max(0,...vals);
       const rangos=tramos.map((t,i)=>{if(tramos.exactos)return `${t}`;const fin=i===tramos.length-1?max:tramos[i+1]-1;return fin>t?`${t}–${fin}`:`${t}`});
@@ -184,7 +251,8 @@
     });
     let te=null;const reetiquetar=()=>{clearTimeout(te);te=setTimeout(etiquetar,80)};
     map.on("moveend",reetiquetar);map.on("resize",reetiquetar);
-    map.on("sourcedata",e=>{if(e.sourceId==="pts"&&e.isSourceLoaded)reetiquetar()});
+    // Mientras se hace zoom, los nombres se ocultan para que no se vean montados
+    const cont=map.getContainer();map.on("zoomstart",()=>cont.classList.add("m3-zoom"));map.on("zoomend",()=>setTimeout(()=>cont.classList.remove("m3-zoom"),120));
     let tz=null;map.on("zoomend",()=>{clearTimeout(tz);tz=setTimeout(pintar,60)});
     // Información al pasar el ratón (en el móvil, al tocar se entra directamente)
     const info=f=>{const p=f.properties,{porProv,porCcaa}=contar();
@@ -192,21 +260,15 @@
       if(p.nom)return `<b>${p.nom}</b><br>${p.n} ${p.n==1?"plaza":"plazas"}`;
       if(modo==="comunidades")return `<b>${p.c}</b><br>${porCcaa.get(p.c)||0} plazas`;
       return `<b>${p.n}</b><br>${porProv.get(NORM(p.n))||0} plazas · ${p.c}`};
-    if(!matchMedia("(pointer: coarse)").matches)for(const capa of ["relieve","puntos","grupos"]){
+    if(!matchMedia("(pointer: coarse)").matches)for(const capa of ["relieve"]){
       map.on("mousemove",capa,e=>{const f=e.features&&e.features[0];if(!f)return;map.getCanvas().style.cursor="pointer";popup.setLngLat(e.lngLat).setHTML(info(f)).addTo(map)});
       map.on("mouseleave",capa,()=>{map.getCanvas().style.cursor="";popup.remove()});
     }
     // Tocar: de lo general a lo concreto
     map.on("click",e=>{
       popup.remove();
-      const g=map.queryRenderedFeatures(e.point,{layers:["grupos"]});
-      if(g.length){map.getSource("pts").getClusterExpansionZoom(g[0].properties.cluster_id).then(z=>map.easeTo({center:g[0].geometry.coordinates,zoom:z+0.3,duration:lento()?0:700})).catch(()=>{});return}
-      const pt=map.queryRenderedFeatures(e.point,{layers:["puntos"]});
-      if(pt.length){const q=pt[0].properties;opts.alElegir&&opts.alElegir({kind:q.cat==1?"muni":"muniES",id:q.nom});return}
       const fs=map.queryRenderedFeatures(e.point,{layers:["relieve"]});if(!fs.length)return;
-      const q=fs[0].properties;
-      if(modo==="comunidades"){cambiarModo("provincias");opts.alElegir&&opts.alElegir({kind:"ccaa",id:q.c})}
-      else{if(modo==="provincias")cambiarModo("municipios");opts.alElegir&&opts.alElegir(CAT_COD[q.n]?{kind:"prov",id:CAT_COD[q.n]}:{kind:"provES",id:q.n})}
+      elegirZona(fs[0].properties);
     });
     const tema=()=>{if(!listo)return;map.setStyle(estilo());map.once("styledata",()=>setTimeout(pintar,50))};
     matchMedia("(prefers-color-scheme: dark)").addEventListener("change",tema);
@@ -216,6 +278,7 @@
     soporta,
     async iniciar(o){
       opts=o;if(!soporta())throw new Error("Sin WebGL");
+      if(!document.getElementById("m3-css")){const st=document.createElement("style");st.id="m3-css";st.textContent=CSS_ETQ;document.head.appendChild(st)}
       await Promise.all([cargar(BASE+"vendor/maplibre/maplibre-gl.css","css"),cargar(BASE+"vendor/maplibre/maplibre-gl.js"),window.MAPA_DATOS?null:cargar(BASE+"mapa-datos.js")]);
       D=window.MAPA_DATOS;iniciarMapa();
     },
