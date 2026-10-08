@@ -1,6 +1,11 @@
 # Radar de Plazas · comprueba la web desde fuera y guarda el resultado en la rama "diagnostico"
 name: Diagnóstico
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      correo:
+        description: Correo al que mandar un código de prueba (opcional)
+        required: false
 permissions:
   contents: write
 jobs:
@@ -18,6 +23,10 @@ jobs:
             done
           done
           curl -s -D - -o /dev/null https://radaropos.com/api/ofertas | head -20 >> out/resultado.txt
+          if [ -n "${{ inputs.correo }}" ]; then
+            echo "auth/start ->" >> out/resultado.txt
+            curl -s -X POST -H 'Content-Type: application/json' -d '{"email":"${{ inputs.correo }}"}' https://radaropos.com/api/auth/start >> out/resultado.txt; echo >> out/resultado.txt
+          fi
           cat out/resultado.txt
       - name: Guarda el resultado
         run: |
