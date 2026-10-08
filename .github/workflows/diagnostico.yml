@@ -1,0 +1,27 @@
+# Radar de Plazas · comprueba la web desde fuera y guarda el resultado en la rama "diagnostico"
+name: Diagnóstico
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prueba la web
+        run: |
+          mkdir -p out
+          for u in / /app.js /app.css /mapa3d.js /mapa-datos.js /vendor/maplibre/maplibre-gl.js /api/estado /api/ofertas /api/estadisticas /api/cp/08001 "/api/ofertas?lat=41.38&lon=2.17&km=25" /oposiciones/seguridad /sitemap.xml; do
+            for h in radaropos.com radar-plazas.pages.dev; do
+              r=$(curl -s -o body.tmp -w '%{http_code} %{size_download} %{time_total}' --compressed "https://$h$u")
+              echo "$h$u -> $r" >> out/resultado.txt
+              case "$r" in 200*) ;; *) head -c 400 body.tmp | tr '\n' ' ' >> out/resultado.txt; echo >> out/resultado.txt;; esac
+            done
+          done
+          curl -s -D - -o /dev/null https://radaropos.com/api/ofertas | head -20 >> out/resultado.txt
+          cat out/resultado.txt
+      - name: Guarda el resultado
+        run: |
+          cd out && git init -q && git checkout -q -b diagnostico
+          git config user.email "actions@github.com" && git config user.name "diagnostico"
+          git add . && git commit -qm "Diagnóstico $(date -u +%FT%TZ)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diagnostico
