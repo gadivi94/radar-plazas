@@ -1,0 +1,44 @@
+# Radar de Plazas · App de iPhone (Capacitor), compilada en la nube con Codemagic.
+# Pasos completos en LEEME.md. Se lanza a mano desde codemagic.io.
+
+workflows:
+  ios:
+    name: iOS (TestFlight)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: opos365_asc_admin   # la misma clave de App Store Connect que usas con opos365
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: cat.gadivi.radarplazas
+      vars:
+        RADAR_API: https://radar-plazas.pages.dev   # cámbialo por tu dominio cuando lo tengas
+      node: 22
+      xcode: latest
+    scripts:
+      - name: Instalar dependencias
+        script: npm install
+      - name: Preparar la web de la app (www/)
+        script: node scripts/prepare-www.mjs
+      - name: Crear el proyecto iOS
+        script: npx cap add ios
+      - name: Icono y pantalla de inicio
+        script: npx capacitor-assets generate --ios --iconBackgroundColor '#0d6b6b' --splashBackgroundColor '#0d6b6b' --splashBackgroundColorDark '#0f181c'
+      - name: Sincronizar y numerar la versión
+        script: |
+          npx cap sync ios
+          cd ios/App && agvtool new-version -all $(($BUILD_NUMBER + 1))
+      - name: Aplicar la firma
+        script: xcode-project use-profiles
+      - name: Compilar el IPA
+        script: |
+          if [ -d ios/App/App.xcworkspace ]; then T='--workspace ios/App/App.xcworkspace'; else T='--project ios/App/App.xcodeproj'; fi
+          xcode-project build-ipa $T --scheme "App"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false

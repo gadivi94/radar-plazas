@@ -1,0 +1,21 @@
+# Radar de Plazas · Revisión de fuentes (BOE, CIDO, TMB)
+# Cada 15 minutos entre las 8:00 y las 12:45 (hora de Madrid en verano). La 1.ª del día recoge;
+# las siguientes leen fichas por tandas y preparan los avisos. También se puede lanzar a mano.
+name: Revisa plazas
+
+on:
+  schedule:
+    - cron: '*/15 6-10 * * *'
+  workflow_dispatch:
+
+jobs:
+  revisa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Lanza la revisión
+        run: |
+          url="${{ vars.WEB_URL || 'https://radar-plazas.pages.dev' }}"
+          code=$(curl -sS -m 120 -o r.json -w '%{http_code}' -X POST "$url/api/run")
+          echo "Respuesta $code: $(head -c 600 r.json)"
+          case "$code" in 200|429) exit 0;; *) echo "::warning::La revisión respondió $code";; esac

@@ -1,0 +1,9 @@
+{
+  "name": "radar-plazas-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "build": "esbuild src/index.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=../web/_worker.js"
+  }
+}

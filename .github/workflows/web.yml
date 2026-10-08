@@ -1,0 +1,79 @@
+# Radar de Plazas · Publica la web y la API en Cloudflare Pages
+# Se ejecuta sola cuando cambia web/, worker/ o wrangler.toml (o a mano: Actions → Publica la web → Run workflow).
+# Secreto necesario: CLOUDFLARE_API_TOKEN (permisos Cloudflare Pages · Edit y D1 · Edit).
+name: Publica la web
+
+on:
+  push:
+    branches: [main]
+    paths: ['web/**', 'worker/**', 'wrangler.toml', '.github/workflows/web.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: web
+  cancel-in-progress: false
+
+env:
+  CF_ACCOUNT_ID: c0c5d225523184f05949796fed095220
+  PROYECTO: radar-plazas
+
+jobs:
+  publica:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pruebas del backend
+        uses: oven-sh/setup-bun@v2
+      - run: cd worker && bun test
+
+      - name: Empaqueta la API (web/_worker.js)
+        run: npx --yes esbuild@0.28.2 worker/src/index.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=web/_worker.js
+
+      - name: Comprueba la llave de Cloudflare y crea el proyecto si no existe
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::Falta el secreto CLOUDFLARE_API_TOKEN (Settings → Secrets and variables → Actions)."; exit 1
+          fi
+          T=$(printf '%s' "$CLOUDFLARE_API_TOKEN" | tr -d '[:space:]'); echo "::add-mask::$T"; echo "CF_TOKEN=$T" >> "$GITHUB_ENV"
+          api="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects"
+          code=$(curl -sS -o p.json -w '%{http_code}' -H "Authorization: Bearer $T" "$api/$PROYECTO")
+          if [ "$code" = "404" ] || grep -q '"code":8000007' p.json; then
+            echo "Creando el proyecto $PROYECTO…"
+            code=$(curl -sS -o p.json -w '%{http_code}' -X POST -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \
+              --data "{\"name\":\"$PROYECTO\",\"production_branch\":\"main\"}" "$api")
+          fi
+          if [ "$code" != "200" ]; then
+            echo "::error::Cloudflare responde $code: $(cat p.json | head -c 400). Revisa que el token tenga Cloudflare Pages · Edit y D1 · Edit."; exit 1
+          fi
+          rm -f p.json
+
+      - name: Publica
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ env.CF_TOKEN }}
+          accountId: ${{ env.CF_ACCOUNT_ID }}
+          command: pages deploy --project-name=${{ env.PROYECTO }} --branch=main --commit-dirty=true
+
+      - name: Conecta el dominio propio (si hay variable DOMINIO)
+        if: ${{ vars.DOMINIO != '' }}
+        run: |
+          for d in "${{ vars.DOMINIO }}" "www.${{ vars.DOMINIO }}"; do
+            curl -sS -X POST -H "Authorization: Bearer $CF_TOKEN" -H 'Content-Type: application/json' \
+              --data "{\"name\":\"$d\"}" \
+              "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/$PROYECTO/domains" | head -c 300; echo
+          done
+
+      - name: Comprueba la web
+        run: |
+          url="https://$PROYECTO.pages.dev"
+          for i in $(seq 1 12); do
+            web=$(curl -s -o /dev/null -w '%{http_code}' "$url/")
+            api=$(curl -s -o /dev/null -w '%{http_code}' "$url/api/estado")
+            if [ "$web" = "200" ] && [ "$api" = "401" ]; then echo "✓ $url funciona (web 200, API protegida)"; exit 0; fi
+            sleep 10
+          done
+          echo "::warning::$url aún no responde como se espera (web $web, API $api). Puede tardar unos minutos la primera vez."

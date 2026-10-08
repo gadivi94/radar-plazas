@@ -1,0 +1,7 @@
+{
+  "appId": "cat.gadivi.radarplazas",
+  "appName": "Radar Plazas",
+  "webDir": "www",
+  "backgroundColor": "#0d6b6b",
+  "ios": { "contentInset": "never", "scrollEnabled": true }
+}

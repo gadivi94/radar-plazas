@@ -1,0 +1,14 @@
+# Radar de Plazas · Cloudflare Pages (web + API en web/_worker.js)
+# Lo publica GitHub Actions (.github/workflows/web.yml); no hace falta tocarlo.
+name = "radar-plazas"
+pages_build_output_dir = "web"
+compatibility_date = "2026-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "radar-plazas-db"
+database_id = "6d4af37c-e480-455a-8e52-9b9d997c3f8e"
+
+[vars]
+# Fichas de detalle que se leen en cada revisión (plan gratuito: 35; de pago: hasta 300)
+ENRICH_BUDGET = "35"
