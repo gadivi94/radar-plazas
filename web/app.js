@@ -56,8 +56,9 @@ const normTxt=s=>(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().t
 
 // ---------- Estado ----------
 const S={q:"",m3:false,clasico:false,ofertas:[],alertas:null,meta:null,tab:"nuevas",sec:"",subs:[],niv:null,solo:false,dif:[],grp:[],etapa:"",busy:new Set(),ses:"",yo:null,adm:null,perfil:null,mapa:"cat",abiertos:new Set()};
+S.ses=ls.get("rp_ses","");try{S.yo=S.ses?JSON.parse(ls.get("rp_yo","null")):null}catch(_){S.yo=null}
 try{S.tab=ls.get("rp_tab","nuevas");if(!TABS.some(x=>x[0]===S.tab))S.tab="nuevas";
-  leerFiltros(JSON.parse(ls.get("rp_f","{}")));S.ses=ls.get("rp_ses","");S.perfil=JSON.parse(ls.get("rp_perfil","null"));S.mapa=ls.get("rp_mapa","cat");
+  leerFiltros(JSON.parse(ls.get("rp_f","{}"))||{});S.perfil=JSON.parse(ls.get("rp_perfil","null"));S.mapa=ls.get("rp_mapa","cat");
 }catch(e){S.place={kind:"ccaa",id:"Cataluña"}}
 function leerFiltros(f){S.dif=f.dif||[];S.grp=f.grp||[];S.sec=f.sec||"";S.subs=f.subs||[];S.niv=f.niv??null;S.solo=!!f.solo;S.place=f.place===undefined?{kind:"ccaa",id:"Cataluña"}:f.place}
 function guardarFiltros(){ls.set("rp_f",JSON.stringify({dif:S.dif,grp:S.grp,place:S.place,sec:S.sec,subs:S.subs,niv:S.niv,solo:S.solo}));marcarCambio()}
@@ -686,13 +687,17 @@ document.addEventListener("submit",async e=>{
 // ---------- Servidor ----------
 async function api(path,init={}){
   const h={"Content-Type":"application/json",...(init.headers||{})};if(S.ses)h.Authorization=`Bearer ${S.ses}`;
-  const r=await fetch(`${API}/api${path}`,{...init,headers:h});
+  const r=await fetch(`${API}/api${path}`,{cache:"no-store",...init,headers:h});
   const b=await r.json().catch(()=>({}));
-  if(r.status===401&&b.sesion===false&&S.ses&&!path.startsWith("/auth/")){cerrarSesion();toast("Tu sesión ha caducado. Vuelve a entrar.")}
+  if(r.status===401&&b.sesion===false&&S.ses&&!path.startsWith("/auth/")){
+    // Antes de cerrar la sesión se comprueba con el servidor (un fallo puntual no debe echarte)
+    if(path==="/cuenta")cerrarSesion(),toast("Tu sesión ha caducado. Vuelve a entrar.");
+    else api("/cuenta").catch(()=>{});
+  }
   if(!r.ok){const er=new Error(b.error||`Error ${r.status}`);Object.assign(er,b);throw er}
   return b;
 }
-function cerrarSesion(){S.ses="";S.yo=null;S.adm=null;S.alertas=null;ls.del("rp_ses");renderSaludo();
+function cerrarSesion(){S.ses="";S.yo=null;S.adm=null;S.alertas=null;ls.del("rp_ses");ls.del("rp_yo");renderSaludo();
   for(const o of S.ofertas)o.marca="nueva";render();renderCrit();renderCuenta();cargar()}
 function adaptar(o){
   const cat=o.comunidad==="Cataluña";
@@ -701,24 +706,30 @@ function adaptar(o){
     sistema:SISTEMA[o.sistema]||o.sistema||"",tipoPersonal:o.interino?"Interino / bolsa":""};
 }
 async function cargar(){
+  // La cuenta va aparte de las plazas: si algo falla al cargar plazas, no parece que se haya cerrado la sesión
+  const cuenta=S.ses?Promise.all([api("/alertas"),api("/cuenta")]).catch(err=>({err})):null;
   try{
     const [o,e]=await Promise.all([api("/ofertas"),api("/estado")]);
     S.loaded=true;S.ofertas=o.items.map(adaptar);S.meta=e.ultima_ejecucion;
     try{ls.set("rp_cache",JSON.stringify({t:Date.now(),items:o.items.slice(0,800),meta:e.ultima_ejecucion}))}catch(_){}
-    if(S.ses){
-      const [a,y]=await Promise.all([api("/alertas"),api("/cuenta")]);S.alertas=a;S.yo=y;sincronizar(y.ajustes);
+  }catch(err){
+    // Sin conexión: lo último que se cargó en este dispositivo
+    const c=JSON.parse(ls.get("rp_cache","null")||"null");
+    if(c&&!S.ofertas.length){S.ofertas=c.items.map(adaptar);S.meta=c.meta;S.loaded=true;$("lastrun").textContent=`Sin conexión: mostrando lo guardado el ${new Date(c.t).toLocaleString("es-ES",{dateStyle:"short",timeStyle:"short"})}`}
+    else $("lastrun").textContent=`No se pudieron cargar las plazas: ${err.message}`;
+  }
+  if(cuenta){
+    const r=await cuenta;
+    if(r&&!r.err){
+      const [a,y]=r;S.alertas=a;S.yo=y;try{ls.set("rp_yo",JSON.stringify({email:y.email,nombre:y.nombre,admin:y.admin}))}catch(_){}
+      try{sincronizar(y.ajustes)}catch(_){}
       if(y.perfil&&(!S.perfil||JSON.stringify(y.perfil)!==JSON.stringify(S.perfil))){S.perfil=y.perfil;ls.set("rp_perfil",JSON.stringify(y.perfil));renderPerfil()}
       else if(!y.perfil&&S.perfil)api("/cuenta",{method:"PATCH",body:JSON.stringify({perfil:S.perfil})}).catch(()=>{});
       S.adm=y.admin?await api("/admin/resumen").catch(()=>null):null;
     }
-    render();renderCrit();renderCuenta();renderSaludo();
-    window.dispatchEvent(new Event("radar:cargado"));
-  }catch(err){
-    // Sin conexión: lo último que se cargó en este dispositivo
-    const c=JSON.parse(ls.get("rp_cache","null")||"null");
-    if(c&&!S.ofertas.length){S.ofertas=c.items.map(adaptar);S.meta=c.meta;S.loaded=true;render();$("lastrun").textContent=`Sin conexión: mostrando lo guardado el ${new Date(c.t).toLocaleString("es-ES",{dateStyle:"short",timeStyle:"short"})}`}
-    else $("lastrun").textContent=`No se pudieron cargar las plazas: ${err.message}`;
   }
+  try{render();renderCrit();renderCuenta();renderSaludo()}catch(e){console.error(e)}
+  window.dispatchEvent(new Event("radar:cargado"));
 }
 async function seguirPendiente(){
   const id=ls.get("rp_pend","");if(!id||!S.ses)return;ls.del("rp_pend");
@@ -953,7 +964,7 @@ document.addEventListener("click",e=>{
 
 // ---------- Después de entrar (código, Google o Apple) ----------
 async function trasEntrar(r){
-  S.ses=r.token;ls.set("rp_ses",r.token);if(r.admin)ls.del("rp_key");
+  S.ses=r.token;ls.set("rp_ses",r.token);ls.set("rp_yo",JSON.stringify({email:r.email,admin:r.admin}));if(r.admin)ls.del("rp_key");
   $("acceso").hidden=true;
   S.bienvenida=!!r.nuevo;
   toast(r.nuevo?"Cuenta creada":"Has entrado");

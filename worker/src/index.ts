@@ -69,7 +69,9 @@ async function api(req: Request, env: Env, u: URL, yo: Usuario | null): Promise<
     // Sin sesión la respuesta es igual para todos: se guarda 5 minutos en la caché de Cloudflare.
     const cache = !yo && typeof caches !== "undefined" ? (caches as unknown as { default: Cache }).default : null;
     const clave = new Request(u.toString(), { method: "GET" });
-    if (cache) { const c = await cache.match(clave); if (c) return c; }
+    // Al navegador nunca se le deja guardarla: si no, al entrar seguiría viendo la versión sin sesión (sin sus marcas)
+    const alCliente = (r: Response) => { const x = new Response(r.body, r); x.headers.set("Cache-Control", "no-store"); x.headers.set("Vary", "Authorization"); return x; };
+    if (cache) { const c = await cache.match(clave); if (c) return alCliente(c); }
     // Lo abierto y, con sesión, también lo que guardaste aunque haya cerrado.
     const rows = yo
       ? (await env.DB.prepare(
@@ -86,7 +88,7 @@ async function api(req: Request, env: Env, u: URL, yo: Usuario | null): Promise<
     const todas = (f ? rows.filter((o) => coincide(o, f, hoy)) : rows);
     const items = (limite > 0 ? todas.slice(0, Math.min(limite, 100)) : todas).map((o) => publica(o, hoy));
     const resp = json({ total: todas.length, items });
-    if (cache) { const c = new Response(resp.body, resp); c.headers.set("Cache-Control", "public, max-age=300"); await cache.put(clave, c.clone()); return c; }
+    if (cache) { const c = new Response(resp.body, resp); c.headers.set("Cache-Control", "public, max-age=300"); await cache.put(clave, c.clone()); return alCliente(c); }
     return resp;
   }
 
