@@ -1,17 +1,16 @@
 /* Fichas de plazas, páginas por sector, guías y herramientas (se suma a legal/legal.css) */
-:root{--urgent-soft:#f8dfe0;--soon:#9a5b00;--soon-soft:#fbecd2;--ok:#2f6b2f;--ok-soft:#e1efdc}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--urgent-soft:#3e1d20;--soon:#f0b45a;--soon-soft:#3a2a12;--ok:#8fcf87;--ok-soft:#1c3220}}
+:root{--urgent-soft:#fdeced;--soon:#c77300;--soon-soft:#fff3e0;--ok:#1e9e6a;--ok-soft:#e3f6ee}
 .migas{font-size:13px;color:var(--muted);margin-top:14px}
 .migas a{color:var(--muted)}
 .org{font-weight:600;color:var(--muted);margin:0 0 4px;font-size:14px}
 main h1{font-size:clamp(26px,6vw,36px)}
 .plazo{display:flex;align-items:center;gap:12px;border-radius:10px;padding:10px 14px;background:var(--ok-soft);color:var(--ok);margin:12px 0}
-.plazo b{font-family:var(--font-display);font-size:34px;line-height:1}
+.plazo b{font-family:var(--font-display);font-weight:800;font-size:30px;line-height:1}
 .plazo span{font-weight:600}
 .plazo.urgente{background:var(--urgent-soft);color:var(--urgent)} .plazo.pronto{background:var(--soon-soft);color:var(--soon)}
 .plazo.cerrada,.plazo.nada{background:var(--bg);color:var(--muted)} .plazo.nada b,.plazo.cerrada b{font-size:22px}
 .botones{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
-.btn{display:inline-block;font:600 14px var(--font-body);padding:8px 13px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);text-decoration:none;cursor:pointer}
+.btn{display:inline-block;font:700 14px var(--font-body);padding:9px 15px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);text-decoration:none;cursor:pointer}
 .btn.primario{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn:disabled{opacity:.6}
 table.datos th{width:40%;font-weight:600}

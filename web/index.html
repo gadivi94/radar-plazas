@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Radar de Plazas / Oposiciones · Oposiciones, bolsas e interinos en toda España</title>
-<meta name="description" content="Oposiciones, bolsas e interinos de toda España en un mapa 3D: BOE, CIDO y empresas públicas de transporte. Filtra por sector, estudios y lugar, y recibe alertas gratis.">
+<meta name="description" content="Oposiciones, bolsas e interinos de toda España en un mapa: BOE, CIDO y empresas públicas de transporte. Filtra por sector, estudios y lugar, y recibe alertas gratis.">
 <link rel="canonical" href="https://radaropos.com/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Radar de Plazas / Oposiciones">
 <meta property="og:description" content="Oposiciones, bolsas de trabajo e interinos de toda España, con alertas por correo.">
 <meta property="og:url" content="https://radaropos.com/">
 <meta property="og:image" content="https://radaropos.com/icon-512.png">
-<meta name="theme-color" content="#0d6b6b">
+<meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Radar Opos">
 <link rel="manifest" href="/manifest.webmanifest">
@@ -19,38 +19,38 @@
 <link rel="icon" href="/icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="app.css">
 <link rel="preload" href="vendor/maplibre/maplibre-gl.js" as="script">
 </head>
 <body>
 <header class="cab">
   <div class="wrap">
-    <a class="marca" href="./" aria-label="Radar de Plazas, inicio"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="var(--accent)" stroke-width="2"/><circle cx="16" cy="16" r="8" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity=".55"/><path d="M16 16 L16 2 A14 14 0 0 1 28.1 9 Z" fill="var(--accent)" opacity=".35"/><circle cx="22" cy="9.5" r="2.2" fill="var(--urgent)"/></svg><b>Radar de Plazas <span class="sep">/</span> Oposiciones</b></a>
-    <label class="busca"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13 13l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span hidden>Buscar</span><input id="q" type="search" placeholder="Policía, TCAE, Girona, conductor…" autocomplete="off" enterkeyhint="search"></label>
+    <a class="marca" href="./" aria-label="Radar de Plazas, inicio"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--accent)"/><circle cx="16" cy="16" r="9.5" fill="none" stroke="#fff" stroke-width="1.6" opacity=".55"/><circle cx="16" cy="16" r="4.5" fill="none" stroke="#fff" stroke-width="1.6" opacity=".8"/><path d="M16 16 L16 3 A13 13 0 0 1 27 9.5 Z" fill="#fff" opacity=".3"/><circle cx="22.5" cy="9" r="2.6" fill="var(--sun)"/></svg><b>Radar de Plazas <span class="sep">/</span> <span class="op">Oposiciones</span></b></a>
     <button type="button" class="lang" id="lang">CA</button>
     <button type="button" class="cuentabtn" id="btnCuenta">Entrar</button>
   </div>
 </header>
 
+<div class="wrap arriba">
+  <h1 class="intro" id="intro">Oposiciones, bolsas e interinos de toda España, en un mapa</h1>
+  <div class="saludo" id="saludo" hidden aria-live="polite"></div>
+</div>
+
 <section class="mapsec" id="hero" aria-label="Mapa de las plazas">
-  <div class="wrap mapcab">
-    <div class="mapcab-t">
-      <div class="saludo" id="saludo" hidden aria-live="polite"></div>
-      <h1>Radar de Plazas <span class="sep">/</span> Oposiciones</h1>
-      <p class="hero-n"><b id="hTotal">–</b> <span id="hTexto">plazas abiertas en toda España</span></p>
+  <div class="mapcaja">
+    <div id="mapa3d" role="application" aria-label="Mapa de España con las plazas abiertas. Acerca el mapa para ver provincias y municipios; toca una zona para ver sus plazas."></div>
+    <div class="mapa-ui" id="mapaUi">
+      <div class="buscador" id="buscador">
+        <label class="busca"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13 13l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span hidden>Buscar</span><input id="q" type="search" placeholder="Puesto, ciudad o código postal" autocomplete="off" enterkeyhint="search" role="combobox" aria-expanded="false" aria-controls="sugs" aria-autocomplete="list"></label>
+        <button type="button" class="borrar-q" id="borrarQ" aria-label="Borrar la búsqueda" hidden>✕</button>
+        <div class="sugs" id="sugs" role="listbox" hidden></div>
+      </div>
+      <div class="chips" id="fsec" role="group" aria-label="Sector"></div>
     </div>
-    <div class="seg3" role="group" aria-label="Ver el mapa por">
-      <button type="button" data-m3modo="comunidades" aria-pressed="true">Comunidades</button><button type="button" data-m3modo="provincias" aria-pressed="false">Provincias</button><button type="button" data-m3modo="municipios" aria-pressed="false">Municipios</button>
-    </div>
-  </div>
-  <div class="mapcaja"><div id="mapa3d" role="application" aria-label="Mapa de España coloreado según las plazas abiertas. Toca una zona para ver sus plazas."></div><p class="m3aviso" id="m3aviso" hidden></p></div>
-  <div class="wrap mappie">
-    <div class="leyenda3" id="leyenda3" aria-label="Leyenda del mapa"></div>
-    <div class="m3info" id="m3info" hidden></div>
-    <div class="volar" role="group" aria-label="Ir a">
-      <button type="button" id="cercaMi">📍 Cerca de mí</button><button type="button" data-abrir-tutor>🧭 Tutor IA</button><button type="button" data-volar="España">España</button><button type="button" data-volar="Cataluña">Cataluña</button><button type="button" data-volar="Madrid">Madrid</button><button type="button" data-volar="Andalucía">Andalucía</button><button type="button" data-volar="Comunidad Valenciana">C. Valenciana</button><button type="button" data-volar="País Vasco">País Vasco</button><button type="button" data-volar="Galicia">Galicia</button><button type="button" data-volar="Canarias">Canarias</button><button type="button" data-volar="Baleares">Baleares</button>
-    </div>
+    <button type="button" class="ubicame" id="cercaMi" aria-label="Plazas cerca de mí" title="Plazas cerca de mí"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    <div class="ley-mapa" id="leyenda3" hidden aria-label="Colores de los puntos: días que quedan para presentarse"></div>
+    <p class="m3aviso" id="m3aviso" hidden></p>
   </div>
 </section>
 
@@ -76,26 +76,25 @@
     <p class="rgpd"><b>Protección de datos.</b> Responsable: Gabriel Di Pace. Finalidad: gestionar tu cuenta y enviarte los avisos que configures. Legitimación: ejecución del servicio que solicitas y tu consentimiento. Destinatarios: no se ceden datos; proveedores técnicos (Cloudflare, Resend y, si los usas para entrar, Google o Apple). Derechos: acceso, rectificación, supresión y demás en <a href="mailto:hola@radaropos.com">hola@radaropos.com</a>. <a href="legal/privacidad.html">Más información</a>.</p>
   </section>
 
-  <section class="zona" aria-label="Sectores">
-    <div class="rail" id="fsec" role="group" aria-label="Sector"></div>
-    <div class="subs" id="fsub" role="group" aria-label="Subcategoría" hidden></div>
-  </section>
-
-  <nav class="tabs" id="tabs" aria-label="Vista"></nav>
-  <div class="barra" id="barra">
-    <span id="fres">–</span>
+  <div class="resumen" id="barra">
+    <p class="res-t"><b id="hTotal">–</b> <span id="hTexto">plazas abiertas en toda España</span></p>
+    <div class="res-acc">
+      <button type="button" class="btn sec" id="verFiltros" aria-expanded="false" aria-controls="filtros"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M6 10h8M8.5 15h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Filtros</button>
+      <button type="button" class="btn pri" id="crearAlerta"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5a5 5 0 0 0-5 5v3.2L3.5 13.5h13L15 10.7V7.5a5 5 0 0 0-5-5ZM8 16a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Crear alerta</button>
+    </div>
     <div class="activos" id="activos"></div>
-    <button type="button" class="btnfil" id="verFiltros" aria-expanded="false" aria-controls="filtros">Filtros</button>
+    <div class="subs" id="fsub" role="group" aria-label="Subcategoría" hidden></div>
   </div>
+  <nav class="tabs" id="tabs" aria-label="Vista"></nav>
   <nav class="seg" id="etapas" aria-label="Etapa" hidden></nav>
   <section class="filtros" id="filtros" aria-label="Filtros" hidden>
     <div class="frow"><label for="fniv" data-i18n>Estudios</label><select class="sel" id="fniv"></select></div>
     <div class="frow"><span data-i18n>Dificultad</span><div class="seg" id="fdif"></div></div>
     <div class="frow"><span data-i18n>Grupo</span><div class="seg" id="fgrp"></div></div>
     <div class="frow"><label for="lugarsel" data-i18n>Lugar</label><select class="sel" id="lugarsel"></select></div>
-    <div class="frow"><label for="cpIn">Cerca de</label><div class="cerca"><input id="cpIn" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="Código postal" autocomplete="postal-code"><button type="button" id="cercaMi2">📍 Mi ubicación</button><select id="kmSel" aria-label="Distancia máxima"><option value="10">10 km</option><option value="25" selected>25 km</option><option value="50">50 km</option><option value="100">100 km</option></select></div></div>
+    <div class="frow"><label for="cpIn">Cerca de</label><div class="cerca"><input id="cpIn" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="Código postal" autocomplete="postal-code"><button type="button" id="cercaMi2">Mi ubicación</button><select id="kmSel" aria-label="Distancia máxima"><option value="10">10 km</option><option value="25" selected>25 km</option><option value="50">50 km</option><option value="100">100 km</option></select></div></div>
     <label class="cumplo"><input type="checkbox" id="soloCumplo"><span>Solo lo que encaja con mi perfil</span> <small id="soloNota"></small></label>
-    <div class="fpie"><button type="button" id="fclear" hidden data-i18n>Borrar filtros</button></div>
+    <div class="fpie"><button type="button" id="fclear" hidden data-i18n>Borrar filtros</button><button type="button" class="btn sec" id="cerrarFiltros">Listo</button></div>
   </section>
 
   <section class="mapa" id="mapaClasico" aria-label="Mapa de plazas" hidden>
@@ -123,6 +122,7 @@
     <div class="esq"></div><div class="esq"></div><div class="esq"></div>
   </section>
 
+  <h2 class="tit-sec">Tu espacio</h2>
   <div class="paneles">
     <details class="crit" id="perfil"><summary data-i18n>Mi perfil</summary><div class="crit-body" id="perfilBody"></div></details>
     <details class="crit" id="crit"><summary data-i18n>Mis alertas</summary><div class="crit-body" id="critBody"><p class="note">Cargando alertas…</p></div></details>
@@ -144,12 +144,30 @@
     <span>© 2026 @gadivi · Radar de Plazas / Oposiciones</span>
   </footer>
 </main>
-<button type="button" class="tutorbtn" id="tutorBtn" aria-controls="tutor">🧭 Tutor</button>
+<button type="button" class="tutorbtn" id="tutorBtn" aria-controls="tutor"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4.5h12a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5H9l-4 3v-3H4A1.5 1.5 0 0 1 2.5 13V6A1.5 1.5 0 0 1 4 4.5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Tutor IA</button>
 <section class="tutor" id="tutor" role="dialog" aria-modal="false" aria-labelledby="tutorT" hidden>
   <div class="tutor-cab"><h2 id="tutorT">Tu tutor</h2><span class="note">Te orienta según tu perfil y tus gustos</span><button type="button" class="x" id="tutorX" aria-label="Cerrar el tutor">✕</button></div>
   <div class="tutor-cuerpo" id="tutorBody" aria-live="polite"></div>
   <form class="tutor-pie" id="tutorForm" hidden><textarea id="tutorQ" rows="1" maxlength="600" placeholder="Pregunta lo que quieras: qué te conviene, por dónde empezar…"></textarea><button type="submit">Enviar</button></form>
 </section>
+<dialog class="hoja" id="dlgAlerta" aria-labelledby="dlgAlertaT">
+  <form method="dialog" id="fAlerta" class="falerta">
+    <div class="hoja-cab"><h2 id="dlgAlertaT">Nueva alerta por correo</h2><button type="button" class="x" id="dlgAlertaX" aria-label="Cerrar">✕</button></div>
+    <p class="note">Cada mañana revisamos los boletines. Si sale una plaza que encaja, te llega un correo.</p>
+    <label class="campo">Nombre de la alerta<input id="alNombre" maxlength="80" required placeholder="Por ejemplo: Policía local en Girona"></label>
+    <label class="campo">Palabras que debe tener<input id="alPalabras" placeholder="policía, bombero, auxiliar…" autocomplete="off"><small>Separadas por comas. Te avisamos si el título o el organismo contiene alguna.</small></label>
+    <label class="campo">Palabras que no quieres<input id="alExcluir" placeholder="prácticas, temporal…" autocomplete="off"></label>
+    <fieldset class="campo"><legend>Comunidades</legend><div class="opciones" id="alComunidades"></div><small>Si no marcas ninguna, toda España.</small></fieldset>
+    <label class="check" id="alLugarBox" hidden><input type="checkbox" id="alLugar" checked><span id="alLugarT"></span></label>
+    <div class="campos2">
+      <label class="campo">Sector<select id="alSector"></select></label>
+      <label class="campo">Tus estudios<select id="alNivel"></select></label>
+    </div>
+    <fieldset class="campo"><legend>¿Cada cuánto?</legend><div class="opciones"><label><input type="radio" name="alFrec" value="diaria" checked> Cada día que haya novedades</label><label><input type="radio" name="alFrec" value="semanal"> Un resumen los lunes</label></div><small>Se aplica a todas tus alertas.</small></fieldset>
+    <p class="note err" id="alErr" role="alert"></p>
+    <div class="hoja-pie"><button type="button" class="btn sec" id="alCancelar">Cancelar</button><button type="submit" class="btn pri" id="alGuardar">Crear alerta</button></div>
+  </form>
+</dialog>
 <div class="toast" id="toast" hidden role="status"></div>
 <script src="geo.js"></script>
 <script src="espana.js"></script>

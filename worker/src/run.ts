@@ -28,14 +28,14 @@ function diaSemanaMadrid(d = new Date()): number { // 1 = lunes
 const masDias = (iso: string, n: number) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 
 export interface Resumen { recogidas: number; completadas: number; revisadas: number; avisos: number; correos: number; errores: string[]; geo?: number; empresas?: { leidas: number; ofertas: number; fallos: string[] } }
-interface Usuario { id: string; email: string; admin: number; avisos_email: number; frecuencia: string | null; boletin: number | null; telegram: string | null }
+interface Usuario { id: string; email: string; nombre?: string | null; admin: number; avisos_email: number; frecuencia: string | null; boletin: number | null; telegram: string | null }
 
 export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSemanal?: boolean } = {}): Promise<Resumen> {
   const hoy = hoyMadrid();
   const ahora = new Date().toISOString();
   const res: Resumen = { recogidas: 0, completadas: 0, revisadas: 0, avisos: 0, correos: 0, errores: [] };
   let presupuesto = Number(env.ENRICH_BUDGET || 35);
-  const usuarios = new Map((await env.DB.prepare("SELECT id, email, admin, avisos_email, frecuencia, boletin, telegram FROM users").all<Usuario>()).results.map((u) => [u.id, u]));
+  const usuarios = new Map((await env.DB.prepare("SELECT id, email, nombre, admin, avisos_email, frecuencia, boletin, telegram FROM users").all<Usuario>()).results.map((u) => [u.id, u]));
   const correo = async (c: Promise<Parameters<typeof enviarCorreo>[1]>, quien: string) => {
     if (!correoActivo(env)) return;
     try { await enviarCorreo(env, await c); res.correos++; } catch (e) { res.errores.push(`correo ${quien}: ${String(e).slice(0, 120)}`); }

@@ -27,10 +27,10 @@ function shell(env: Env, o: { titulo: string; desc: string; ruta: string; cuerpo
 <meta name="description" content="${e(o.desc.slice(0, 160))}">
 <link rel="canonical" href="${e(url)}">${o.noindex ? '\n<meta name="robots" content="noindex">' : ""}
 <meta property="og:type" content="website"><meta property="og:title" content="${e(o.titulo)}"><meta property="og:description" content="${e(o.desc.slice(0, 200))}"><meta property="og:url" content="${e(url)}"><meta property="og:image" content="${sitio(env)}/icon-512.png">
-<meta name="theme-color" content="#0d6b6b">
+<meta name="theme-color" content="#2f6feb">
 <link rel="icon" href="/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="/legal/legal.css">
 <link rel="stylesheet" href="/paginas.css">
 ${(o.jsonld || []).map((j) => `<script type="application/ld+json">${JSON.stringify(j).replace(/</g, "\\u003c")}</script>`).join("\n")}

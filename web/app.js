@@ -45,6 +45,7 @@ const DOCS=[["dni","DNI o NIE"],["titulo","Título"],["tasa","Pago de la tasa"],
 const SISTEMA={concurso:"Concurso de méritos","concurso-oposicion":"Concurso-oposición",oposicion:"Oposición",bolsa:"Bolsa de trabajo"};
 const COMUNIDADES=["Andalucía","Aragón","Asturias","Baleares","Canarias","Cantabria","Castilla y León","Castilla-La Mancha","Cataluña","Comunidad Valenciana","Extremadura","Galicia","La Rioja","Madrid","Murcia","Navarra","País Vasco","Ceuta","Melilla","Estatal"];
 const SECT=Object.fromEntries(SECTORES.map(s=>[s.k,s]));
+const CORTO={seguridad:"Seguridad",justicia:"Justicia",sanidad:"Sanidad",educacion:"Educación",social:"Social",transporte:"Transporte",empresas:"Empresas públicas",militar:"Militar",subalterno:"Conserjes",administrativo:"Administración",oficios:"Oficios",tecnico:"Técnicos",otros:"Otros"};
 const ICONO={seguridad:"🚓",justicia:"⚖️",sanidad:"🩺",educacion:"🎒",social:"🤝",transporte:"🚇",empresas:"📮",militar:"🎖️",subalterno:"🗝️",administrativo:"🗂️",oficios:"🔧",tecnico:"💻",otros:"✳️"};
 const FUENTE={BOE:"BOE",TMB:"TMB",EMPRESA:"web de la empresa"};
 const SUBN=Object.fromEntries(SECTORES.flatMap(s=>s.subs.map(([k,n])=>[k,{n,s:s.k}])));
@@ -114,7 +115,7 @@ function render(){
   const cSec=contarPor("sec",o=>o.tipo||"otros"),cSub=contarPor("sub",o=>o.subtipo),cDif=contarPor("dif",dificultad),cGrp=contarPor("grp",grupoDe);
   const cuenta=(sin,fn)=>{const m={sec:cSec,sub:cSub,dif:cDif,grp:cGrp}[sin];let n=0;for(const [k,v] of m)if(fn({tipo:k,subtipo:k,dificultad:k,grupo:k,_k:k}))n+=v;return n};
   let tot=0;for(const v of cSec.values())tot+=v;
-  $("fsec").innerHTML=`<button type="button" data-sec="" aria-pressed="${!S.sec}"><span class="i">📡</span><span class="t">${t("Todos")}</span><span class="n">${tot}</span></button>`+SECTORES.map(s=>{const n=cSec.get(s.k)||0;return n||S.sec===s.k?`<button type="button" data-sec="${s.k}" aria-pressed="${S.sec===s.k}"><span class="i">${ICONO[s.k]||"•"}</span><span class="t">${esc(s.n)}</span><span class="n">${n}</span></button>`:""}).join("");
+  $("fsec").innerHTML=SECTORES.map(s=>{const n=cSec.get(s.k)||0;return n||S.sec===s.k?`<button type="button" data-sec="${S.sec===s.k?"":s.k}" aria-pressed="${S.sec===s.k}" title="${n} ${n===1?"plaza":"plazas"}"><span class="i" aria-hidden="true">${ICONO[s.k]||"•"}</span>${esc(CORTO[s.k]||s.n)}</button>`:""}).join("");
   const subs=S.sec?SECT[S.sec]?.subs||[]:[];
   $("fsub").hidden=!subs.length;
   $("fsub").innerHTML=subs.map(([k,n])=>{const x=cSub.get(k)||0;return x||S.subs.includes(k)?`<button type="button" class="chip" data-sub="${k}" aria-pressed="${S.subs.includes(k)}">${esc(n)}<small>${x}</small></button>`:""}).join("");
@@ -124,7 +125,7 @@ function render(){
   $("soloCumplo").checked=S.solo;$("soloNota").textContent=S.perfil?.nivel!=null?"":"(completa tu perfil)";
   const av=$("avisoPerfil"),sinPerfil=S.perfil?.nivel==null;let cerrado=false;try{cerrado=!!sessionStorage.getItem("rp_avp")}catch(_){}
   av.hidden=!(sinPerfil&&!cerrado)&&!(!sinPerfil&&!S.solo&&!cerrado);
-  av.innerHTML=sinPerfil?`<span>Completa tu perfil (estudios, idiomas e intereses) y te enseñamos solo las plazas que encajan contigo.</span><button type="button" data-ir-perfil>Completar perfil</button><button type="button" class="x" data-cerrar-aviso aria-label="Cerrar">✕</button>`
+  av.innerHTML=sinPerfil?`<span>Dinos tus estudios e intereses y te enseñamos solo lo que encaja contigo.</span><button type="button" data-ir-perfil>Completar perfil</button><button type="button" class="x" data-cerrar-aviso aria-label="Cerrar">✕</button>`
     :`<span>Tienes el perfil hecho. ¿Ver solo las plazas que encajan contigo?</span><button type="button" data-solo-perfil>Ver solo las mías</button><button type="button" class="x" data-cerrar-aviso aria-label="Cerrar">✕</button>`;
   if(S.meta){$("lastrun").textContent=`${LANG==="ca"?"Última revisió":"Última revisión"}: ${new Date(S.meta.fecha).toLocaleString(LANG==="ca"?"ca-ES":"es-ES",{dateStyle:"medium",timeStyle:"short"})} · ${S.meta.recogidas??0} ${t("nuevas")} · ${S.meta.completadas??0} ${LANG==="ca"?"fitxes llegides":"fichas leídas"}`}
   S.mapRows=base.filter(o=>pasaFiltros(o));
@@ -134,11 +135,10 @@ function render(){
   const rows=S.mapRows.filter(lugarActivo)
     .sort(S.place?.kind==="cerca"?(a,b)=>distOferta(a)-distOferta(b):(a,b)=>{const da=daysLeft(a),db=daysLeft(b);if(da===null&&db===null)return 0;if(da===null)return 1;if(db===null)return -1;return da-db});
   const activos=S.dif.length+S.grp.length+(S.place?1:0)+(S.sec?1:0)+S.subs.length+(S.niv!=null?1:0)+(S.solo?1:0);
-  $("fres").textContent=`${rows.length} ${t(rows.length===1?"plaza":"plazas")}`;
   $("fclear").hidden=!activos;
   $("hTotal").textContent=rows.length.toLocaleString("es-ES");
-  $("hTexto").textContent=(rows.length===1?"plaza ":"plazas ")+(S.tab==="nuevas"?(S.ses?"nuevas sin revisar":"nuevas esta semana"):S.tab==="mias"?"en seguimiento":"abiertas")+" "+nombreLugar(S.place)+(S.sec||S.subs.length||S.niv!=null||S.dif.length||S.grp.length||S.q||S.solo?" con tus filtros":"");
-  renderActivos();renderM3info(rows);
+  $("hTexto").textContent=(rows.length===1?"plaza ":"plazas ")+(S.tab==="nuevas"?(S.ses?"nuevas sin revisar":"nuevas esta semana"):S.tab==="mias"?"en seguimiento":S.tab==="descartada"?"descartadas":"abiertas")+" "+nombreLugar(S.place);
+  renderActivos();
   if(!rows.length){
     const sinCuenta=!S.ses&&["mias","descartada"].includes(S.tab);
     const msg=sinCuenta?"Entra con tu correo para seguir plazas y verlas aquí en cualquier dispositivo.":{nuevas:S.ses?"No hay plazas nuevas sin revisar. Cuando la revisión diaria encuentre algo, aparecerá aquí y te llegará un aviso.":"No han entrado plazas nuevas esta semana con estos filtros.",
@@ -184,33 +184,32 @@ function card(o){
   let due;
   if(n===null)due=`<div class="due none"><small>${esc(t(o.estado==="pendiente"?"aún sin":"sin"))}</small><small>${t("plazo")}</small></div>`;
   else if(n<0)due=`<div class="due none"><small>${t("cerrada")}</small></div>`;
-  else{const cls=n<=3?"urgent":n<=7?"soon":"";due=`<div class="due ${cls}"><b>${n}</b><small>${t(n===1?"día":"días")}</small></div>`}
+  else if(n===0)due=`<div class="due urgent"><b class="hoy">${LANG==="ca"?"Avui":"Hoy"}</b><small>${LANG==="ca"?"últim dia":"último día"}</small></div>`;
+  else{const cls=n<=3?"urgent":n<=7?"soon":"";due=`<div class="due ${cls}" title="${t("hasta")} ${fmtDate(o.terminiFecha)}"><b>${n}</b><small>${t(n===1?"día":"días")}</small></div>`}
   const tags=[];
   if(esNueva(o)&&isOpen(o))tags.push(`<span class="tag new">${t("nueva")}</span>`);
-  const sec=SECT[o.tipo||"otros"];tags.push(`<span class="tag ${o.tipo==="seguridad"?"prio":""}">${esc(o.subtipo&&SUBN[o.subtipo]?SUBN[o.subtipo].n:sec?.n||"Otros")}</span>`);
-  const dv=dificultad(o);tags.push(`<span class="tag dif${dv}">${t(DIF[dv-1][1])}</span>`);
-  if(o.grupo)tags.push(`<span class="tag">${esc(o.grupo)}</span>`);
-  if(o.tipoPersonal)tags.push(`<span class="tag">${esc(o.tipoPersonal)}</span>`);
-  if(o.sistema)tags.push(`<span class="tag">${esc(o.sistema)}</span>`);
-  if(o.terminiFecha)tags.push(`<span class="tag">${t("hasta")} ${fmtDate(o.terminiFecha)}</span>`);
-  else if(o.terminiTexto)tags.push(`<span class="tag">${esc(o.terminiTexto)}</span>`);
-  if(o.zona)tags.push(`<span class="tag">${esc(o.zona)}</span>`);
-  if(S.place?.kind==="cerca"){const d=distOferta(o);if(d!==null)tags.push(`<span class="tag dist">📍 a ${d<1?"menos de 1":Math.round(d)} km${o._aprox?" (aprox.)":""}</span>`)}
+  const sec=SECT[o.tipo||"otros"];tags.push(`<span class="tag prio">${esc(o.subtipo&&SUBN[o.subtipo]?SUBN[o.subtipo].n:sec?.n||"Otros")}</span>`);
+  if(S.place?.kind==="cerca"){const d=distOferta(o);if(d!==null)tags.push(`<span class="tag dist">a ${d<1?"menos de 1":Math.round(d)} km${o._aprox?" (aprox.)":""}</span>`)}
   const c=cumpleDe(o);
   if(c)tags.push(c.estado==="si"?`<span class="tag ok">✓ ${t("Cumples")}</span>`:c.estado==="no"?`<span class="tag ko" title="${esc(c.faltan.join(" · "))}">✗ ${t("Te falta")}: ${esc(c.faltan[0])}${c.faltan.length>1?` +${c.faltan.length-1}`:""}</span>`:`<span class="tag">? ${t("Revisa")} ${esc(c.dudas.join(", "))}</span>`);
+  const dv=dificultad(o);
+  const meta=[o.zona,o.sistema,o.grupo?`${LANG==="ca"?"grup":"grupo"} ${o.grupo}`:"",o.tipoPersonal,o.terminiFecha?`${t("hasta")} ${fmtDate(o.terminiFecha)}`:o.terminiTexto||""].filter(Boolean);
   const dis=!S.busy.has(o.id)?"":"disabled";
-  const b=(k,l)=>`<button type="button" data-id="${esc(o.id)}" data-marca="${k}" aria-pressed="${m===k||(k==="interesa"&&SEGUIMIENTO.has(m))}" ${dis}>${t(l)}</button>`;
-  const segui=S.ses&&SEGUIMIENTO.has(m)?seguimiento(o):"";
-  return `<article class="card ${isOpen(o)?"":"closed"}" id="c-${esc(o.id.replace(/[^a-zA-Z0-9]/g,"-"))}">${due}<div class="body">
-    <div class="ens"><span aria-hidden="true">${ICONO[o.tipo||"otros"]||""}</span><span>${esc(o.ens)}${o.fuente&&FUENTE[o.fuente]&&o.fuente!=="EMPRESA"?" · "+esc(FUENTE[o.fuente]):""}</span></div>
-    <h2 class="titulo"><a href="${esc(o.ruta?API+o.ruta:o.url)}">${esc(o.titulo)}</a></h2>
+  const sigue=SEGUIMIENTO.has(m);
+  const ruta=esc(o.ruta?API+o.ruta:o.url);
+  const segui=S.ses&&sigue?seguimiento(o):"";
+  return `<article class="card ${isOpen(o)?"":"closed"}" id="c-${esc(o.id.replace(/[^a-zA-Z0-9]/g,"-"))}">${due}<button type="button" class="descartar" data-id="${esc(o.id)}" data-marca="descartada" aria-pressed="${m==="descartada"}" aria-label="${t(m==="descartada"?"Recuperar":"Descartar")}" title="${t(m==="descartada"?"Recuperar":"Descartar")}" ${dis}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><div class="body">
+    <div class="ens"><span aria-hidden="true">${ICONO[o.tipo||"otros"]||""}</span><span>${esc(o.ens)}</span></div>
+    <h2 class="titulo"><a href="${ruta}">${esc(o.titulo)}</a></h2>
+    <p class="meta">${meta.map(esc).join(" · ")}</p>
     <div class="tags">${tags.join("")}</div>
     <div class="acts">${o.tramiteUrl&&isOpen(o)?`<a class="primary" href="${esc(o.tramiteUrl)}" target="_blank" rel="noopener">${t("Presentar solicitud")}</a>`:""}
-      <a href="${esc(o.ruta?API+o.ruta:o.url)}">${t("Ficha")}</a><a href="${esc(o.url)}" target="_blank" rel="noopener">${t("Oficial")}</a>
-      ${b("interesa",SEGUIMIENTO.has(m)?"✓ "+t(ETAPAS.find(e=>e[0]===m)?.[1]||"Me interesa"):"Me interesa")}${b("descartada","Descartar")}
-      <button type="button" data-share="${esc(o.id)}" aria-label="${t("Compartir")}">↗︎</button>
-      ${o.terminiFecha&&isOpen(o)?`<a href="${API}/api/ics/${esc(o.id.split(":")[0])}/${encodeURIComponent(o.id.split(":").slice(1).join(":"))}" aria-label="${t("Calendario")}">📅</a>`:""}</div>
-    ${promoOpos(o)?`<a class="promo" href="https://opos365.com" target="_blank" rel="noopener">📚 ${t("Prepárate con OPOS 365")}: temario, psicotécnicos y tests</a>`:""}
+      <button type="button" class="sigo" data-id="${esc(o.id)}" data-marca="interesa" aria-pressed="${sigue}" ${dis}>${sigue?"★ "+t(ETAPAS.find(e=>e[0]===m)?.[1]||"Me interesa"):"☆ "+t("Me interesa")}</button>
+      <span class="ico">
+        <button type="button" data-share="${esc(o.id)}" aria-label="${t("Compartir")}" title="${t("Compartir")}"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10M6 7l4-4 4 4M4 12v4h12v-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        ${o.terminiFecha&&isOpen(o)?`<a href="${API}/api/ics/${esc(o.id.split(":")[0])}/${encodeURIComponent(o.id.split(":").slice(1).join(":"))}" aria-label="${t("Calendario")}" title="${t("Calendario")}"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4.5" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 8.5h14M7 3v3M13 3v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></a>`:""}
+      </span></div>
+    ${promoOpos(o)?`<a class="promo" href="https://opos365.com" target="_blank" rel="noopener">${t("Prepárate con OPOS 365")}: temario y tests</a>`:""}
     ${segui}
   </div></article>`;
 }
@@ -516,10 +515,9 @@ function renderCrit(){
   box.innerHTML=`<p class="note">Cada mañana se revisan el BOE, el CIDO y TMB. Si sale una plaza que encaja con una alerta activa, ${S.yo?.avisos_email===false?"la verás aquí (tienes los avisos por correo desactivados en Mi cuenta)":`te llega ${S.yo?.frecuencia==="semanal"?"un resumen cada lunes":"un correo"} a <b>${esc(S.yo?.email||"tu correo")}</b>`}${S.yo?.telegram?" y un mensaje por Telegram":""}.</p>
     ${al.map(a=>`<div class="alerta"><div><b>${esc(a.nombre)}</b><span class="note">${esc(resumenFiltros(a.filtros||{}))}</span></div>
       <button type="button" data-al-on="${esc(a.id)}" aria-pressed="${!!a.activa}">${t(a.activa?"Activa":"Pausada")}</button>
-      <button type="button" data-al-del="${esc(a.id)}">${S.borrando===a.id?"¿Borrar?":t("Borrar")}</button></div>`).join("")||'<p class="note">Aún no tienes alertas.</p>'}
-    ${lleno?`<p class="note">Has llegado al máximo de ${max} alertas de la cuenta gratuita. Borra una para crear otra.</p>`:`<div><h3>${t("Nueva alerta con los filtros de arriba")}</h3><p class="note">${esc(resumenFiltros(filtrosActuales()))}</p>
-    <form class="add" id="nuevaAlerta"><input id="nombreAlerta" placeholder="Nombre (ej.: Policía local Girona)" autocomplete="off" required maxlength="80"><button type="submit">${t("Crear")}</button></form>
-    ${S.yo&&!S.yo.admin?`<p class="note">${al.length} de ${max} alertas de la cuenta gratuita.</p>`:""}</div>`}`;
+      <button type="button" data-al-edit="${esc(a.id)}">Editar</button>
+      <button type="button" data-al-del="${esc(a.id)}">${S.borrando===a.id?"¿Borrar?":t("Borrar")}</button></div>`).join("")||'<p class="note">Aún no tienes alertas. Crea una con las palabras y las comunidades que te interesan.</p>'}
+    ${lleno?`<p class="note">Has llegado al máximo de ${max} alertas de la cuenta gratuita. Borra una para crear otra.</p>`:`<button type="button" class="linkbtn" data-nueva-alerta>Crear una alerta</button>${S.yo&&!S.yo.admin?`<p class="note">${al.length} de ${max} alertas de la cuenta gratuita.</p>`:""}`}`;
 }
 const IDIOMAS=[["catalan","Catalán"],["valenciano","Valenciano"],["euskera","Euskera"],["gallego","Gallego"],["ingles","Inglés"],["frances","Francés"],["aleman","Alemán"]];
 function completitud(p){if(!p)return 0;let n=0;if(p.nivel!=null)n+=35;if(p.intereses?.length)n+=25;if(Object.values(p.idiomas||{}).some(Boolean)||p.catalan)n+=15;if(p.edad)n+=10;if(p.carne?.length)n+=10;if(p.nacionalidad)n+=5;return Math.min(100,n)}
@@ -551,7 +549,7 @@ function guardarPerfil(){
 }
 function renderCuenta(){
   const box=$("cuentaBox"),btn=$("btnCuenta");
-  btn.textContent=S.yo?(S.yo.nombre||S.yo.email):t("Entrar");btn.classList.toggle("in",!!S.yo);
+  btn.textContent=S.yo?(S.yo.nombre||S.yo.email.split("@")[0]):t("Entrar");btn.classList.toggle("in",!!S.yo);
   box.hidden=!S.yo;if(!S.yo)return;
   const y=S.yo,ad=S.adm;
   const cal=y.calendario?`<p class="note">📅 Tus plazas en el calendario del móvil: <a href="${esc(y.calendario.replace(/^https:/,"webcal:"))}">Suscribirme</a> · <button type="button" class="linkish" data-copiar="${esc(y.calendario)}">Copiar enlace</button></p>`:`<button type="button" id="crearCal">📅 Ver mis plazas en el calendario del móvil</button>`;
@@ -765,8 +763,8 @@ async function iniciarMapa3D(){
   for(const b of document.querySelectorAll("[data-m3modo]"))b.setAttribute("aria-pressed",String(b.dataset.m3modo===Mapa3D.modo()));
   try{
     await Mapa3D.iniciar({contenedor:$("mapa3d"),leyenda:$("leyenda3"),provDe,coordDe,coordDeNombre,diasDe:daysLeft,
-      alElegir(p){S.place=p;guardarFiltros();render();Mapa3D.enfocar(S.place)},
-      alCambiarModo(m){for(const x of document.querySelectorAll("[data-m3modo]"))x.setAttribute("aria-pressed",String(x.dataset.m3modo===m))}});
+      margenArriba:()=>{const u=$("mapaUi");return u?u.offsetHeight:0},
+      alElegir(p){S.place=p;S.mostrar=0;guardarFiltros();render();Mapa3D.enfocar(S.place)}});
     S.m3=true;render();if(S.place)Mapa3D.enfocar(S.place);
   }catch(e){usarClasico("No se ha podido cargar el mapa 3D: abajo tienes el mapa plano.")}
 }
@@ -781,15 +779,13 @@ document.addEventListener("click",e=>{
     for(const x of document.querySelectorAll("[data-volar]"))x.setAttribute("aria-pressed",String(x===b&&v!=="España"));return}
   if(b.id==="m3ver"){$("barra").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});return}
   if(b.id==="m3quitar"){S.place=null;guardarFiltros();render();if(S.m3){Mapa3D.modo("comunidades");for(const x of document.querySelectorAll("[data-m3modo]"))x.setAttribute("aria-pressed",String(x.dataset.m3modo==="comunidades"));Mapa3D.enfocar(null)}for(const x of document.querySelectorAll("[data-volar]"))x.setAttribute("aria-pressed","false");return}
-  if(b.id==="verFiltros"){const f=$("filtros"),abrir=f.hidden;f.hidden=!abrir;b.setAttribute("aria-expanded",String(abrir));return}
+  if(b.id==="verFiltros"||b.id==="cerrarFiltros"){const f=$("filtros"),abrir=b.id==="verFiltros"&&f.hidden;f.hidden=!abrir;$("verFiltros").setAttribute("aria-expanded",String(abrir));if(abrir)f.scrollIntoView({behavior:"smooth",block:"nearest"});return}
   if(b.dataset.quitar){const k=b.dataset.quitar;
     if(k==="q"){S.q="";$("q").value=""}else if(k==="place"){S.place=null;if(S.m3)Mapa3D.enfocar(null)}else if(k==="sec"){S.sec="";S.subs=[]}else if(k==="niv")S.niv=null;else if(k==="solo")S.solo=false;
     else if(k.startsWith("sub:"))S.subs=S.subs.filter(x=>x!==k.slice(4));else if(k.startsWith("dif:"))S.dif=S.dif.filter(x=>x!==+k.slice(4));else if(k.startsWith("grp:"))S.grp=S.grp.filter(x=>x!==k.slice(4));
     guardarFiltros();render();return}
 });
 let tq=null;
-$("q").addEventListener("input",e=>{clearTimeout(tq);tq=setTimeout(()=>{S.q=e.target.value.trim();S.mostrar=0;if(S.q&&S.tab==="nuevas"){S.tab="todas"}render()},180)});
-if(matchMedia("(min-width: 900px)").matches){$("filtros").hidden=false;$("verFiltros").setAttribute("aria-expanded","true")}
 
 // ---------- Cerca de mí y código postal ----------
 S.km=+ls.get("rp_km","25")||25;
@@ -835,9 +831,7 @@ document.addEventListener("click",e=>{
 $("cpIn").addEventListener("input",e=>{const v=e.target.value.replace(/\D/g,"");e.target.value=v;if(v.length===5)buscarCP(v)});
 $("kmSel").value=String(S.km);
 $("kmSel").addEventListener("change",e=>{S.km=+e.target.value;ls.set("rp_km",String(S.km));marcarCambio();if(S.place?.kind==="cerca"){S.place.km=S.km;guardarFiltros();render();if(S.m3)Mapa3D.enfocar(S.place)}});
-// En el buscador, 5 cifras = código postal
-$("q").addEventListener("keydown",e=>{if(e.key==="Enter"&&/^\d{5}$/.test(e.target.value.trim())){e.preventDefault();const cp=e.target.value.trim();e.target.value="";S.q="";buscarCP(cp)}});
-$("q").addEventListener("input",e=>{const v=e.target.value.trim();if(/^\d{5}$/.test(v)){e.target.value="";clearTimeout(tq);S.q="";buscarCP(v)}});
+
 if(S.place?.kind==="cerca")cargarDatosMapa().then(()=>render());
 
 // ---------- Tutor ----------
@@ -918,6 +912,7 @@ function novedadesParaTi(){
 }
 function renderSaludo(){
   const box=$("saludo");if(!box)return;
+  $("intro").classList.toggle("sr",!!S.yo);
   if(!S.yo){box.hidden=true;box.innerHTML="";return}
   const n=nombreSaludo(),sal=(SALUDOS[LANG]||SALUDOS.es)[franja()],ca=LANG==="ca";
   if(S.bienvenida){
@@ -953,7 +948,7 @@ document.addEventListener("click",e=>{
   if(ir==="perfil"){const d=$("perfil");d.open=true;d.scrollIntoView({behavior:"smooth"})}
   else if(ir==="alertas"){const d=$("crit");if(d){d.open=true;d.scrollIntoView({behavior:"smooth"})}}
   else if(ir==="nombre"){const d=$("cuentaBox");d.open=true;d.scrollIntoView({behavior:"smooth"});setTimeout(()=>$("nombreIn")&&$("nombreIn").focus(),400)}
-  else if(ir==="nuevas"){S.tab="nuevas";ls.set("rp_tab","nuevas");render();const l=$("lista")||$("resultados");(l||document.querySelector(".barra")).scrollIntoView({behavior:"smooth"})}
+  else if(ir==="nuevas"){S.tab="nuevas";ls.set("rp_tab","nuevas");render();$("barra").scrollIntoView({behavior:"smooth"})}
 });
 
 // ---------- Después de entrar (código, Google o Apple) ----------
@@ -1039,3 +1034,132 @@ function sincronizar(srv){
 S.bienvenida=false;
 const abrirAccesoAntes=abrirAcceso;
 abrirAcceso=function(m){abrirAccesoAntes(m);prepararSocial()};
+
+// ---------- Buscador con sugerencias (lugares, sectores y texto) ----------
+const ICON_LUGAR="📍",ICON_BUSCA="🔎";
+let sugSel=-1,sugItems=[];
+function sugerencias(txt){
+  const q=normTxt(txt),items=[];
+  if(!q){
+    items.push({g:"",ic:"🧭",t:"Plazas cerca de mí",acc:()=>geolocalizar()});
+    if(S.place)items.push({g:"",ic:"🇪🇸",t:"Ver toda España",acc:()=>elegirLugar(null)});
+    return items;
+  }
+  if(/^\d{5}$/.test(q))return [{g:"",ic:ICON_LUGAR,t:`Código postal ${q}`,sub:"Plazas a tu alrededor",acc:()=>buscarCP(q)}];
+  const cuenta=new Map(),add=(k,n=1)=>cuenta.set(k,(cuenta.get(k)||0)+n);
+  for(const o of S.ofertas){if(!isOpen(o))continue;add("c:"+(o.comunidad||"Cataluña"));const pv=provDe(o);if(pv)add("p:"+pv);const m=o.municipio||muniDe(o)?.nom;if(m)add("m:"+m)}
+  const lug=[];
+  for(const c of COMUNIDADES)if(normTxt(c).includes(q))lug.push({ic:ICON_LUGAR,t:c==="Estatal"?"Ámbito estatal":c,sub:"Comunidad",n:cuenta.get("c:"+c)||0,acc:()=>elegirLugar({kind:"ccaa",id:c})});
+  for(const p of PROV_ES)if(normTxt(p).includes(q)){const cat={Barcelona:8,Girona:17,Lleida:25,Tarragona:43}[p];lug.push({ic:ICON_LUGAR,t:p,sub:"Provincia",n:cuenta.get("p:"+p)||0,acc:()=>elegirLugar(cat?{kind:"prov",id:cat}:{kind:"provES",id:p})})}
+  const munis=[...cuenta].filter(([k])=>k.startsWith("m:")&&normTxt(k.slice(2)).includes(q)).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  for(const [k,n] of munis){const nom=k.slice(2),cat=MUNI.has(nn(nom));lug.push({ic:ICON_LUGAR,t:nom,sub:"Municipio",n,acc:()=>elegirLugar({kind:cat?"muni":"muniES",id:cat?MUNI.get(nn(nom)).nom:nom})})}
+  lug.sort((a,b)=>(normTxt(b.t).startsWith(q)-normTxt(a.t).startsWith(q))||b.n-a.n);
+  for(const l of lug.slice(0,5))items.push({g:"Lugares",...l});
+  const sec=[];
+  for(const x of SECTORES){if(normTxt(x.n).includes(q)||normTxt(CORTO[x.k]||"").includes(q))sec.push({ic:ICONO[x.k]||"•",t:x.n,sub:"Sector",acc:()=>{S.sec=x.k;S.subs=[];S.mostrar=0;guardarFiltros();render()}});
+    for(const [k,n] of x.subs)if(normTxt(n).includes(q))sec.push({ic:ICONO[x.k]||"•",t:n,sub:x.n,acc:()=>{S.sec=x.k;S.subs=[k];S.mostrar=0;guardarFiltros();render()}})}
+  for(const x of sec.slice(0,4))items.push({g:"Puestos y sectores",...x});
+  const n=S.ofertas.filter(o=>isOpen(o)&&(o._h||(o._h=normTxt(`${o.titulo} ${o.organismo||""} ${o.municipio||""} ${o.provincia||""} ${o.comunidad||""} ${SUBN[o.subtipo]?.n||""} ${SECT[o.tipo]?.n||""}`))).includes(q)).length;
+  items.push({g:"Buscar texto",ic:ICON_BUSCA,t:`«${txt.trim()}» en todas las plazas`,n,acc:()=>buscarTexto(txt.trim())});
+  return items;
+}
+function pintarSugs(){
+  const box=$("sugs"),inp=$("q");
+  sugItems=sugerencias(inp.value);sugSel=-1;
+  if(!sugItems.length||document.activeElement!==inp){box.hidden=true;inp.setAttribute("aria-expanded","false");return}
+  let g=null,h="";
+  sugItems.forEach((it,i)=>{if(it.g&&it.g!==g){g=it.g;h+=`<h3>${esc(g)}</h3>`}
+    h+=`<button type="button" role="option" id="sug${i}" data-sug="${i}" aria-selected="false"><span class="ic" aria-hidden="true">${it.ic}</span><span class="tx">${esc(it.t)}${it.sub?`<small>${esc(it.sub)}</small>`:""}</span>${it.n!=null?`<span class="n">${it.n.toLocaleString("es-ES")}</span>`:""}</button>`});
+  box.innerHTML=h;box.hidden=false;inp.setAttribute("aria-expanded","true");
+}
+function cerrarSugs(){$("sugs").hidden=true;$("q").setAttribute("aria-expanded","false")}
+function elegirLugar(p){
+  S.place=p;S.mostrar=0;S.q="";$("q").value="";$("borrarQ").hidden=true;cerrarSugs();$("q").blur();
+  guardarFiltros();render();if(S.m3)Mapa3D.enfocar(S.place);
+}
+function buscarTexto(v){
+  S.q=v;S.mostrar=0;if(S.q&&S.tab==="nuevas")S.tab="todas";cerrarSugs();$("q").blur();$("borrarQ").hidden=!v;render();
+  if(v)$("barra").scrollIntoView({behavior:"smooth",block:"start"});
+}
+$("q").addEventListener("input",()=>{$("borrarQ").hidden=!$("q").value;clearTimeout(tq);tq=setTimeout(pintarSugs,90)});
+$("q").addEventListener("focus",pintarSugs);
+$("q").addEventListener("blur",()=>setTimeout(cerrarSugs,180));
+$("q").addEventListener("keydown",e=>{
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){if(!sugItems.length)return;e.preventDefault();sugSel=(sugSel+(e.key==="ArrowDown"?1:-1)+sugItems.length)%sugItems.length;
+    for(const b of $("sugs").querySelectorAll("[data-sug]"))b.setAttribute("aria-selected",String(+b.dataset.sug===sugSel));$("q").setAttribute("aria-activedescendant","sug"+sugSel);return}
+  if(e.key==="Escape"){cerrarSugs();return}
+  if(e.key==="Enter"){e.preventDefault();const v=$("q").value.trim();
+    if(sugSel>=0&&sugItems[sugSel]){sugItems[sugSel].acc();if(!sugItems[sugSel].g||sugItems[sugSel].g!=="Buscar texto")cerrarSugs();return}
+    if(/^\d{5}$/.test(v)){$("q").value="";buscarCP(v);cerrarSugs();return}
+    buscarTexto(v)}
+});
+$("sugs").addEventListener("mousedown",e=>e.preventDefault());
+$("sugs").addEventListener("click",e=>{const b=e.target.closest("[data-sug]");if(!b)return;const it=sugItems[+b.dataset.sug];cerrarSugs();$("q").blur();if(it.g!=="Buscar texto"&&it.g!==""){$("q").value="";$("borrarQ").hidden=true}it.acc()});
+$("borrarQ").addEventListener("click",()=>{$("q").value="";$("borrarQ").hidden=true;if(S.q){S.q="";render()}$("q").focus()});
+if(S.q){$("q").value=S.q;$("borrarQ").hidden=false}
+
+// ---------- Alertas por correo: palabras, comunidades, sector y estudios ----------
+let alEditando=null;
+function lugarDeFiltros(f){
+  if(f.cerca)return `A menos de ${f.cerca.km} km de ${f.cerca.etiqueta||"tu ubicación"}`;
+  if(f.zonas?.length)return f.zonas.length>3?`${f.zonas.length} municipios de ${f.comunidades?.[0]||"Cataluña"}`:f.zonas.join(", ");
+  if(f.provincias?.length)return "Provincia de "+f.provincias.join(", ");
+  return "";
+}
+function abrirAlerta(a){
+  if(!S.ses){abrirAcceso("Crea tu cuenta gratis y te avisamos por correo cuando salga una plaza con tus palabras y en tus comunidades.");return}
+  alEditando=a||null;
+  const f=a?{...a.filtros}:filtrosActuales();
+  if(!a&&S.q)f.palabras=S.q.split(/\s*,\s*|\s+y\s+/).filter(Boolean);
+  const ccaa=new Set(f.comunidades||[]);
+  $("dlgAlertaT").textContent=a?"Editar alerta":"Nueva alerta por correo";
+  $("alGuardar").textContent=a?"Guardar cambios":"Crear alerta";
+  $("alNombre").value=a?a.nombre:(sugerirNombre(f));
+  $("alPalabras").value=(f.palabras||[]).join(", ");$("alExcluir").value=(f.excluir||[]).join(", ");
+  $("alComunidades").innerHTML=COMUNIDADES.map(c=>`<label><input type="checkbox" value="${esc(c)}" ${ccaa.has(c)?"checked":""}>${esc(c==="Estatal"?"Ámbito estatal":c)}</label>`).join("");
+  const lug=lugarDeFiltros(f);$("alLugarBox").hidden=!lug;$("alLugar").checked=!!lug;$("alLugarT").textContent=lug?`Solo en: ${lug}`:"";
+  $("alLugarBox").dataset.f=JSON.stringify({zonas:f.zonas,provincias:f.provincias,cerca:f.cerca});
+  $("alSector").innerHTML=`<option value="">Todos los sectores</option>`+SECTORES.map(x=>`<option value="${x.k}" ${(f.tipos||[])[0]===x.k?"selected":""}>${esc(x.n)}</option>`).join("");
+  $("alSector").dataset.subs=JSON.stringify(f.subtipos||[]);
+  $("alNivel").innerHTML=NIV_OPC.map(([v,l])=>`<option value="${v}" ${String(f.nivelMax??"")===v?"selected":""}>${esc(l)}</option>`).join("");
+  for(const r of document.querySelectorAll('[name="alFrec"]'))r.checked=r.value===(S.yo?.frecuencia||"diaria");
+  $("alErr").textContent="";
+  const d=$("dlgAlerta");if(d.showModal)d.showModal();else d.setAttribute("open","");
+  setTimeout(()=>$("alPalabras").focus(),60);
+}
+function sugerirNombre(f){
+  const p=[];if(f.subtipos?.length)p.push(SUBN[f.subtipos[0]]?.n);else if(f.tipos?.length)p.push(SECT[f.tipos[0]]?.n);
+  if(S.q)p.push(S.q);
+  const l=f.comunidades?.[0]||(S.place&&S.place.kind!=="cerca"?nombreLugar(S.place).replace(/^en (la provincia de )?/,""):"");if(l)p.push(l);
+  return p.filter(Boolean).join(" · ").slice(0,80);
+}
+const listaComas=v=>v.split(",").map(x=>x.trim()).filter(Boolean).slice(0,20);
+function cerrarAlerta(){const d=$("dlgAlerta");if(d.close)d.close();else d.removeAttribute("open")}
+$("dlgAlertaX").addEventListener("click",cerrarAlerta);$("alCancelar").addEventListener("click",cerrarAlerta);
+$("dlgAlerta").addEventListener("click",e=>{if(e.target===$("dlgAlerta"))cerrarAlerta()});
+$("fAlerta").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const nombre=$("alNombre").value.trim();if(!nombre){$("alErr").textContent="Ponle un nombre a la alerta.";return}
+  const f={soloAbiertas:true};
+  const pal=listaComas($("alPalabras").value),exc=listaComas($("alExcluir").value);if(pal.length)f.palabras=pal;if(exc.length)f.excluir=exc;
+  const cc=[...$("alComunidades").querySelectorAll("input:checked")].map(x=>x.value);if(cc.length)f.comunidades=cc;
+  if($("alLugar").checked&&!$("alLugarBox").hidden){const l=JSON.parse($("alLugarBox").dataset.f||"{}");for(const k of ["zonas","provincias","cerca"])if(l[k]&&(!Array.isArray(l[k])||l[k].length))f[k]=l[k]}
+  const sec=$("alSector").value;if(sec){f.tipos=[sec];const subs=JSON.parse($("alSector").dataset.subs||"[]").filter(k=>SUBN[k]?.s===sec);if(subs.length)f.subtipos=subs}
+  const niv=$("alNivel").value;if(niv!=="")f.nivelMax=+niv;
+  const frec=document.querySelector('[name="alFrec"]:checked')?.value||"diaria";
+  $("alGuardar").disabled=true;
+  try{
+    if(alEditando)await api(`/alertas/${encodeURIComponent(alEditando.id)}`,{method:"PUT",body:JSON.stringify({nombre,filtros:f})});
+    else await api("/alertas",{method:"POST",body:JSON.stringify({nombre,filtros:f})});
+    if(S.yo&&frec!==S.yo.frecuencia){await api("/cuenta",{method:"PATCH",body:JSON.stringify({frecuencia:frec})}).catch(()=>{});S.yo.frecuencia=frec}
+    S.alertas=await api("/alertas");if(S.yo)S.yo.alertas=S.alertas.length;
+    cerrarAlerta();renderCrit();renderCuenta();
+    toast(alEditando?"Alerta guardada":`Alerta creada: te avisaremos a ${S.yo?.email||"tu correo"}`);
+  }catch(err){$("alErr").textContent=err.message}
+  finally{$("alGuardar").disabled=false}
+});
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.id==="crearAlerta"||b.dataset.nuevaAlerta!==undefined){abrirAlerta(null);return}
+  if(b.dataset.alEdit){const a=(S.alertas||[]).find(x=>x.id===b.dataset.alEdit);if(a)abrirAlerta(a)}
+});

@@ -118,6 +118,7 @@ async function api(req: Request, env: Env, u: URL, yo: Usuario | null): Promise<
   if (path === "/alertas" && req.method === "POST") return conSesion(async (yo) => {
     const b = (await req.json().catch(() => ({}))) as { nombre?: string; filtros?: Filtros };
     if (!b.nombre?.trim()) return json({ error: "Ponle un nombre a la alerta" }, 400);
+    if (JSON.stringify(b.filtros || {}).length > 6000) return json({ error: "La alerta tiene demasiadas condiciones" }, 400);
     const n = (await env.DB.prepare("SELECT COUNT(*) AS n FROM alertas WHERE uid = ?").bind(yo.id).first<{ n: number }>())?.n ?? 0;
     const max = limiteAlertas(env, yo);
     if (n >= max) return json({ error: `Con la cuenta gratuita puedes tener hasta ${max} alertas. Borra o edita una para crear otra.`, limite: max }, 403);
@@ -131,6 +132,7 @@ async function api(req: Request, env: Env, u: URL, yo: Usuario | null): Promise<
     const b = (await req.json().catch(() => ({}))) as { nombre?: string; filtros?: Filtros; activa?: boolean };
     const cur = await env.DB.prepare("SELECT * FROM alertas WHERE id = ? AND uid = ?").bind(mA[1], yo.id).first<{ nombre: string; filtros: string; activa: number }>();
     if (!cur) return json({ error: "No existe" }, 404);
+    if (b.filtros && JSON.stringify(b.filtros).length > 6000) return json({ error: "La alerta tiene demasiadas condiciones" }, 400);
     await env.DB.prepare("UPDATE alertas SET nombre = ?, filtros = ?, activa = ? WHERE id = ? AND uid = ?").bind(
       b.nombre?.trim().slice(0, 80) || cur.nombre, b.filtros ? JSON.stringify(b.filtros) : cur.filtros, b.activa === undefined ? cur.activa : b.activa ? 1 : 0, mA[1], yo.id,
     ).run();

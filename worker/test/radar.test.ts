@@ -296,7 +296,7 @@ describe("cuentas por correo", () => {
     const nuevos = correos.slice(antes);
     expect(nuevos.map((c) => c.to[0]).sort()).toEqual(["ana@ejemplo.com", "jefe@ejemplo.com"]);
     const deAna = nuevos.find((c) => c.to[0] === "ana@ejemplo.com")!;
-    expect(deAna.subject).toBe("2 plazas nuevas para tus alertas · Radar de Plazas");
+    expect(deAna.subject).toBe("2 plazas nuevas: Policía");
     expect(deAna.text).toContain("Agent de Policia Local");
     expect(deAna.headers?.["List-Unsubscribe"]).toContain("/api/baja?u=");
     const pend = JSON.parse((DB.raw.query("SELECT v FROM meta WHERE k='avisos_pendientes'").get() as { v: string }).v);
