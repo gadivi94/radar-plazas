@@ -1,7 +1,11 @@
 {
-  "appId": "cat.gadivi.radarplazas",
-  "appName": "Radar Plazas",
+  "appId": "com.radaropos.app",
+  "appName": "Radar de Plazas",
   "webDir": "www",
   "backgroundColor": "#0d6b6b",
-  "ios": { "contentInset": "never", "scrollEnabled": true }
+  "ios": { "contentInset": "never", "scrollEnabled": true, "limitsNavigationsToAppBoundDomains": false },
+  "plugins": {
+    "SplashScreen": { "launchAutoHide": true, "launchShowDuration": 600, "backgroundColor": "#0d6b6b" },
+    "LocalNotifications": { "iconColor": "#0d6b6b" }
+  }
 }

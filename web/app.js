@@ -583,7 +583,7 @@ function abrirAcceso(motivo){
 async function marcar(o,next,extra={}){
   if(!S.ses){ls.set("rp_pend",o.id);abrirAcceso("Crea tu cuenta gratis para seguir plazas: etapas, documentos, notas y aviso antes de que cierren.");return false}
   S.busy.add(o.id);
-  try{await api(`/ofertas/${encodeURIComponent(o.id)}`,{method:"PATCH",body:JSON.stringify({marca:next,...extra})});o.marca=next;Object.assign(o,extra);return true}
+  try{await api(`/ofertas/${encodeURIComponent(o.id)}`,{method:"PATCH",body:JSON.stringify({marca:next,...extra})});o.marca=next;Object.assign(o,extra);window.dispatchEvent(new Event("radar:marca"));return true}
   catch(err){toast(err.message||"No se pudo guardar. Inténtalo de nuevo.");return false}
   finally{S.busy.delete(o.id)}
 }
@@ -714,6 +714,7 @@ async function cargar(){
       S.adm=y.admin?await api("/admin/resumen").catch(()=>null):null;
     }
     render();renderCrit();renderCuenta();renderSaludo();
+    window.dispatchEvent(new Event("radar:cargado"));
   }catch(err){
     // Sin conexión: lo último que se cargó en este dispositivo
     const c=JSON.parse(ls.get("rp_cache","null")||"null");

@@ -4,11 +4,18 @@
   "private": true,
   "description": "Radar de Plazas: web (Cloudflare Pages) y app iOS (Capacitor + Codemagic)",
   "scripts": {
-    "prepare-www": "node scripts/prepare-www.mjs"
+    "prepare-www": "node scripts/prepare-www.mjs",
+    "patch-native": "node scripts/patch-native.mjs"
   },
   "dependencies": {
     "@capacitor/core": "^8.0.0",
-    "@capacitor/ios": "^8.0.0"
+    "@capacitor/ios": "^8.0.0",
+    "@capacitor/browser": "^8.0.0",
+    "@capacitor/share": "^8.0.0",
+    "@capacitor/local-notifications": "^8.0.0",
+    "@capacitor/splash-screen": "^8.0.0",
+    "@capacitor/app-launcher": "^8.0.0",
+    "@capgo/capacitor-social-login": "^8.0.0"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

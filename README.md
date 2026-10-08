@@ -57,15 +57,9 @@ Textos legales: rellenar el domicilio marcado en amarillo en `web/legal/aviso-le
 
 Cloudflare → Workers & Pages → radar-plazas → Metrics → **Web Analytics → Enable**. No usa cookies, así que no hace falta aviso.
 
-## App de iPhone (cuando quieras)
+## App de iPhone
 
-1. developer.apple.com → Identifiers → **+** → App ID `cat.gadivi.radarplazas`.
-2. App Store Connect → Apps → **+** → Nueva app «Radar Plazas» con ese Bundle ID.
-3. Codemagic → **Add application** → GitHub → `radar-plazas` → *codemagic.yaml*.
-4. Codemagic → Code signing identities → iOS provisioning profiles → crea/descarga el perfil *App Store* de `cat.gadivi.radarplazas` (igual que hiciste con opos365).
-5. Lanza el flujo **iOS (TestFlight)** e instálala desde TestFlight.
-
-Si tienes dominio propio, cambia `RADAR_API` en `codemagic.yaml`.
+Todo el paso a paso está en **[APP-IOS.md](APP-IOS.md)** (Bundle ID `com.radaropos.app`, Codemagic → flujo **iOS (TestFlight)**).
 
 ## Pruebas
 

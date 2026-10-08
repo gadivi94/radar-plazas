@@ -1,5 +1,5 @@
-# Radar de Plazas · App de iPhone (Capacitor), compilada en la nube con Codemagic.
-# Pasos completos en LEEME.md. Se lanza a mano desde codemagic.io.
+# Radar de Plazas · app de iPhone (Capacitor), compilada en la nube con Codemagic y subida a TestFlight.
+# Pasos completos en APP-IOS.md. Se lanza a mano desde codemagic.io (Start new build → «iOS (TestFlight)»).
 
 workflows:
   ios:
@@ -11,9 +11,10 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: cat.gadivi.radarplazas
+        bundle_identifier: com.radaropos.app
       vars:
         RADAR_API: https://radaropos.com
+        GOOGLE_IOS_CLIENT_ID: ""             # ID de cliente OAuth de Google de tipo iOS (opcional: sin él solo sale «Entrar con Apple»)
       node: 22
       xcode: latest
     scripts:
@@ -24,21 +25,28 @@ workflows:
       - name: Crear el proyecto iOS
         script: npx cap add ios
       - name: Icono y pantalla de inicio
-        script: npx capacitor-assets generate --ios --iconBackgroundColor '#0d6b6b' --splashBackgroundColor '#0d6b6b' --splashBackgroundColorDark '#0f181c'
-      - name: Sincronizar y numerar la versión
+        script: npx capacitor-assets generate --ios --iconBackgroundColor '#0d6b6b' --splashBackgroundColor '#0d6b6b' --splashBackgroundColorDark '#0d6b6b'
+      - name: Sincronizar y ajustar versión, permisos y entrada con Apple
         script: |
           npx cap sync ios
-          cd ios/App && agvtool new-version -all $(($BUILD_NUMBER + 1))
+          node scripts/patch-native.mjs
       - name: Aplicar la firma
         script: xcode-project use-profiles
       - name: Compilar el IPA
         script: |
+          set -o pipefail
           if [ -d ios/App/App.xcworkspace ]; then T='--workspace ios/App/App.xcworkspace'; else T='--project ios/App/App.xcodeproj'; fi
-          xcode-project build-ipa $T --scheme "App"
+          if ! xcode-project build-ipa $T --scheme "App"; then
+            echo
+            echo "================ MOTIVO DEL ERROR (líneas con error del registro de xcodebuild) ================"
+            grep -h -E "error:|Provisioning profile|doesn't (include|support)|entitlement|No such module|Undefined symbol|Command .* failed|Signing for|is not valid|xcodebuild: error" /tmp/xcodebuild_logs/*.log 2>/dev/null | grep -v "warning:" | sort -u | head -80
+            echo "================================================================================================="
+            exit 1
+          fi
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: false
+        submit_to_testflight: false   # llega a TestFlight para pruebas internas sin revisión
