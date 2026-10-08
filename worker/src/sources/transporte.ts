@@ -35,7 +35,7 @@ export const EMPRESAS: Empresa[] = [
   { id: "emtmadrid", nombre: "EMT Madrid", comunidad: "Madrid", municipio: "Madrid", url: "https://www.emtmadrid.es/Empresa/Empleo?lang=es-ES", enlace: /\/EMPRESA\/Empleo\/[^"'\s<>]+\.aspx/i, frescura: 45 },
   { id: "metromadrid", nombre: "Metro de Madrid", comunidad: "Madrid", municipio: "Madrid", url: "https://www.metromadrid.es/es/trabaja-con-nosotros", enlace: /\/es\/oferta-empleo\/[a-z0-9-]+/, excluir: /finalizad|cerrad/i, tren: true },
   // Castilla y León
-  { id: "auvasa", nombre: "AUVASA (Autobuses Urbanos de Valladolid)", comunidad: "Castilla y León", municipio: "Valladolid", url: "https://www.auvasa.es/empresa/ofertas-de-empleo/", enlace: /\/wp-content\/uploads\/\d{4}\/\d{2}\/convocatoria_oe\d+_\d{4}[^"'\s<>]*\.pdf/i, frescura: 120 },
+  { id: "auvasa", nombre: "AUVASA (Autobuses Urbanos de Valladolid)", comunidad: "Castilla y León", municipio: "Valladolid", url: "https://www.auvasa.es/empresa/ofertas-de-empleo/", enlace: /\/wp-content\/uploads\/\d{4}\/\d{2}\/convocatoria_oe\d+_\d{4}[^"'\s<>]*\.pdf/i, incluir: /^bases/i, tituloCabecera: true, frescura: 120 },
   // Cataluña
   { id: "fgc", nombre: "FGC (Ferrocarrils de la Generalitat de Catalunya)", comunidad: "Cataluña", url: "https://treballar.fgc.cat/go/CONVOCATORIES/814602/", enlace: /\/job\/[^"'\s<>]+\/\d+\//, tren: true },
   { id: "atm", nombre: "ATM (Autoritat del Transport Metropolità)", comunidad: "Cataluña", municipio: "Barcelona", url: "https://www.atm.cat/atm/transparencia/organitzacio", enlace: /\/documents\/[^"'\s<>]+/, seccion: [/Ofertes d.ocupaci[oó] en curs/i, /Ofertes d.ocupaci[oó] resoltes/i], tituloCabecera: true },
@@ -151,10 +151,11 @@ export function ofertasEmpresa(e: Empresa, body: string, hoy: string, ahora: str
     const sig = html.slice(idx + m[0].length).search(/<h[1-6]\b/i);
     const fin = idx + m[0].length + Math.min(sig < 0 ? 600 : sig, 600);
     const ctx = limpiar(html.slice(cab ? cab.pos : Math.max(0, idx - 500), fin));
-    if (e.incluir && !e.incluir.test(titulo) && !e.incluir.test(limpiar(m[0]))) continue;
+    if (e.incluir && !e.incluir.test(titulo) && !e.incluir.test(limpiar(m[2]))) continue;
     if (e.excluir && e.excluir.test(titulo)) continue;
     const o = oferta(e, href, titulo, ctx, hoy, ahora);
-    if (o && !vistos.has(o.id)) vistos.set(o.id, o);
+    // Una oferta por título (algunas webs enlazan el mismo proceso varias veces)
+    if (o && !vistos.has(o.id) && ![...vistos.values()].some((x) => x.titulo.toLowerCase() === o.titulo.toLowerCase())) vistos.set(o.id, o);
   }
   let lista = [...vistos.values()];
   if (e.ultimos) lista = lista.sort((a, b) => Number(b.url!.match(/\/(\d+)-/)?.[1] || 0) - Number(a.url!.match(/\/(\d+)-/)?.[1] || 0)).slice(0, e.ultimos);

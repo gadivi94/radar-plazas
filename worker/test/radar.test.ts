@@ -526,7 +526,12 @@ describe("empresas de transporte", () => {
     const atm = ofertasEmpresa(E("atm"), `<h2>Ofertes d'ocupació en curs</h2><h3>Tècnic/a Superior en Contractació Pública (TSCON)</h3><a href="/documents/d/portal-atm/08-20261005_anuncidogc_tscon">Anunci DOGC</a><h2>Ofertes d'ocupació resoltes</h2><h3>Antiga</h3><a href="/documents/d/portal-atm/01-2020_x">Anunci</a>`, hoy, ahora);
     expect(atm.map((o) => o.titulo)).toEqual(["Anunci DOGC"].length ? ["Tècnic/a Superior en Contractació Pública (TSCON)"] : []);
     // AUVASA: PDFs recientes por la fecha de subida
-    const au = ofertasEmpresa(E("auvasa"), `<a href="https://www.auvasa.es/wp-content/uploads/2026/08/convocatoria_oe01_2026_01.pdf">CONVOCATORIA PARA LA CONTRATACIÓN DE 3 AGENTES DE APARCAMIENTO</a><a href="https://www.auvasa.es/wp-content/uploads/2025/04/Convocatoria_oe02_2025.pdf">VIEJA CONVOCATORIA DE CONDUCTORES</a>`, hoy, ahora);
-    expect(au.map((o) => o.publicado)).toEqual(["2026-08-01"]);
+    const au = ofertasEmpresa(E("auvasa"), `<h3>CONVOCATORIA PARA LA CONTRATACIÓN DE 3 AGENTES DE APARCAMIENTO</h3><a href="https://www.auvasa.es/wp-content/uploads/2026/08/convocatoria_oe01_2026_01.pdf">BASES DE LA CONVOCATORIA.</a>
+      <a href="https://www.auvasa.es/wp-content/uploads/2026/09/convocatoria_oe01_2026_03.pdf">ACTA FASE PRIMERA – LISTADO PROVISIONAL</a>
+      <h3>VIEJA CONVOCATORIA DE CONDUCTORES</h3><a href="https://www.auvasa.es/wp-content/uploads/2025/04/Convocatoria_oe02_2025.pdf">BASES DE LA CONVOCATORIA.</a>`, hoy, ahora);
+    expect(au.map((o) => [o.titulo, o.publicado])).toEqual([["CONVOCATORIA PARA LA CONTRATACIÓN DE 3 AGENTES DE APARCAMIENTO", "2026-08-01"]]);
+    // Entidades HTML con acento y títulos repetidos
+    const tg = ofertasEmpresa(E("tusgsal"), `<h3>MEC&Agrave;NIC/A (TORN DE DIA)</h3><a href="https://direxis.es/ofertes/mecanic/">Veure oferta</a><h3>MEC&Agrave;NIC/A (TORN DE DIA)</h3><a href="https://direxis.es/ofertes/mecanic-2/">Veure oferta</a>`, hoy, ahora);
+    expect(tg.map((o) => o.titulo)).toEqual(["MECÀNIC/A (TORN DE DIA)"]);
   });
 });

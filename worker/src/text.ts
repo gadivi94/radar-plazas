@@ -2,11 +2,20 @@
 
 const ENT: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", middot: "·" };
 
+const DIACRITICO: Record<string, string> = { acute: "\u0301", grave: "\u0300", uml: "\u0308", circ: "\u0302", tilde: "\u0303", cedil: "\u0327" };
+const OTRAS: Record<string, string> = { ordm: "º", ordf: "ª", laquo: "«", raquo: "»", iexcl: "¡", iquest: "¿", euro: "€", ndash: "–", mdash: "—", hellip: "…", rsquo: "’", lsquo: "‘", ldquo: "“", rdquo: "”" };
+/** &Agrave; &eacute; &ntilde; &ccedil;… → letra con su acento. */
+function acento(n: string): string | undefined {
+  if (OTRAS[n]) return OTRAS[n];
+  const m = n.match(/^([a-zA-Z])(acute|grave|uml|circ|tilde|cedil)$/);
+  return m ? (m[1] + DIACRITICO[m[2]]).normalize("NFC") : undefined;
+}
+
 export function decode(s: string): string {
   return s
     .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))
     .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
-    .replace(/&([a-z]+);/gi, (m, n) => ENT[n.toLowerCase()] ?? m);
+    .replace(/&([a-z]+);/gi, (m, n) => ENT[n.toLowerCase()] ?? acento(n) ?? m);
 }
 
 /** HTML/XML → texto con saltos de línea en los bloques. */
