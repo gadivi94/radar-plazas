@@ -108,15 +108,19 @@ function render(){
   if(S.tab==="mias"){const ce=k=>S.ofertas.filter(o=>o.marca===k).length;
     $("etapas").innerHTML=`<button type="button" data-etapa="" aria-pressed="${!S.etapa}">${t("Todas")}</button>`+ETAPAS.map(([k,l])=>`<button type="button" data-etapa="${k}" aria-pressed="${S.etapa===k}">${t(l)}<small>${ce(k)}</small></button>`).join("")}
   const base=S.ofertas.filter(inTab);
-  const cuenta=(sin,fn)=>base.filter(o=>pasaFiltros(o,sin)&&lugarActivo(o)&&fn(o)).length;
-  const tot=cuenta("sec",()=>true);
-  $("fsec").innerHTML=`<button type="button" data-sec="" aria-pressed="${!S.sec}"><span class="i">📡</span><span class="t">${t("Todos")}</span><span class="n">${tot}</span></button>`+SECTORES.map(s=>{const n=cuenta("sec",o=>(o.tipo||"otros")===s.k);return n||S.sec===s.k?`<button type="button" data-sec="${s.k}" aria-pressed="${S.sec===s.k}"><span class="i">${ICONO[s.k]||"•"}</span><span class="t">${esc(s.n)}</span><span class="n">${n}</span></button>`:""}).join("");
+  // Recuentos de cada grupo de botones en una sola pasada por grupo (rápido con miles de plazas)
+  const enLugar=base.filter(lugarActivo);
+  const contarPor=(sin,clave)=>{const m=new Map();for(const o of enLugar)if(pasaFiltros(o,sin)){const k=clave(o);m.set(k,(m.get(k)||0)+1)}return m};
+  const cSec=contarPor("sec",o=>o.tipo||"otros"),cSub=contarPor("sub",o=>o.subtipo),cDif=contarPor("dif",dificultad),cGrp=contarPor("grp",grupoDe);
+  const cuenta=(sin,fn)=>{const m={sec:cSec,sub:cSub,dif:cDif,grp:cGrp}[sin];let n=0;for(const [k,v] of m)if(fn({tipo:k,subtipo:k,dificultad:k,grupo:k,_k:k}))n+=v;return n};
+  let tot=0;for(const v of cSec.values())tot+=v;
+  $("fsec").innerHTML=`<button type="button" data-sec="" aria-pressed="${!S.sec}"><span class="i">📡</span><span class="t">${t("Todos")}</span><span class="n">${tot}</span></button>`+SECTORES.map(s=>{const n=cSec.get(s.k)||0;return n||S.sec===s.k?`<button type="button" data-sec="${s.k}" aria-pressed="${S.sec===s.k}"><span class="i">${ICONO[s.k]||"•"}</span><span class="t">${esc(s.n)}</span><span class="n">${n}</span></button>`:""}).join("");
   const subs=S.sec?SECT[S.sec]?.subs||[]:[];
   $("fsub").hidden=!subs.length;
-  $("fsub").innerHTML=subs.map(([k,n])=>{const x=cuenta("sub",o=>o.subtipo===k);return x||S.subs.includes(k)?`<button type="button" class="chip" data-sub="${k}" aria-pressed="${S.subs.includes(k)}">${esc(n)}<small>${x}</small></button>`:""}).join("");
+  $("fsub").innerHTML=subs.map(([k,n])=>{const x=cSub.get(k)||0;return x||S.subs.includes(k)?`<button type="button" class="chip" data-sub="${k}" aria-pressed="${S.subs.includes(k)}">${esc(n)}<small>${x}</small></button>`:""}).join("");
   $("fniv").innerHTML=NIV_OPC.map(([v,l])=>`<option value="${v}">${t(l)}</option>`).join("");$("fniv").value=S.niv==null?"":String(S.niv);
-  $("fdif").innerHTML=DIF.map(([v,l])=>`<button type="button" data-dif="${v}" aria-pressed="${S.dif.includes(v)}">${t(l)}<small>${cuenta("dif",o=>dificultad(o)===v)}</small></button>`).join("");
-  $("fgrp").innerHTML=GRUPOS.map(([v,l])=>`<button type="button" data-grp="${v}" aria-pressed="${S.grp.includes(v)}">${t(l)}<small>${cuenta("grp",o=>grupoDe(o)===v)}</small></button>`).join("");
+  $("fdif").innerHTML=DIF.map(([v,l])=>`<button type="button" data-dif="${v}" aria-pressed="${S.dif.includes(v)}">${t(l)}<small>${cDif.get(v)||0}</small></button>`).join("");
+  $("fgrp").innerHTML=GRUPOS.map(([v,l])=>`<button type="button" data-grp="${v}" aria-pressed="${S.grp.includes(v)}">${t(l)}<small>${cGrp.get(v)||0}</small></button>`).join("");
   $("soloCumplo").checked=S.solo;$("soloNota").textContent=S.perfil?.nivel!=null?"":"(completa tu perfil)";
   const av=$("avisoPerfil"),sinPerfil=S.perfil?.nivel==null;let cerrado=false;try{cerrado=!!sessionStorage.getItem("rp_avp")}catch(_){}
   av.hidden=!(sinPerfil&&!cerrado)&&!(!sinPerfil&&!S.solo&&!cerrado);
@@ -257,7 +261,8 @@ const PROV_NOM={8:"Barcelona",17:"Girona",25:"Lleida",43:"Tarragona"};
 const COM_NOM=Object.fromEntries(GEO.comarques.map(c=>[c.id,c.nom]));
 const nn=s=>(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/’/g,"'").replace(/^(el|la|els|les)\s+|^l'/,"").trim();
 const MUNI=new Map(GEO.munis.map(m=>[nn(m[0]),{nom:m[0],com:m[1],prov:m[2],x:m[3],y:m[4]}]));
-function muniDe(o){
+function muniDe(o){if(o._mc!==undefined)return o._mc;return o._mc=muniDe0(o)}
+function muniDe0(o){
   if(o.comunidad&&o.comunidad!=="Cataluña")return null;
   let m=MUNI.get(nn(o.zona));if(m)return m;
   const e=(o.ens||"").match(/^Ajuntament (?:de l'|de la |dels |de les |del |de |d')([^-–]+?)(?:\s+[-–].*)?$/i);
