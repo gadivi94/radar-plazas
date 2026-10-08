@@ -15,6 +15,7 @@ import { corto, rutaPlaza } from "./avisos";
 import { paginaPlaza, paginaSector, sitemap } from "./paginas";
 import { estadisticas } from "./estadisticas";
 import { telegramWebhook } from "./telegram";
+import { cargarClaves } from "./mail";
 import type { Env, Oferta } from "./types";
 
 async function cupoIA(env: Env, k: string, max: number): Promise<boolean> {
@@ -264,6 +265,7 @@ export default {
       if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
       try {
         await asegurarEsquema(env);
+        await cargarClaves(env);
         // La revisión la lanza GitHub Actions cada 15 min sin clave; es idempotente y tiene freno.
         if (u.pathname === "/api/run" && req.method === "POST") {
           const admin = (await esClaveAdmin(req, env)) || !!(await usuarioDe(req, env))?.admin;
@@ -288,6 +290,7 @@ export default {
     if (mP || mS || u.pathname === "/sitemap.xml") {
       try {
         await asegurarEsquema(env);
+        await cargarClaves(env);
         const r = mP ? await paginaPlaza(env, mP[1], mP[2]) : mS ? await paginaSector(env, mS[1], mS[2]) : await sitemap(env);
         if (r) return r;
         return new Response("No encontrada", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } });
@@ -296,6 +299,6 @@ export default {
     return env.ASSETS.fetch(req);
   },
   async scheduled(_c: ScheduledController, env: Env, ctx: ExecutionContext) {
-    ctx.waitUntil(asegurarEsquema(env).then(() => ciclo(env)).then(() => undefined));
+    ctx.waitUntil(asegurarEsquema(env).then(() => cargarClaves(env)).then(() => ciclo(env)).then(() => undefined));
   },
 } satisfies ExportedHandler<Env>;

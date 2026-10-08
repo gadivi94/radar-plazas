@@ -5,6 +5,17 @@ export const sitio = (env: Env) => (env.SITE_URL || "https://radaropos.com").rep
 export const contacto = (env: Env) => env.CONTACT_TO || "hola@radaropos.com";
 export const correoActivo = (env: Env) => !!env.RESEND_API_KEY;
 
+// Si la clave de Resend no llegó como secreto de Cloudflare, se lee de la tabla meta (privada).
+let CLAVE_RESEND: string | null | undefined;
+export async function cargarClaves(env: Env): Promise<void> {
+  if (env.RESEND_API_KEY) return;
+  if (CLAVE_RESEND === undefined) {
+    const r = await env.DB.prepare("SELECT v FROM meta WHERE k = 'resend_api_key'").first<{ v: string }>().catch(() => null);
+    CLAVE_RESEND = r?.v?.trim() || null;
+  }
+  if (CLAVE_RESEND) env.RESEND_API_KEY = CLAVE_RESEND;
+}
+
 export const escHtml = (s: unknown) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
