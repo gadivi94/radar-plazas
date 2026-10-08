@@ -24,6 +24,10 @@ jobs:
             done
           done
           curl -s -D - -o /dev/null https://radaropos.com/api/ofertas | head -20 >> out/resultado.txt
+          echo "--- mapa base" >> out/resultado.txt
+          for m in https://tiles.openfreemap.org/styles/liberty https://tiles.openfreemap.org/planet https://elevation-tiles-prod.s3.amazonaws.com/terrarium/5/15/12.png; do
+            curl -s -o /dev/null -H "Origin: https://radaropos.com" -D - "$m" | grep -i -E "^HTTP|access-control-allow-origin|content-type" >> out/resultado.txt
+          done
           if [ -n "${{ inputs.correo }}" ]; then
             echo "auth/start ->" >> out/resultado.txt
             curl -s -X POST -H 'Content-Type: application/json' -d '{"email":"${{ inputs.correo }}"}' https://radaropos.com/api/auth/start >> out/resultado.txt; echo >> out/resultado.txt
