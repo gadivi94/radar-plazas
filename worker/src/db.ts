@@ -36,7 +36,7 @@ export async function setMeta(env: Env, k: string, v: string): Promise<void> {
   await env.DB.prepare("INSERT INTO meta (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(k, v).run();
 }
 
-export interface Alerta { id: string; nombre: string; filtros: string; activa: number; creada: string }
+export interface Alerta { id: string; nombre: string; filtros: string; activa: number; creada: string; uid: string | null }
 export async function alertasActivas(env: Env): Promise<Alerta[]> {
   return (await env.DB.prepare("SELECT * FROM alertas WHERE activa = 1").all<Alerta>()).results;
 }

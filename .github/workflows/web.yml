@@ -1,6 +1,6 @@
 # Radar de Plazas · Publica la web y la API en Cloudflare Pages
 # Se ejecuta sola cuando cambia web/, worker/ o wrangler.toml (o a mano: Actions → Publica la web → Run workflow).
-# Secreto necesario: CLOUDFLARE_API_TOKEN (permisos Cloudflare Pages · Edit y D1 · Edit).
+# Secretos: CLOUDFLARE_API_TOKEN (permisos Cloudflare Pages · Edit y D1 · Edit) y, para enviar correos, RESEND_API_KEY.
 name: Publica la web
 
 on:
@@ -52,6 +52,14 @@ jobs:
           fi
           rm -f p.json
 
+      - name: Pasa la clave de correo (Resend) a Cloudflare
+        env:
+          RESEND: ${{ secrets.RESEND_API_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.CF_ACCOUNT_ID }}
+        run: |
+          if [ -z "$RESEND" ]; then echo "::notice::Sin RESEND_API_KEY: la web funciona, pero aún no se envían códigos ni avisos por correo."; exit 0; fi
+          printf '%s' "$RESEND" | tr -d '[:space:]' | CLOUDFLARE_API_TOKEN="$CF_TOKEN" npx --yes wrangler@4 pages secret put RESEND_API_KEY --project-name="$PROYECTO"
+
       - name: Publica
         uses: cloudflare/wrangler-action@v3
         with:
@@ -73,11 +81,12 @@ jobs:
           url="https://$PROYECTO.pages.dev"
           for i in $(seq 1 12); do
             web=$(curl -s -o /dev/null -w '%{http_code}' "$url/")
-            api=$(curl -s -o /dev/null -w '%{http_code}' "$url/api/estado")
-            if [ "$web" = "200" ] && [ "$api" = "401" ]; then echo "✓ $url funciona (web 200, API protegida)"; exit 0; fi
+            api=$(curl -s -o /dev/null -w '%{http_code}' "$url/api/ofertas")
+            cta=$(curl -s -o /dev/null -w '%{http_code}' "$url/api/cuenta")
+            if [ "$web" = "200" ] && [ "$api" = "200" ] && [ "$cta" = "401" ]; then echo "✓ $url funciona (web, plazas públicas y cuentas protegidas)"; exit 0; fi
             sleep 10
           done
-          echo "::warning::$url aún no responde como se espera (web $web, API $api). Puede tardar unos minutos la primera vez."
+          echo "::warning::$url aún no responde como se espera (web $web, plazas $api, cuenta $cta). Puede tardar unos minutos la primera vez."
 
       - name: Comprueba el dominio
         if: ${{ env.DOMINIO != '' }}

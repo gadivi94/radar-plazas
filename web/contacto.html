@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contacto · Radar de Plazas</title>
+<meta name="description" content="Escribe a Radar de Plazas: dudas, errores en una plaza o propuestas.">
+<meta name="theme-color" content="#0d6b6b">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="legal/legal.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="marca" href="index.html">Radar de <span>Plazas</span></a><a class="volver" href="index.html">← Volver a las plazas</a></div>
+  <main>
+    <h1>Contacto</h1>
+    
+
+    <p>¿Has visto un error en una plaza, echas en falta una fuente o quieres proponer algo? Escríbenos con este formulario o a <a href="mailto:hola@radaropos.com">hola@radaropos.com</a>. Respondemos normalmente en 48 horas laborables.</p>
+    <form class="contacto" id="contacto" novalidate>
+      <label>Nombre <input name="nombre" autocomplete="name" maxlength="80"></label>
+      <label>Correo electrónico <input name="email" type="email" autocomplete="email" required></label>
+      <label>Mensaje <textarea name="mensaje" required maxlength="4000" placeholder="Cuéntanos en qué podemos ayudarte"></textarea></label>
+      <div class="trampa" aria-hidden="true"><label>Web <input name="web" tabindex="-1" autocomplete="off"></label></div>
+      <label class="check"><input type="checkbox" name="acepta" required><span>He leído la <a href="legal/privacidad.html">política de privacidad</a> y acepto que se usen mis datos para responderme.</span></label>
+      <button type="submit">Enviar mensaje</button>
+      <p class="estado" id="estado" role="status"></p>
+    </form>
+    <p class="rgpd"><b>Protección de datos.</b> Responsable: Gabriel Di Pace. Finalidad: responder a tu mensaje. Legitimación: tu consentimiento. Destinatarios: no se ceden datos; proveedores técnicos (Cloudflare, Resend). Derechos: acceso, rectificación, supresión y demás en hola@radaropos.com. Más información en la <a href="legal/privacidad.html">política de privacidad</a>.</p>
+    <script>
+    const API=(window.RADAR_API||"").replace(/\/$/,"");
+    document.getElementById("contacto").addEventListener("submit",async e=>{
+      e.preventDefault();const f=e.target,st=document.getElementById("estado"),btn=f.querySelector("button");
+      const d={nombre:f.nombre.value.trim(),email:f.email.value.trim(),mensaje:f.mensaje.value.trim(),web:f.web.value,acepta:f.acepta.checked};
+      st.className="estado";
+      if(!d.email||!d.mensaje){st.textContent="Escribe tu correo y el mensaje.";st.classList.add("err");return}
+      if(!d.acepta){st.textContent="Marca la casilla de privacidad para poder enviarlo.";st.classList.add("err");return}
+      btn.disabled=true;st.textContent="Enviando…";
+      try{const r=await fetch(API+"/api/contacto",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)});const b=await r.json().catch(()=>({}));
+        if(!r.ok)throw new Error(b.error||"No se pudo enviar");
+        f.reset();st.textContent="¡Gracias! Hemos recibido tu mensaje y te responderemos al correo que has indicado.";st.classList.add("ok")}
+      catch(err){st.textContent=err.message+". También puedes escribir a hola@radaropos.com.";st.classList.add("err")}
+      finally{btn.disabled=false}
+    });
+    </script>
+
+  </main>
+  <footer><nav aria-label="Información legal"><a href="legal/aviso-legal.html">Aviso legal</a><a href="legal/privacidad.html">Privacidad</a><a href="legal/cookies.html">Cookies</a><a href="legal/condiciones.html">Condiciones de uso</a><a href="contacto.html">Contacto</a></nav><span>© 2026 @gadivi · Radar de Plazas</span></footer>
+</div>
+</body>
+</html>

@@ -36,8 +36,10 @@ CREATE TABLE IF NOT EXISTS alertas (
   nombre   TEXT NOT NULL,
   filtros  TEXT NOT NULL,                  -- JSON (ver src/filters.ts)
   activa   INTEGER DEFAULT 1,
-  creada   TEXT NOT NULL
+  creada   TEXT NOT NULL,
+  uid      TEXT                            -- dueño (users.id); NULL = alertas antiguas sin cuenta
 );
+CREATE INDEX IF NOT EXISTS idx_alertas_uid ON alertas(uid);
 
 CREATE TABLE IF NOT EXISTS devices (
   token    TEXT PRIMARY KEY,
@@ -49,3 +51,21 @@ CREATE TABLE IF NOT EXISTS meta (
   k TEXT PRIMARY KEY,
   v TEXT
 );
+
+-- Cuentas (entrada sin contraseña: código de 6 cifras por correo)
+CREATE TABLE IF NOT EXISTS users (
+  id           TEXT PRIMARY KEY,
+  email        TEXT UNIQUE NOT NULL,
+  creado       TEXT NOT NULL,
+  ultimo       TEXT,
+  admin        INTEGER DEFAULT 0,
+  plan         TEXT DEFAULT 'gratis',      -- gratis | pro
+  avisos_email INTEGER DEFAULT 1,
+  acepta       TEXT                        -- fecha en que aceptó condiciones y privacidad
+);
+CREATE TABLE IF NOT EXISTS otp (email TEXT PRIMARY KEY, hash TEXT, exp INTEGER, intentos INTEGER, enviado INTEGER);
+CREATE TABLE IF NOT EXISTS sesiones (th TEXT PRIMARY KEY, uid TEXT NOT NULL, creada INTEGER, ultima INTEGER);
+CREATE INDEX IF NOT EXISTS idx_sesiones_uid ON sesiones(uid);
+CREATE TABLE IF NOT EXISTS marcas (uid TEXT NOT NULL, oferta_id TEXT NOT NULL, marca TEXT NOT NULL, ts TEXT, PRIMARY KEY (uid, oferta_id));
+CREATE TABLE IF NOT EXISTS mensajes (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, email TEXT, mensaje TEXT, fecha TEXT, ip TEXT, leido INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS limites (k TEXT PRIMARY KEY, n INTEGER, dia TEXT);
