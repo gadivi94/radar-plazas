@@ -1,0 +1,61 @@
+radaropos.com/api/auth/config -> 200 45 0.538581
+{"google":null,"googleIos":null,"apple":null}
+radar-plazas.pages.dev/api/auth/config -> 200 45 0.527840
+{"google":null,"googleIos":null,"apple":null}
+radaropos.com/ -> 200 5643 0.203865
+radar-plazas.pages.dev/ -> 200 5489 0.233000
+radaropos.com/app.js -> 200 33883 0.199306
+radar-plazas.pages.dev/app.js -> 200 33965 0.081434
+radaropos.com/app.css -> 200 8002 0.279075
+radar-plazas.pages.dev/app.css -> 200 8006 0.069600
+radaropos.com/mapa3d.js -> 200 8915 0.199432
+radar-plazas.pages.dev/mapa3d.js -> 200 8972 0.121412
+radaropos.com/mapa-datos.js -> 200 51472 0.127037
+radar-plazas.pages.dev/mapa-datos.js -> 200 51472 0.074433
+radaropos.com/vendor/maplibre/maplibre-gl.js -> 200 211698 0.132521
+radar-plazas.pages.dev/vendor/maplibre/maplibre-gl.js -> 200 211795 0.153700
+radaropos.com/api/estado -> 200 93 0.791979
+radar-plazas.pages.dev/api/estado -> 200 93 0.386203
+radaropos.com/api/ofertas -> 200 87094 0.985258
+radar-plazas.pages.dev/api/ofertas -> 200 87094 0.901948
+radaropos.com/api/estadisticas -> 200 1339 2.080800
+radar-plazas.pages.dev/api/estadisticas -> 200 1341 2.553904
+radaropos.com/api/cp/08001 -> 200 80 0.390628
+radar-plazas.pages.dev/api/cp/08001 -> 200 80 0.746438
+radaropos.com/api/ofertas?lat=41.38&lon=2.17&km=25 -> 200 27428 1.715068
+radar-plazas.pages.dev/api/ofertas?lat=41.38&lon=2.17&km=25 -> 200 27428 1.293022
+radaropos.com/oposiciones/seguridad -> 200 4048 0.261102
+radar-plazas.pages.dev/oposiciones/seguridad -> 200 4074 0.264862
+radaropos.com/sitemap.xml -> 200 18952 0.882278
+radar-plazas.pages.dev/sitemap.xml -> 200 18914 0.452748
+HTTP/2 200 
+date: Thu, 08 Oct 2026 20:38:47 GMT
+content-type: application/json; charset=utf-8
+content-length: 959233
+access-control-allow-methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=gQQ7N8rp61NtlgE4v7qvGSL9FJPkX6Oob%2BHag0CXfY9YJowQBrLqU2RCHCqvoHkjVMP9tGvAHiie3kVz97IqFHUfYzoDoRis5SarAUJryyBeOEwc8AsFxr5PdVar0PLh"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+cf-cache-status: DYNAMIC
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 11
+cache-control: no-store
+last-modified: Thu, 08 Oct 2026 20:38:35 GMT
+server: cloudflare
+vary: Authorization
+access-control-allow-headers: Authorization, Content-Type
+cf-ray: a477f3801abb2283-LAX
+alt-svc: h3=":443"; ma=86400
+
+--- mapa base
+HTTP/2 200 
+content-type: application/json
+access-control-allow-origin: *
+x-content-type-options: nosniff
+HTTP/2 200 
+content-type: application/json
+access-control-allow-origin: *
+x-content-type-options: nosniff
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Type: image/png
