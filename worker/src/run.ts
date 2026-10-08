@@ -93,21 +93,30 @@ export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSe
   const nRevision = Math.min(seguidas.length, 5, cupo);
   const elegidas = [...pend.slice(0, cupo - nRevision).map((o) => ({ o, revision: false })), ...seguidas.slice(0, nRevision).map((o) => ({ o, revision: true }))];
   const cambios: Array<{ o: Oferta; texto: string }> = [];
-  for (const { o, revision } of elegidas) {
-    try {
-      const r = await fetch(o.detalle_url!, { headers: { ...UA, Accept: o.fuente === "BOE" ? "application/xml" : "text/html" } });
-      if (!r.ok) { await actualizar(env, o.id, revision ? { revisada: ahora } : { detalle_ok: r.status === 404 ? 1 : 0 }); continue; }
-      const body = await r.text();
-      const extra: Partial<Oferta> = o.fuente === "BOE" ? enriquecerBoe(o, body) : enriquecerCido(o, body);
-      const texto = revision ? describirCambio(o, extra) : null;
-      if (texto) {
-        extra.historia = JSON.stringify([...JSON.parse(o.historia || "[]"), { fecha: ahora, texto }].slice(-20));
-        cambios.push({ o: { ...o, ...extra } as Oferta, texto });
-      }
-      await actualizar(env, o.id, { ...extra, revisada: ahora });
-      if (revision) res.revisadas++; else res.completadas++;
-    } catch (e) { res.errores.push(`${o.id}: ${String(e)}`); }
-  }
+  // Fichas en paralelo (6 a la vez) y con tope de tiempo, para que cada revisión termine siempre.
+  const tope = Date.now() + Number(env.TIEMPO_FICHAS_MS || 70_000);
+  const cola = [...elegidas];
+  const trabajador = async () => {
+    for (let x = cola.shift(); x; x = cola.shift()) {
+      if (Date.now() > tope) return;
+      const { o, revision } = x;
+      try {
+        const ctrl = new AbortController(); const to = setTimeout(() => ctrl.abort(), 15_000);
+        const r = await fetch(o.detalle_url!, { headers: { ...UA, Accept: o.fuente === "BOE" ? "application/xml" : "text/html" }, signal: ctrl.signal }).finally(() => clearTimeout(to));
+        if (!r.ok) { await actualizar(env, o.id, revision ? { revisada: ahora } : { detalle_ok: r.status === 404 ? 1 : 0 }); continue; }
+        const body = await r.text();
+        const extra: Partial<Oferta> = o.fuente === "BOE" ? enriquecerBoe(o, body) : enriquecerCido(o, body);
+        const texto = revision ? describirCambio(o, extra) : null;
+        if (texto) {
+          extra.historia = JSON.stringify([...JSON.parse(o.historia || "[]"), { fecha: ahora, texto }].slice(-20));
+          cambios.push({ o: { ...o, ...extra } as Oferta, texto });
+        }
+        await actualizar(env, o.id, { ...extra, revisada: ahora });
+        if (revision) res.revisadas++; else res.completadas++;
+      } catch (e) { res.errores.push(`${o.id}: ${String(e).slice(0, 100)}`); }
+    }
+  };
+  await Promise.all(Array.from({ length: 6 }, trabajador));
   if (cambios.length) {
     const ids = cambios.map((c) => c.o.id);
     const quien = (await env.DB.prepare(`SELECT uid, oferta_id FROM marcas WHERE marca NOT IN ('descartada','visto') AND oferta_id IN (${ids.map(() => "?").join(",")})`)

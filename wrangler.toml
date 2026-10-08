@@ -15,7 +15,7 @@ binding = "AI"
 
 [vars]
 # Fichas de detalle que se leen en cada revisión (plan gratuito: 35; de pago: hasta 300)
-ENRICH_BUDGET = "35"
+ENRICH_BUDGET = "45"
 SITE_URL = "https://radaropos.com"
 MAIL_FROM = "Radar de Plazas <avisos@radaropos.com>"
 CONTACT_TO = "hola@radaropos.com"

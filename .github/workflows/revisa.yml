@@ -16,6 +16,6 @@ jobs:
       - name: Lanza la revisión
         run: |
           url="${{ vars.WEB_URL || 'https://radar-plazas.pages.dev' }}"
-          code=$(curl -sS -m 120 -o r.json -w '%{http_code}' -X POST "$url/api/run")
+          code=$(curl -sS -m 280 -o r.json -w '%{http_code}' -X POST "$url/api/run")
           echo "Respuesta $code: $(head -c 600 r.json)"
           case "$code" in 200|429) exit 0;; *) echo "::warning::La revisión respondió $code";; esac

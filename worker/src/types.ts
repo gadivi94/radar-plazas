@@ -14,7 +14,8 @@ export interface Env {
   TELEGRAM_BOT?: string;      // nombre del bot, sin @
   AI?: { run: (model: string, input: unknown) => Promise<unknown> }; // Workers AI (resúmenes y preguntas)
   IA_MODELO?: string;
-  IA_DIARIAS?: string;        // preguntas a la IA por usuario y día
+  IA_DIARIAS?: string;
+  TIEMPO_FICHAS_MS?: string;  // tiempo máximo leyendo fichas en cada revisión        // preguntas a la IA por usuario y día
 }
 
 export interface Oferta {
