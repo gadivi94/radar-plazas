@@ -30,7 +30,7 @@ const ipDe = (req: Request) => req.headers.get("CF-Connecting-IP") || "0";
 
 // ---------- esquema: las tablas nuevas se crean solas la primera vez ----------
 let ESQUEMA_OK = false;
-const ESQUEMA_VERSION = "2";
+const ESQUEMA_VERSION = "3";
 export async function asegurarEsquema(env: Env): Promise<void> {
   if (ESQUEMA_OK) return;
   const db = env.DB;
@@ -38,6 +38,7 @@ export async function asegurarEsquema(env: Env): Promise<void> {
     ["alertas", "uid TEXT"],
     ["ofertas", "subtipo TEXT"], ["ofertas", "nivel INTEGER"], ["ofertas", "requisitos TEXT"], ["ofertas", "historia TEXT"], ["ofertas", "revisada TEXT"], ["ofertas", "ia_resumen TEXT"],
     ["users", "perfil TEXT"], ["users", "frecuencia TEXT DEFAULT 'diaria'"], ["users", "boletin INTEGER DEFAULT 0"], ["users", "telegram TEXT"], ["users", "cal_token TEXT"],
+    ["ofertas", "lat REAL"], ["ofertas", "lon REAL"],
     ["marcas", "notas TEXT"], ["marcas", "docs TEXT"], ["marcas", "recordado INTEGER DEFAULT 0"],
   ];
   // Primero las tablas (users y marcas pueden no existir aún), luego las columnas nuevas.
@@ -50,6 +51,7 @@ export async function asegurarEsquema(env: Env): Promise<void> {
     db.prepare("CREATE TABLE IF NOT EXISTS mensajes (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, email TEXT, mensaje TEXT, fecha TEXT, ip TEXT, leido INTEGER DEFAULT 0)"),
     db.prepare("CREATE TABLE IF NOT EXISTS limites (k TEXT PRIMARY KEY, n INTEGER, dia TEXT)"),
     db.prepare("CREATE TABLE IF NOT EXISTS ia_uso (k TEXT PRIMARY KEY, n INTEGER, dia TEXT)"),
+    db.prepare("CREATE TABLE IF NOT EXISTS geocache (k TEXT PRIMARY KEY, lat REAL, lon REAL)"),
   ]);
   await tablas();
   const meta = await db.prepare("SELECT v FROM meta WHERE k = 'esquema'").first<{ v: string }>().catch(() => null);

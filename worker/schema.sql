@@ -31,7 +31,9 @@ CREATE TABLE IF NOT EXISTS ofertas (
   requisitos    TEXT,                      -- JSON
   historia      TEXT,                      -- JSON [{fecha, texto}]
   revisada      TEXT,
-  ia_resumen    TEXT
+  ia_resumen    TEXT,
+  lat           REAL,                      -- coordenadas del municipio (Nominatim), para el mapa 3D
+  lon           REAL
 );
 CREATE INDEX IF NOT EXISTS idx_ofertas_tipo ON ofertas(tipo, subtipo);
 CREATE INDEX IF NOT EXISTS idx_ofertas_comunidad ON ofertas(comunidad);
@@ -82,3 +84,4 @@ CREATE TABLE IF NOT EXISTS marcas (uid TEXT NOT NULL, oferta_id TEXT NOT NULL, m
 CREATE TABLE IF NOT EXISTS ia_uso (k TEXT PRIMARY KEY, n INTEGER, dia TEXT);
 CREATE TABLE IF NOT EXISTS mensajes (id INTEGER PRIMARY KEY AUTOINCREMENT, nombre TEXT, email TEXT, mensaje TEXT, fecha TEXT, ip TEXT, leido INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS limites (k TEXT PRIMARY KEY, n INTEGER, dia TEXT);
+CREATE TABLE IF NOT EXISTS geocache (k TEXT PRIMARY KEY, lat REAL, lon REAL);

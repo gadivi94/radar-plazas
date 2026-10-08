@@ -493,3 +493,40 @@ test("web/sectores.js está al día con src/sectores.ts", async () => {
   const { readFileSync } = await import("node:fs");
   expect(readFileSync(new URL("../../web/sectores.js", import.meta.url), "utf8")).toBe(generar());
 });
+
+describe("empresas de transporte", () => {
+  test("lectores por empresa", async () => {
+    const { EMPRESAS, ofertasEmpresa } = await import("../src/sources/transporte");
+    const E = (id: string) => EMPRESAS.find((e) => e.id === id)!;
+    const hoy = "2026-10-08", ahora = "2026-10-08T08:00:00Z";
+    // EMT Madrid: la fecha del título decide si es reciente
+    const emt = ofertasEmpresa(E("emtmadrid"), `<ul><li><a href="/Elementos-Cabecera/Enlaces-Pie-vertical/EMPRESA/Empleo/Convocatoria-3-plazas-Jefe-a-de-Operaciones-Servic.aspx">Convocatoria 3 plazas Jefe/a de Operaciones Servicio de Teleférico 28-09-2026</a></li>
+      <li><a href="/Elementos-Cabecera/Enlaces-Pie-vertical/EMPRESA/Empleo/Convocatoria-plazas-Personal-de-Conduccion.aspx">Convocatoria plazas Personal de Conducción de autobús en línea 21-04-2026</a></li></ul>`, hoy, ahora);
+    expect(emt).toHaveLength(1);
+    expect(emt[0]).toMatchObject({ organismo: "EMT Madrid", comunidad: "Madrid", provincia: "Madrid", tipo: "transporte", plazas: 3, fuente: "EMPRESA" });
+    expect(emt[0].url).toBe("https://www.emtmadrid.es/Elementos-Cabecera/Enlaces-Pie-vertical/EMPRESA/Empleo/Convocatoria-3-plazas-Jefe-a-de-Operaciones-Servic.aspx");
+    // FGC: plazo junto a la oferta
+    const fgc = ofertasEmpresa(E("fgc"), `<tr><td><a href="/job/Barcelona%C2%A0-Maquinistes-d&apos;FGC-Mobilitat/1374338657/">Maquinistes d'FGC Mobilitat</a></td><td>Barcelona</td><td>18/10/2026</td></tr>`, hoy, ahora);
+    expect(fgc[0]).toMatchObject({ titulo: "Maquinistes d'FGC Mobilitat", plazo_fin: "2026-10-18", subtipo: "metro-tren", comunidad: "Cataluña" });
+    // Dbus: solo [ABIERTA]
+    const dbus = ofertasEmpresa(E("dbus"), `<h2><a href="https://dbus.eus/es/seleccion-de-personal/abierta-bolsa-mecanico/">[ABIERTA] Bolsa de Trabajo: Mecánico/a-electricista polivalente</a></h2><h2><a href="https://dbus.eus/es/seleccion-de-personal/abierta-bolsa-limpieza/">[CERRADA] Bolsa de Trabajo: Limpieza-Repostaje</a></h2>`, hoy, ahora);
+    expect(dbus.map((o) => o.titulo)).toEqual(["Bolsa de Trabajo: Mecánico/a-electricista polivalente"]);
+    expect(dbus[0]).toMatchObject({ sistema: "bolsa", subtipo: "otros-transporte" });
+    // Guaguas: título del encabezado, plazo «del … al …», concluidas fuera
+    const gu = ofertasEmpresa(E("guaguas"), `<h2>CONVOCATORIA SELECCION TÉCNICO/A DE COMPRAS</h2><p>Convocatoria: del 01/10/2026 al 20/10/2026</p><a href="/ofertas_trabajo/bases_37.pdf">Bases</a>
+      <h2>CONVOCATORIA BOLSA CONDUCTORES (CONCLUIDA)</h2><p>Convocatoria: del 01/01/2026 al 20/01/2026</p><a href="/ofertas_trabajo/bases_30.pdf">Bases</a>`, hoy, ahora);
+    expect(gu).toHaveLength(1);
+    expect(gu[0]).toMatchObject({ titulo: "CONVOCATORIA SELECCION TÉCNICO/A DE COMPRAS", plazo_fin: "2026-10-20" });
+    // Metro Bilbao (JSON:API de Drupal)
+    const mb = ofertasEmpresa(E("metrobilbao"), JSON.stringify({ data: [{ attributes: { title: "Proceso externo de selección de personal", created: "2026-09-18T10:00:00+00:00", drupal_internal__nid: 20493, body: { summary: "Ingeniería de datos", value: "<p>Plazo hasta el 30/10/2026</p>" } } },
+      { attributes: { title: "Proceso externo de selección de personal", created: "2025-01-18T10:00:00+00:00", drupal_internal__nid: 100, body: { value: "<p>viejo</p>" } } }] }), hoy, ahora);
+    expect(mb).toHaveLength(1);
+    expect(mb[0]).toMatchObject({ titulo: "Proceso externo de selección de personal: Ingeniería de datos", url: "https://cms.metrobilbao.eus/es/node/20493", plazo_fin: "2026-10-30" });
+    // ATM: solo la sección «en curso»
+    const atm = ofertasEmpresa(E("atm"), `<h2>Ofertes d'ocupació en curs</h2><h3>Tècnic/a Superior en Contractació Pública (TSCON)</h3><a href="/documents/d/portal-atm/08-20261005_anuncidogc_tscon">Anunci DOGC</a><h2>Ofertes d'ocupació resoltes</h2><h3>Antiga</h3><a href="/documents/d/portal-atm/01-2020_x">Anunci</a>`, hoy, ahora);
+    expect(atm.map((o) => o.titulo)).toEqual(["Anunci DOGC"].length ? ["Tècnic/a Superior en Contractació Pública (TSCON)"] : []);
+    // AUVASA: PDFs recientes por la fecha de subida
+    const au = ofertasEmpresa(E("auvasa"), `<a href="https://www.auvasa.es/wp-content/uploads/2026/08/convocatoria_oe01_2026_01.pdf">CONVOCATORIA PARA LA CONTRATACIÓN DE 3 AGENTES DE APARCAMIENTO</a><a href="https://www.auvasa.es/wp-content/uploads/2025/04/Convocatoria_oe02_2025.pdf">VIEJA CONVOCATORIA DE CONDUCTORES</a>`, hoy, ahora);
+    expect(au.map((o) => o.publicado)).toEqual(["2026-08-01"]);
+  });
+});

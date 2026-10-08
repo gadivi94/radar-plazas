@@ -45,6 +45,8 @@ const DOCS=[["dni","DNI o NIE"],["titulo","Título"],["tasa","Pago de la tasa"],
 const SISTEMA={concurso:"Concurso de méritos","concurso-oposicion":"Concurso-oposición",oposicion:"Oposición",bolsa:"Bolsa de trabajo"};
 const COMUNIDADES=["Andalucía","Aragón","Asturias","Baleares","Canarias","Cantabria","Castilla y León","Castilla-La Mancha","Cataluña","Comunidad Valenciana","Extremadura","Galicia","La Rioja","Madrid","Murcia","Navarra","País Vasco","Ceuta","Melilla","Estatal"];
 const SECT=Object.fromEntries(SECTORES.map(s=>[s.k,s]));
+const ICONO={seguridad:"🚓",justicia:"⚖️",sanidad:"🩺",educacion:"🎒",social:"🤝",transporte:"🚇",empresas:"📮",militar:"🎖️",subalterno:"🗝️",administrativo:"🗂️",oficios:"🔧",tecnico:"💻",otros:"✳️"};
+const FUENTE={BOE:"BOE",TMB:"TMB",EMPRESA:"web de la empresa"};
 const SUBN=Object.fromEntries(SECTORES.flatMap(s=>s.subs.map(([k,n])=>[k,{n,s:s.k}])));
 const NIV_OPC=[["","Cualquier nivel"],["0","Sin titulación"],["1","Con ESO"],["2","Con bachillerato o FP medio"],["3","Con FP superior"],["4","Con carrera"]];
 const DIF=[[1,"Fácil"],[2,"Media"],[3,"Difícil"]];
@@ -52,7 +54,7 @@ const GRUPOS=[["AP","AP"],["C2","C2"],["C1","C1"],["B","B"],["A2","A2"],["A1","A
 const normTxt=s=>(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim();
 
 // ---------- Estado ----------
-const S={ofertas:[],alertas:null,meta:null,tab:"nuevas",sec:"",subs:[],niv:null,solo:false,dif:[],grp:[],etapa:"",busy:new Set(),ses:"",yo:null,adm:null,perfil:null,mapa:"cat",abiertos:new Set()};
+const S={q:"",m3:false,clasico:false,ofertas:[],alertas:null,meta:null,tab:"nuevas",sec:"",subs:[],niv:null,solo:false,dif:[],grp:[],etapa:"",busy:new Set(),ses:"",yo:null,adm:null,perfil:null,mapa:"cat",abiertos:new Set()};
 try{S.tab=ls.get("rp_tab","nuevas");if(!TABS.some(x=>x[0]===S.tab))S.tab="nuevas";
   const f=JSON.parse(ls.get("rp_f","{}"));S.dif=f.dif||[];S.grp=f.grp||[];S.sec=f.sec||"";S.subs=f.subs||[];S.niv=f.niv??null;S.solo=!!f.solo;
   S.place=f.place===undefined?{kind:"ccaa",id:"Cataluña"}:f.place;S.ses=ls.get("rp_ses","");S.perfil=JSON.parse(ls.get("rp_perfil","null"));S.mapa=ls.get("rp_mapa","cat");
@@ -64,6 +66,8 @@ function dificultad(o){return o.dificultad||2}
 function cumpleDe(o){return S.perfil&&window.RadarCumple?RadarCumple.cumple(o,S.perfil):null}
 /* Filtros de la barra (sin el lugar, que lo aplica el mapa/desplegable). `sin` permite contar cada grupo de chips sin su propio filtro. */
 function pasaFiltros(o,sin){
+  if(S.q){const h=o._h||(o._h=normTxt(`${o.titulo} ${o.organismo||""} ${o.municipio||""} ${o.provincia||""} ${o.comunidad||""} ${SUBN[o.subtipo]?.n||""} ${SECT[o.tipo]?.n||""}`));
+    for(const w of normTxt(S.q).split(/\s+/))if(w&&!h.includes(w))return false}
   if(sin!=="sec"&&S.sec&&(o.tipo||"otros")!==S.sec)return false;
   if(sin!=="sec"&&sin!=="sub"&&S.subs.length&&!S.subs.includes(o.subtipo))return false;
   if(S.niv!=null&&o.nivel!=null&&o.nivel>S.niv)return false;
@@ -104,25 +108,28 @@ function render(){
     $("etapas").innerHTML=`<button type="button" data-etapa="" aria-pressed="${!S.etapa}">${t("Todas")}</button>`+ETAPAS.map(([k,l])=>`<button type="button" data-etapa="${k}" aria-pressed="${S.etapa===k}">${t(l)}<small>${ce(k)}</small></button>`).join("")}
   const base=S.ofertas.filter(inTab);
   const cuenta=(sin,fn)=>base.filter(o=>pasaFiltros(o,sin)&&lugarActivo(o)&&fn(o)).length;
-  $("fsec").innerHTML=`<button type="button" data-sec="" aria-pressed="${!S.sec}">${t("Todos")}</button>`+SECTORES.map(s=>{const n=cuenta("sec",o=>(o.tipo||"otros")===s.k);return n||S.sec===s.k?`<button type="button" data-sec="${s.k}" aria-pressed="${S.sec===s.k}">${esc(s.n)}<small>${n}</small></button>`:""}).join("");
+  const tot=cuenta("sec",()=>true);
+  $("fsec").innerHTML=`<button type="button" data-sec="" aria-pressed="${!S.sec}"><span class="i">📡</span><span class="t">${t("Todos")}</span><span class="n">${tot}</span></button>`+SECTORES.map(s=>{const n=cuenta("sec",o=>(o.tipo||"otros")===s.k);return n||S.sec===s.k?`<button type="button" data-sec="${s.k}" aria-pressed="${S.sec===s.k}"><span class="i">${ICONO[s.k]||"•"}</span><span class="t">${esc(s.n)}</span><span class="n">${n}</span></button>`:""}).join("");
   const subs=S.sec?SECT[S.sec]?.subs||[]:[];
-  $("fsubRow").hidden=!subs.length;
-  $("fsub").innerHTML=subs.map(([k,n])=>{const x=cuenta("sub",o=>o.subtipo===k);return `<button type="button" data-sub="${k}" aria-pressed="${S.subs.includes(k)}" ${x||S.subs.includes(k)?"":"disabled"}>${esc(n)}<small>${x}</small></button>`}).join("");
+  $("fsub").hidden=!subs.length;
+  $("fsub").innerHTML=subs.map(([k,n])=>{const x=cuenta("sub",o=>o.subtipo===k);return x||S.subs.includes(k)?`<button type="button" class="chip" data-sub="${k}" aria-pressed="${S.subs.includes(k)}">${esc(n)}<small>${x}</small></button>`:""}).join("");
   $("fniv").innerHTML=NIV_OPC.map(([v,l])=>`<option value="${v}">${t(l)}</option>`).join("");$("fniv").value=S.niv==null?"":String(S.niv);
   $("fdif").innerHTML=DIF.map(([v,l])=>`<button type="button" data-dif="${v}" aria-pressed="${S.dif.includes(v)}">${t(l)}<small>${cuenta("dif",o=>dificultad(o)===v)}</small></button>`).join("");
   $("fgrp").innerHTML=GRUPOS.map(([v,l])=>`<button type="button" data-grp="${v}" aria-pressed="${S.grp.includes(v)}">${t(l)}<small>${cuenta("grp",o=>grupoDe(o)===v)}</small></button>`).join("");
   $("soloCumplo").checked=S.solo;$("soloNota").textContent=S.perfil?.nivel!=null?"":"(rellena Mi perfil)";
-  $("sNuevas").textContent=c.nuevas;$("sNuevasL").textContent=t(S.ses?"nuevas sin revisar":"nuevas esta semana");
-  $("sInteresa").textContent=c.mias;
-  $("sCierran").textContent=S.ofertas.filter(o=>{const n=daysLeft(o);return n!==null&&n>=0&&n<=7&&(o.marca||"nueva")!=="descartada"}).length;
   if(S.meta){$("lastrun").textContent=`${LANG==="ca"?"Última revisió":"Última revisión"}: ${new Date(S.meta.fecha).toLocaleString(LANG==="ca"?"ca-ES":"es-ES",{dateStyle:"medium",timeStyle:"short"})} · ${S.meta.recogidas??0} ${t("nuevas")} · ${S.meta.completadas??0} ${LANG==="ca"?"fitxes llegides":"fichas leídas"}`}
   S.mapRows=base.filter(o=>pasaFiltros(o));
-  drawPins();renderInfo();renderLugar();drawEs();
+  if(S.clasico){drawPins();renderInfo();drawEs()}
+  renderLugar();
+  window.Mapa3D&&S.m3&&Mapa3D.actualizar(S.mapRows,S.place);
   const rows=S.mapRows.filter(lugarActivo)
     .sort((a,b)=>{const da=daysLeft(a),db=daysLeft(b);if(da===null&&db===null)return 0;if(da===null)return 1;if(db===null)return -1;return da-db});
   const activos=S.dif.length+S.grp.length+(S.place?1:0)+(S.sec?1:0)+S.subs.length+(S.niv!=null?1:0)+(S.solo?1:0);
-  $("fres").textContent=`${rows.length} ${t(rows.length===1?"plaza":"plazas")}${activos?" "+t("con estos filtros"):""}`;
+  $("fres").textContent=`${rows.length} ${t(rows.length===1?"plaza":"plazas")}`;
   $("fclear").hidden=!activos;
+  $("hTotal").textContent=rows.length.toLocaleString("es-ES");
+  $("hTexto").textContent=(rows.length===1?"plaza ":"plazas ")+(S.tab==="nuevas"?(S.ses?"nuevas sin revisar":"nuevas esta semana"):S.tab==="mias"?"en seguimiento":"abiertas")+" "+nombreLugar(S.place)+(S.sec||S.subs.length||S.niv!=null||S.dif.length||S.grp.length||S.q||S.solo?" con tus filtros":"");
+  renderActivos();renderM3info(rows);
   if(!rows.length){
     const sinCuenta=!S.ses&&["mias","descartada"].includes(S.tab);
     const msg=sinCuenta?"Entra con tu correo para seguir plazas y verlas aquí en cualquier dispositivo.":{nuevas:S.ses?"No hay plazas nuevas sin revisar. Cuando la revisión diaria encuentre algo, aparecerá aquí y te llegará un aviso.":"No han entrado plazas nuevas esta semana con estos filtros.",
@@ -131,6 +138,35 @@ function render(){
     $("list").innerHTML=`<div class="empty">${S.ofertas.length||S.loaded?msg:t("Aquí aparecerán las plazas que encajen con tus criterios.")}</div>`;return;
   }
   $("list").innerHTML=rows.slice(0,S.mostrar||60).map(card).join("")+(rows.length>(S.mostrar||60)?`<button type="button" class="mas" id="verMas">Ver ${Math.min(60,rows.length-(S.mostrar||60))} más (de ${rows.length-(S.mostrar||60)})</button>`:"");
+}
+function nombreLugar(p){
+  if(!p)return "en toda España";
+  if(p.kind==="ccaa")return p.id==="Estatal"?"de ámbito estatal":"en "+p.id;
+  if(p.kind==="prov")return "en la provincia de "+(PROV_NOM[p.id]||"");
+  if(p.kind==="provES")return "en la provincia de "+p.id;
+  if(p.kind==="com")return "en "+(COM_NOM[p.id]||"la comarca");
+  if(p.kind==="toda")return "válidas en toda Cataluña";
+  return "en "+p.id;
+}
+function renderActivos(){
+  const a=[];
+  if(S.q)a.push(["q",`“${S.q}”`]);
+  if(S.place)a.push(["place",nombreLugar(S.place).replace(/^en (la provincia de )?/,"")]);
+  if(S.sec)a.push(["sec",SECT[S.sec]?.n||S.sec]);
+  for(const k of S.subs)a.push(["sub:"+k,SUBN[k]?.n||k]);
+  if(S.niv!=null)a.push(["niv",NIV_OPC.find(x=>x[0]===String(S.niv))?.[1]]);
+  for(const d of S.dif)a.push(["dif:"+d,DIF[d-1][1]]);
+  for(const g of S.grp)a.push(["grp:"+g,g==="?"?"Sin grupo":"Grupo "+g]);
+  if(S.solo)a.push(["solo","Solo las que cumplo"]);
+  $("activos").innerHTML=a.map(([k,l])=>`<button type="button" class="activo" data-quitar="${esc(k)}" aria-label="Quitar filtro ${esc(l)}">${esc(l)}</button>`).join("");
+}
+function renderM3info(rows){
+  const box=$("m3info");
+  if(!S.place){box.hidden=true;return}
+  const pronto=rows.filter(o=>{const n=daysLeft(o);return n!==null&&n>=0&&n<=7}).length;
+  box.hidden=false;
+  box.innerHTML=`<div><b>${esc(nombreLugar(S.place).replace(/^en (la provincia de )?/,""))}</b><span>${rows.length} ${rows.length===1?"plaza":"plazas"}${pronto?` · ${pronto} cierran en 7 días`:""}</span></div>
+    <div class="acc"><button type="button" class="si" id="m3ver">Ver lista</button><button type="button" id="m3quitar" aria-label="Quitar el lugar y ver toda España">✕</button></div>`;
 }
 function promoOpos(o){return o.tipo==="seguridad"&&(o.subtipo==="mossos"||(o.comunidad==="Cataluña"&&["policia-local","agente-civico","vigilante"].includes(o.subtipo)))}
 function card(o){
@@ -155,7 +191,7 @@ function card(o){
   const b=(k,l)=>`<button type="button" data-id="${esc(o.id)}" data-marca="${k}" aria-pressed="${m===k||(k==="interesa"&&SEGUIMIENTO.has(m))}" ${dis}>${t(l)}</button>`;
   const segui=S.ses&&SEGUIMIENTO.has(m)?seguimiento(o):"";
   return `<article class="card ${isOpen(o)?"":"closed"}" id="c-${esc(o.id.replace(/[^a-zA-Z0-9]/g,"-"))}">${due}<div class="body">
-    <div class="ens">${esc(o.ens)}${o.fuente&&o.fuente!=="CIDO"?" · "+esc(o.fuente):""}</div>
+    <div class="ens"><span aria-hidden="true">${ICONO[o.tipo||"otros"]||""}</span><span>${esc(o.ens)}${o.fuente&&FUENTE[o.fuente]&&o.fuente!=="EMPRESA"?" · "+esc(FUENTE[o.fuente]):""}</span></div>
     <h2 class="titulo"><a href="${esc(o.ruta?API+o.ruta:o.url)}">${esc(o.titulo)}</a></h2>
     <div class="tags">${tags.join("")}</div>
     <div class="acts">${o.tramiteUrl&&isOpen(o)?`<a class="primary" href="${esc(o.tramiteUrl)}" target="_blank" rel="noopener">${t("Presentar solicitud")}</a>`:""}
@@ -200,6 +236,7 @@ function filtrosActuales(){
   const pl=S.place;
   if(pl?.kind==="ccaa")f.comunidades=[pl.id];
   else if(pl?.kind==="provES")f.provincias=[pl.id];
+  else if(pl?.kind==="muniES")f.zonas=[pl.id];
   else if(pl?.kind==="muni")f.zonas=[pl.id];
   else if(pl?.kind==="com")f.zonas=GEO.munis.filter(m=>m[1]===pl.id).map(m=>m[0]);
   else if(pl?.kind==="prov"){f.comunidades=["Cataluña"];f.zonas=GEO.munis.filter(m=>m[2]===pl.id).map(m=>m[0])}
@@ -337,6 +374,7 @@ function lugarActivo(o){
   if(!S.place)return true;
   if(S.place.kind==="ccaa")return (o.comunidad||"Cataluña")===S.place.id;
   if(S.place.kind==="provES")return normTxt(o.provincia)===normTxt(S.place.id)||o.comunidad==="Estatal";
+  if(S.place.kind==="muniES")return normTxt(o.municipio)===normTxt(S.place.id);
   if(o.comunidad&&o.comunidad!=="Cataluña")return false;
   const m=muniDe(o);
   if(S.place.kind==="toda")return !m;
@@ -363,20 +401,20 @@ function renderLugar(){
   if(porMuni.size)h+=`<optgroup label="Localidades con plazas">${[...porMuni].sort(byName).map(([l,n])=>opt("muni:"+l,l,n)).join("")}</optgroup>`;
   if(toda)h+=`<optgroup label="Sin municipio">${opt("toda:1","Válidas en toda Cataluña",toda)}</optgroup>`;
   const k=placeKey(S.place);
-  if(k&&!h.includes(`value="${esc(k)}"`))h+=opt(k,(["muni","ccaa","provES"].includes(S.place.kind)?S.place.id:S.place.kind==="com"?COM_NOM[S.place.id]:PROV_NOM[S.place.id])||"Lugar elegido",0);
+  if(k&&!h.includes(`value="${esc(k)}"`))h+=opt(k,(["muni","ccaa","provES","muniES"].includes(S.place.kind)?S.place.id:S.place.kind==="com"?COM_NOM[S.place.id]:PROV_NOM[S.place.id])||"Lugar elegido",0);
   sel.innerHTML=h;sel.value=k;
 }
 $("lugarsel").addEventListener("change",e=>{
   const v=e.target.value;
   if(!v){S.place=null;setVB({...FULL})}
-  else{const [kind,id]=v.split(/:(.*)/s);S.place={kind,id:["muni","ccaa","provES"].includes(kind)?id:kind==="toda"?"1":+id};
+  else{const [kind,id]=v.split(/:(.*)/s);S.place={kind,id:["muni","ccaa","provES","muniES"].includes(kind)?id:kind==="toda"?"1":+id};
     if(kind==="ccaa"||kind==="provES"){setVB({...FULL});if(kind==="provES"||(kind==="ccaa"&&id!=="Cataluña"))cambiarMapa("es")}
     if(kind==="prov"){cambiarMapa("cat");zoomProv(+id)}
     else if(kind==="muni"){cambiarMapa("cat");const m=MUNI.get(nn(id));if(m){const w=FULL.w*0.3;setVB({x:m.x-w/2,y:m.y-w*FULL.h/FULL.w/2,w,h:0});S.sel={kind:"muni",id}}}
     else if(kind==="com"){cambiarMapa("cat");const ms=GEO.munis.filter(m=>m[1]===+id),xs=ms.map(m=>m[3]),ys=ms.map(m=>m[4]);
       const w=Math.max(Math.max(...xs)-Math.min(...xs),(Math.max(...ys)-Math.min(...ys))*FULL.w/FULL.h)*1.6+40;
       setVB({x:(Math.max(...xs)+Math.min(...xs))/2-w/2,y:(Math.max(...ys)+Math.min(...ys))/2-w*FULL.h/FULL.w/2,w,h:0});S.sel={kind:"com",id:+id}}}
-  guardarFiltros();render();
+  guardarFiltros();render();window.Mapa3D&&S.m3&&Mapa3D.enfocar(S.place);
 });
 function cambiarMapa(v){
   S.mapa=v;ls.set("rp_mapa",v);
@@ -669,8 +707,57 @@ function leerUrl(){
   if([...q.keys()].length)try{history.replaceState(null,"",location.pathname+location.hash)}catch(_){}
 }
 
-leerUrl();traducirEstatico();cambiarMapa(S.mapa);renderPerfil();render();renderCrit();renderCuenta();
+leerUrl();traducirEstatico();renderPerfil();render();renderCrit();renderCuenta();iniciarMapa3D();
 cargar().then(seguirPendiente);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)cargar()});
 setInterval(()=>{if(!document.hidden)cargar()},5*60_000);
 if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol)&&!window.RADAR_API)navigator.serviceWorker.register("/sw.js").catch(()=>{});
+
+// ---------- Mapa 3D ----------
+function coordDe(o){
+  if(!o.comunidad||o.comunidad==="Cataluña"){const m=muniDe(o);const c=m&&window.MAPA_DATOS&&MAPA_DATOS.munisCat[m.nom];return c?{nom:m.nom,cat:true,lon:c[0],lat:c[1]}:null}
+  if(o.lat&&o.lon&&o.municipio)return {nom:o.municipio,cat:false,lon:o.lon,lat:o.lat};
+  return null;
+}
+function coordDeNombre(nom,cat){
+  if(cat){const c=window.MAPA_DATOS&&MAPA_DATOS.munisCat[nom];return c?{lon:c[0],lat:c[1]}:null}
+  const o=S.ofertas.find(x=>x.municipio===nom&&x.lat&&x.lon);return o?{lon:o.lon,lat:o.lat}:null;
+}
+function provDe(o){if(o.provincia)return o.provincia;const m=(!o.comunidad||o.comunidad==="Cataluña")&&muniDe(o);return m?PROV_NOM[m.prov]:null}
+function usarClasico(motivo){
+  S.clasico=true;S.m3=false;$("hero").classList.add("plano");$("mapaClasico").hidden=false;
+  for(const el of document.querySelectorAll(".seg3,.volar"))el.hidden=true;
+  const av=$("m3aviso");av.hidden=false;av.textContent=motivo||"Tu dispositivo no puede mostrar el mapa 3D: abajo tienes el mapa plano.";
+  if(!$("map").firstChild)initMap();cambiarMapa(S.mapa);render();
+}
+async function iniciarMapa3D(){
+  if(!window.Mapa3D||!Mapa3D.soporta()){usarClasico();return}
+  for(const b of document.querySelectorAll("[data-m3modo]"))b.setAttribute("aria-pressed",String(b.dataset.m3modo===Mapa3D.modo()));
+  try{
+    await Mapa3D.iniciar({contenedor:$("mapa3d"),provDe,coordDe,coordDeNombre,diasDe:daysLeft,
+      alElegir(p){S.place=placeKey(S.place)===placeKey(p)?null:p;guardarFiltros();render();Mapa3D.enfocar(S.place)},
+      alGirar(v){$("m3girar").setAttribute("aria-pressed",String(v))}});
+    S.m3=true;render();if(S.place)Mapa3D.enfocar(S.place);
+  }catch(e){usarClasico("No se ha podido cargar el mapa 3D: abajo tienes el mapa plano.")}
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.m3modo){Mapa3D.modo(b.dataset.m3modo);for(const x of document.querySelectorAll("[data-m3modo]"))x.setAttribute("aria-pressed",String(x===b));return}
+  if(b.dataset.volar){const v=b.dataset.volar;
+    if(v==="España"){S.place=null}else if(v!=="Canarias"&&v!=="Baleares"&&COMUNIDADES.includes(v))S.place={kind:"ccaa",id:v};
+    else if(v==="Canarias"||v==="Baleares")S.place={kind:"ccaa",id:v};
+    guardarFiltros();render();if(S.m3)Mapa3D.enfocar(S.place);
+    for(const x of document.querySelectorAll("[data-volar]"))x.setAttribute("aria-pressed",String(x===b&&v!=="España"));return}
+  if(b.id==="m3plano"){const si=b.getAttribute("aria-pressed")!=="true";b.setAttribute("aria-pressed",String(si));b.textContent=si?"3D":"2D";b.title=si?"Ver en 3D":"Ver en plano";Mapa3D.plano(si);return}
+  if(b.id==="m3girar"){b.setAttribute("aria-pressed",String(Mapa3D.girar()));return}
+  if(b.id==="m3ver"){$("barra").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});return}
+  if(b.id==="m3quitar"){S.place=null;guardarFiltros();render();if(S.m3)Mapa3D.enfocar(null);for(const x of document.querySelectorAll("[data-volar]"))x.setAttribute("aria-pressed","false");return}
+  if(b.id==="verFiltros"){const f=$("filtros"),abrir=f.hidden;f.hidden=!abrir;b.setAttribute("aria-expanded",String(abrir));return}
+  if(b.dataset.quitar){const k=b.dataset.quitar;
+    if(k==="q"){S.q="";$("q").value=""}else if(k==="place"){S.place=null;if(S.m3)Mapa3D.enfocar(null)}else if(k==="sec"){S.sec="";S.subs=[]}else if(k==="niv")S.niv=null;else if(k==="solo")S.solo=false;
+    else if(k.startsWith("sub:"))S.subs=S.subs.filter(x=>x!==k.slice(4));else if(k.startsWith("dif:"))S.dif=S.dif.filter(x=>x!==+k.slice(4));else if(k.startsWith("grp:"))S.grp=S.grp.filter(x=>x!==k.slice(4));
+    guardarFiltros();render();return}
+});
+let tq=null;
+$("q").addEventListener("input",e=>{clearTimeout(tq);tq=setTimeout(()=>{S.q=e.target.value.trim();S.mostrar=0;if(S.q&&S.tab==="nuevas"){S.tab="todas"}render()},180)});
+if(matchMedia("(min-width: 900px)").matches){$("filtros").hidden=false;$("verFiltros").setAttribute("aria-expanded","true")}

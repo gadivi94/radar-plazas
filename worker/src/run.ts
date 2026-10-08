@@ -6,6 +6,8 @@ import { enviarPush } from "./push";
 import { enriquecerBoe, fetchSumario, itemsSeccion2B, ofertaDesdeBoe } from "./sources/boe";
 import { CIDO_FEEDS, enriquecerCido, fetchFeed, ofertasDesdeFeed } from "./sources/cido";
 import { ofertasTmb, TMB_URL } from "./sources/tmb";
+import { recogerEmpresas } from "./sources/transporte";
+import { geocodificar } from "./geocodificar";
 import { fmt } from "./classify";
 import { correoActivo, enviarCorreo } from "./mail";
 import { clasificar, nivelDe } from "./sectores";
@@ -25,7 +27,7 @@ function diaSemanaMadrid(d = new Date()): number { // 1 = lunes
 }
 const masDias = (iso: string, n: number) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 
-export interface Resumen { recogidas: number; completadas: number; revisadas: number; avisos: number; correos: number; errores: string[] }
+export interface Resumen { recogidas: number; completadas: number; revisadas: number; avisos: number; correos: number; errores: string[]; geo?: number; empresas?: { leidas: number; ofertas: number; fallos: string[] } }
 interface Usuario { id: string; email: string; admin: number; avisos_email: number; frecuencia: string | null; boletin: number | null; telegram: string | null }
 
 export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSemanal?: boolean } = {}): Promise<Resumen> {
@@ -64,8 +66,18 @@ export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSe
       const r = await fetch(TMB_URL, { headers: UA }); presupuesto--;
       if (r.ok) nuevas.push(...ofertasTmb(await r.text(), hoy, ahora));
     } catch (e) { res.errores.push(String(e)); }
+    // Empresas públicas de transporte de toda España
+    const emp = await recogerEmpresas(hoy, ahora);
+    nuevas.push(...emp.ofertas);
+    res.empresas = { leidas: emp.leidas.size, ofertas: emp.ofertas.length, fallos: emp.errores.slice(0, 12) }; // algunas webs bloquean robots: no es un error del Radar
     const unicas = [...new Map(nuevas.map((o) => [o.id, o])).values()];
     res.recogidas = await insertarNuevas(env, unicas);
+    // Lo que una empresa ya no muestra se da por cerrado; lo que vuelve a aparecer, se reabre.
+    for (const [empresa, ids] of emp.leidas) {
+      const fuera = ids.length ? ` AND id NOT IN (${ids.map(() => "?").join(",")})` : "";
+      await env.DB.prepare(`UPDATE ofertas SET estado = 'cerrada' WHERE id LIKE ? AND (estado IS NULL OR estado != 'cerrada')${fuera}`).bind(`tr:${empresa}:%`, ...ids).run();
+      if (ids.length) await env.DB.prepare(`UPDATE ofertas SET estado = 'abierta' WHERE estado = 'cerrada' AND id IN (${ids.map(() => "?").join(",")})`).bind(...ids).run();
+    }
     await setMeta(env, "ultima_recogida", hoy);
     try { await limpieza(env); } catch (e) { res.errores.push("limpieza: " + String(e)); }
   }
@@ -129,6 +141,9 @@ export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSe
       await telegram(u, "Novedades en plazas que sigues", lista.map((c) => c.o));
     }
   }
+
+  // Coordenadas para el mapa 3D (pocas por vuelta, con pausa)
+  try { res.geo = await geocodificar(env, Number(env.GEO_POR_VUELTA || 12)); } catch (_) { /* opcional */ }
 
   // 4 · Avisos de plazas nuevas: ya completadas (o con más de 3 h esperando ficha) y aún no avisadas
   const candidatas = (await env.DB.prepare(

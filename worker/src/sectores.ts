@@ -75,6 +75,7 @@ export const SECTORES: Record<string, Sector> = {
       ["metro-tren", "Metro, tren y ferrocarril", /maquinista|\bmetro\b|renfe|\badif\b|ferrocarril|\bfgc\b|\btren\b/],
       ["conductor", "Conductores de autobús y vehículos", /conductor|conduccio|conduccion|xofer|chofer|autobus|\bbus\b/],
       ["atencion-viajeros", "Atención al cliente", /atencio al client|atencion al cliente|\btmb\b|transports metropolitans/],
+      ["otros-transporte", "Otros puestos en empresas de transporte", /(?!)/],
     ],
   },
   empresas: {

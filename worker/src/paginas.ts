@@ -93,7 +93,7 @@ export async function paginaPlaza(env: Env, fuente: string, code: string): Promi
     ["Tipo de personal", Number(o.interino) ? "Interino, temporal o bolsa" : null],
     ["Dificultad orientativa", o.dificultad ? DIF[o.dificultad] : null],
     ["Publicada", o.publicado ? fmt(o.publicado) : null],
-    ["Fuente", o.fuente === "CIDO" ? "CIDO · Diputació de Barcelona" : o.fuente === "BOE" ? "Boletín Oficial del Estado" : "TMB"],
+    ["Fuente", o.fuente === "CIDO" ? "CIDO · Diputació de Barcelona" : o.fuente === "BOE" ? "Boletín Oficial del Estado" : o.fuente === "EMPRESA" ? `Web de empleo de ${o.organismo}` : "TMB"],
   ];
   const reqs: Array<[string, string | null | undefined]> = [
     ["Titulación", req.titulacion],

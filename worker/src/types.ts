@@ -15,12 +15,13 @@ export interface Env {
   AI?: { run: (model: string, input: unknown) => Promise<unknown> }; // Workers AI (resúmenes y preguntas)
   IA_MODELO?: string;
   IA_DIARIAS?: string;
-  TIEMPO_FICHAS_MS?: string;  // tiempo máximo leyendo fichas en cada revisión        // preguntas a la IA por usuario y día
+  TIEMPO_FICHAS_MS?: string;
+  GEO_POR_VUELTA?: string;    // municipios a geocodificar por revisión ("0" para desactivar)  // tiempo máximo leyendo fichas en cada revisión        // preguntas a la IA por usuario y día
 }
 
 export interface Oferta {
   id: string;
-  fuente: "BOE" | "CIDO" | "TMB";
+  fuente: "BOE" | "CIDO" | "TMB" | "EMPRESA";
   titulo: string;
   organismo?: string | null;
   municipio?: string | null;
@@ -33,6 +34,8 @@ export interface Oferta {
   historia?: string | null;       // JSON [{fecha, texto}] con los cambios detectados
   revisada?: string | null;       // última vez que se releyó la ficha
   ia_resumen?: string | null;
+  lat?: number | null;
+  lon?: number | null;
   grupo?: string | null;
   sistema?: string | null;
   dificultad?: number | null;
