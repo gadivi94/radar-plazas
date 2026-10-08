@@ -16,6 +16,7 @@ concurrency:
 env:
   CF_ACCOUNT_ID: c0c5d225523184f05949796fed095220
   PROYECTO: radar-plazas
+  DOMINIO: ${{ vars.DOMINIO || 'radaropos.com' }}
 
 jobs:
   publica:
@@ -58,10 +59,10 @@ jobs:
           accountId: ${{ env.CF_ACCOUNT_ID }}
           command: pages deploy --project-name=${{ env.PROYECTO }} --branch=main --commit-dirty=true
 
-      - name: Conecta el dominio propio (si hay variable DOMINIO)
-        if: ${{ vars.DOMINIO != '' }}
+      - name: Conecta el dominio propio
+        if: ${{ env.DOMINIO != '' }}
         run: |
-          for d in "${{ vars.DOMINIO }}" "www.${{ vars.DOMINIO }}"; do
+          for d in "$DOMINIO" "www.$DOMINIO"; do
             curl -sS -X POST -H "Authorization: Bearer $CF_TOKEN" -H 'Content-Type: application/json' \
               --data "{\"name\":\"$d\"}" \
               "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/$PROYECTO/domains" | head -c 300; echo
@@ -77,3 +78,14 @@ jobs:
             sleep 10
           done
           echo "::warning::$url aún no responde como se espera (web $web, API $api). Puede tardar unos minutos la primera vez."
+
+      - name: Comprueba el dominio
+        if: ${{ env.DOMINIO != '' }}
+        continue-on-error: true
+        run: |
+          for i in $(seq 1 6); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://$DOMINIO/" || true)
+            [ "$code" = "200" ] && { echo "✓ https://$DOMINIO funciona"; exit 0; }
+            sleep 15
+          done
+          echo "::warning::https://$DOMINIO aún no responde ($code). El certificado puede tardar hasta 15 min la primera vez."

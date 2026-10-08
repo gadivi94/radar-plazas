@@ -13,7 +13,7 @@ workflows:
         distribution_type: app_store
         bundle_identifier: cat.gadivi.radarplazas
       vars:
-        RADAR_API: https://radar-plazas.pages.dev   # cámbialo por tu dominio cuando lo tengas
+        RADAR_API: https://radaropos.com
       node: 22
       xcode: latest
     scripts:

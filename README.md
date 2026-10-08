@@ -2,7 +2,7 @@
 
 Plazas públicas de toda España (BOE, CIDO y TMB) con mapa de Cataluña, filtros por dificultad, grupo y lugar, y alertas.
 
-- **Web:** https://radar-plazas.pages.dev (o tu dominio). Pide la clave de acceso la primera vez.
+- **Web:** https://radaropos.com (también https://radar-plazas.pages.dev). Pide la clave de acceso la primera vez.
 - **App de iPhone:** la misma web dentro de una app (Capacitor), compilada con Codemagic.
 
 ## Cómo funciona
