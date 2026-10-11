@@ -120,7 +120,7 @@ function render(){
   const cSis=new Map();for(const o of enLugar)if(pasaFiltros(o,"sis")){if(o.sisK)cSis.set(o.sisK,(cSis.get(o.sisK)||0)+1);if(Number(o.interino))cSis.set("interino",(cSis.get("interino")||0)+1)}
   const cuenta=(sin,fn)=>{const m={sec:cSec,sub:cSub,dif:cDif,grp:cGrp}[sin];let n=0;for(const [k,v] of m)if(fn({tipo:k,subtipo:k,dificultad:k,grupo:k,_k:k}))n+=v;return n};
   let tot=0;for(const v of cSec.values())tot+=v;
-  $("fsec").innerHTML=SECTORES.map(s=>{const n=cSec.get(s.k)||0;return n||S.sec===s.k?`<button type="button" data-sec="${S.sec===s.k?"":s.k}" aria-pressed="${S.sec===s.k}" title="${n} ${n===1?"plaza":"plazas"}"><span class="i" aria-hidden="true">${ICONO[s.k]||"•"}</span>${esc(CORTO[s.k]||s.n)}</button>`:""}).join("");
+  $("fsec").innerHTML=`<button type="button" class="tutorchip" data-abrir-tutor><span class="i" aria-hidden="true">🧭</span>Tutor IA</button>`+SECTORES.map(s=>{const n=cSec.get(s.k)||0;return n||S.sec===s.k?`<button type="button" data-sec="${S.sec===s.k?"":s.k}" aria-pressed="${S.sec===s.k}" title="${n} ${n===1?"plaza":"plazas"}"><span class="i" aria-hidden="true">${ICONO[s.k]||"•"}</span>${esc(CORTO[s.k]||s.n)}</button>`:""}).join("");
   const subs=S.sec?SECT[S.sec]?.subs||[]:[];
   $("fsub").hidden=!subs.length;
   $("fsub").innerHTML=subs.map(([k,n])=>{const x=cSub.get(k)||0;return x||S.subs.includes(k)?`<button type="button" class="chip" data-sub="${k}" aria-pressed="${S.subs.includes(k)}">${esc(n)}<small>${x}</small></button>`:""}).join("");
@@ -554,7 +554,7 @@ function guardarPerfil(){
   p.intereses=[...document.querySelectorAll("#perfilBody [data-interes]:checked")].map(x=>x.dataset.interes);
   delete p.catalan;
   if(p.prefs)p.prefs={...p.prefs,intereses:p.intereses};
-  S.perfil=p;ls.set("rp_perfil",JSON.stringify(p));
+  p.t=Date.now();S.perfil=p;ls.set("rp_perfil",JSON.stringify(p));
   if(S.ses)api("/cuenta",{method:"PATCH",body:JSON.stringify({perfil:p})}).catch(()=>{});
   render();renderPerfil();
 }
@@ -734,8 +734,10 @@ async function cargar(){
     if(r&&!r.err){
       const [a,y]=r;S.alertas=a;S.yo=y;try{ls.set("rp_yo",JSON.stringify({email:y.email,nombre:y.nombre,admin:y.admin}))}catch(_){}
       try{sincronizar(y.ajustes)}catch(_){}
-      if(y.perfil&&(!S.perfil||JSON.stringify(y.perfil)!==JSON.stringify(S.perfil))){S.perfil=y.perfil;ls.set("rp_perfil",JSON.stringify(y.perfil));renderPerfil()}
-      else if(!y.perfil&&S.perfil)api("/cuenta",{method:"PATCH",body:JSON.stringify({perfil:S.perfil})}).catch(()=>{});
+      // Perfil: gana el más reciente (cada cambio lleva su hora); si solo hay uno, se copia al otro lado
+      const tl=S.perfil?.t||0,ts=y.perfil?.t||0;
+      if(y.perfil&&(!S.perfil||ts>tl)){S.perfil=y.perfil;ls.set("rp_perfil",JSON.stringify(y.perfil));renderPerfil()}
+      else if(S.perfil&&(!y.perfil||tl>ts))api("/cuenta",{method:"PATCH",body:JSON.stringify({perfil:S.perfil})}).catch(()=>{});
       S.adm=y.admin?await api("/admin/resumen").catch(()=>null):null;
     }
   }
@@ -913,7 +915,7 @@ document.addEventListener("submit",async e=>{
     const prefs={intereses:f.getAll("intereses"),estilo:f.getAll("estilo"),prisa:f.get("prisa"),horas:f.get("horas"),movilidad:f.get("movilidad")};
     const cp=String(f.get("cp")||"").trim();
     if(/^\d{5}$/.test(cp)){try{const r=await api(`/cp/${cp}`);Object.assign(prefs,{cp,lugar:r.lugar||r.provincia,lat:r.lat,lon:r.lon})}catch(_){prefs.cp=cp}}
-    S.perfil={...(S.perfil||{}),nivel:+f.get("nivel"),intereses:prefs.intereses,prefs};ls.set("rp_perfil",JSON.stringify(S.perfil));
+    S.perfil={...(S.perfil||{}),nivel:+f.get("nivel"),intereses:prefs.intereses,prefs,t:Date.now()};ls.set("rp_perfil",JSON.stringify(S.perfil));
     try{await api("/cuenta",{method:"PATCH",body:JSON.stringify({perfil:S.perfil})})}catch(_){}
     renderPerfil();render();renderTutor();
     if(!S.chat.length)preguntarTutor("¿Por dónde empiezo?");return}

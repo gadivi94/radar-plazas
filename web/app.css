@@ -88,6 +88,7 @@ svg{flex:none}
 .chips button{flex:none;scroll-snap-align:start;display:inline-flex;align-items:center;gap:6px;border:0;background:var(--surface);border-radius:999px;padding:7px 13px;font-weight:600;font-size:14px;cursor:pointer;box-shadow:0 1px 3px rgba(29,36,51,.16)}
 .chips button .i{font-size:15px;line-height:1}
 .chips button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.chips .tutorchip{background:var(--fg);color:#fff}
 .ubicame{position:absolute;right:12px;bottom:36px;z-index:5;width:46px;height:46px;border-radius:50%;border:0;background:var(--surface);color:var(--accent);box-shadow:var(--sombra-flota);cursor:pointer;display:flex;align-items:center;justify-content:center}
 .ubicame svg{width:22px;height:22px}
 .mapcaja .maplibregl-ctrl-bottom-right{bottom:88px}

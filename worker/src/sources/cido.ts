@@ -1,5 +1,5 @@
 // CIDO (Diputació de Barcelona): todas las administraciones catalanas, incluidas bolsas e interinos.
-import { coordCatalana, provinciaCatalana, provinciaDe } from "../geo";
+import { capitalComarca, coordCatalana, provinciaCatalana, provinciaDe, sedeDe } from "../geo";
 import { dificultadDe, grupoDe, grupoProbable, interinoDe, isoDe, plazasDe, sistemaDe } from "../classify";
 import { clasificar, nivelDe, requisitosDe } from "../sectores";
 import { campo, parseRss, toText } from "../text";
@@ -24,9 +24,16 @@ export async function fetchFeed(url: string): Promise<string> {
 /** Municipio a partir del ens o de "(Ciudad)" al final del título. */
 export function municipioDe(ens: string, titulo: string): string | null {
   const m = ens.match(/^(?:Ajuntament|Consell Comarcal|Consorci|Mancomunitat)\s+(?:de l'|de la |dels |de les |del |de |d')([^-–]+?)(?:\s+[-–].*)?$/i);
-  if (m) return m[1].trim();
+  if (m) {
+    const n = m[1].trim();
+    // Lo que da coordenadas conocidas es un municipio; si es una comarca, su capital; si no, la sede del organismo
+    if (coordCatalana(n)) return n;
+    return capitalComarca(n) || sedeDe(ens) || (/^Ajuntament/i.test(ens) ? n : null);
+  }
   const p = titulo.match(/\(([^()]+)\)\s*$/);
-  if (p && !/^\d/.test(p[1])) return p[1].trim();
+  if (p && !/^\d/.test(p[1]) && coordCatalana(p[1].trim())) return p[1].trim();
+  const sede = sedeDe(ens);
+  if (sede) return sede;
   const dip = ens.match(/Diputaci[oó] de (Barcelona|Girona|Lleida|Tarragona)/i);
   if (dip) return dip[1];
   return null;

@@ -43,6 +43,76 @@ const PROV: Array<[string, string, string[]]> = [
 
 export const PROVINCIAS = PROV.map(([provincia, comunidad]) => ({ provincia, comunidad }));
 
+// Sede conocida de organismos catalanes que no son ayuntamientos (hospitales, universidades, consorcios, Generalitat…)
+const SEDES: Array<[RegExp, string]> = [
+  [/sociosanitari d'igualada|anoia/i, "Igualada"],
+  [/universitat aut[oò]noma de barcelona|\(UAB\)/i, "Cerdanyola del Vallès"],
+  [/rovira i virgili|\(URV\)/i, "Tarragona"],
+  [/universitat de girona|\(UdG\)|hospital de girona|josep trueta|salut de girona|dipsalut/i, "Girona"],
+  [/universitat de lleida|\(UdL\)|arnau de vilanova|hospital de lleida/i, "Lleida"],
+  [/universitat de vic|\(UVic\)|consorci hospitalari de vic|osona/i, "Vic"],
+  [/sant joan de reus|universitari de reus|baix camp/i, "Reus"],
+  [/joan xxiii|santa tecla|camp de tarragona/i, "Tarragona"],
+  [/althaia|manresa|bages/i, "Manresa"],
+  [/parc taul[ií]|sabadell/i, "Sabadell"],
+  [/consorci sanitari de terrassa|m[uú]tua de terrassa|terrassa/i, "Terrassa"],
+  [/hospital de matar[oó]|consorci sanitari del maresme|maresme/i, "Mataró"],
+  [/granollers|vall[eè]s oriental/i, "Granollers"],
+  [/hospital de sant celoni|baix montseny/i, "Sant Celoni"],
+  [/garraf|sant antoni abat|vilanova i la geltr[uú]/i, "Vilanova i la Geltrú"],
+  [/alt pened[eè]s|vilafranca/i, "Vilafranca del Penedès"],
+  [/baix llobregat|moises broggi|sant joan desp[ií]/i, "Sant Joan Despí"],
+  [/hospital de bellvitge|duran i reynals|hospitalet de llobregat/i, "L'Hospitalet de Llobregat"],
+  [/germans trias|can ruti|badalona/i, "Badalona"],
+  [/sant cugat/i, "Sant Cugat del Vallès"],
+  [/tortosa|verge de la cinta|terres de l'ebre/i, "Tortosa"],
+  [/olot|garrotxa/i, "Olot"],
+  [/figueres|alt empord[aà]/i, "Figueres"],
+  [/palam[oó]s|baix empord[aà]/i, "Palamós"],
+  [/blanes|calella|selva/i, "Blanes"],
+  [/puigcerd[aà]|cerdanya/i, "Puigcerdà"],
+  [/seu d'urgell|alt urgell/i, "La Seu d'Urgell"],
+  [/tremp|pallars juss[aà]/i, "Tremp"],
+  [/sort|pallars sobir[aà]/i, "Sort"],
+  [/vielha|aran/i, "Vielha e Mijaran"],
+  [/berga|bergued[aà]/i, "Berga"],
+  [/solsona|solson[eè]s/i, "Solsona"],
+  [/valls|alt camp/i, "Valls"],
+  [/montblanc|conca de barber[aà]/i, "Montblanc"],
+  [/el vendrell|baix pened[eè]s/i, "El Vendrell"],
+  [/m[oó]ra d'ebre|ribera d'ebre/i, "Móra d'Ebre"],
+  [/amposta|montsi[aà]/i, "Amposta"],
+  [/gandesa|terra alta/i, "Gandesa"],
+  [/falset|priorat/i, "Falset"],
+  [/balaguer|noguera/i, "Balaguer"],
+  [/t[aà]rrega|urgell/i, "Tàrrega"],
+  [/cervera|segarra/i, "Cervera"],
+  [/mollerussa|pla d'urgell/i, "Mollerussa"],
+  [/borges blanques|garrigues/i, "Les Borges Blanques"],
+  [/banyoles|pla de l'estany/i, "Banyoles"],
+  [/ripoll|ripoll[eè]s/i, "Ripoll"],
+  [/santa coloma de farners/i, "Santa Coloma de Farners"],
+  [/bisbal d'empord[aà]/i, "La Bisbal d'Empordà"],
+  [/esplugues/i, "Esplugues de Llobregat"],
+  [/moi[aà]|moian[eè]s/i, "Moià"],
+  [/vall d'hebron|hospital cl[ií]nic|sant pau|del mar|isglobal|idibaps|ibec|irb|crg|icfo|bsc|supercomputing|universitat de barcelona|\(UB\)|pompeu fabra|\(UPF\)|polit[eè]cnica de catalunya|\(UPC\)|oberta de catalunya|\(UOC\)|ramon llull|generalitat de catalunya|ajuntament de barcelona|diputaci[oó] de barcelona|[aà]rea metropolitana|institut catal[aà]|consorci d'educaci[oó]|ferrocarrils|\(FGC\)|barcelona/i, "Barcelona"],
+];
+/** Municipio sede de un organismo catalán que no es un ayuntamiento, o null. */
+export function sedeDe(organismo: string | null | undefined): string | null {
+  if (!organismo) return null;
+  // La Generalitat y sus institutos convocan para toda Cataluña: sin municipio concreto
+  if (/^Generalitat/i.test(organismo) && !/hospital|universit/i.test(organismo)) return null;
+  for (const [re, m] of SEDES) if (re.test(organismo)) return m;
+  return null;
+}
+/** Capital de comarca cuando lo que llega como municipio es una comarca (el CIDO lo hace con los consells comarcals). */
+export function capitalComarca(nombre: string | null | undefined): string | null {
+  if (!nombre) return null;
+  const k = norm(nombre).replace(/^(el|la|els|les)\s+|^l'/, "");
+  const C: Record<string, string> = { "alt camp": "Valls", "alt emporda": "Figueres", "alt penedes": "Vilafranca del Penedès", "alt urgell": "La Seu d'Urgell", "alta ribagorca": "El Pont de Suert", "anoia": "Igualada", "bages": "Manresa", "baix camp": "Reus", "baix ebre": "Tortosa", "baix emporda": "La Bisbal d'Empordà", "baix llobregat": "Sant Feliu de Llobregat", "baix penedes": "El Vendrell", "barcelones": "Barcelona", "bergueda": "Berga", "cerdanya": "Puigcerdà", "conca de barbera": "Montblanc", "garraf": "Vilanova i la Geltrú", "garrigues": "Les Borges Blanques", "garrotxa": "Olot", "girones": "Girona", "maresme": "Mataró", "moianes": "Moià", "montsia": "Amposta", "noguera": "Balaguer", "osona": "Vic", "pallars jussa": "Tremp", "pallars sobira": "Sort", "pla d'urgell": "Mollerussa", "pla de l'estany": "Banyoles", "priorat": "Falset", "ribera d'ebre": "Móra d'Ebre", "ripolles": "Ripoll", "segarra": "Cervera", "segria": "Lleida", "selva": "Santa Coloma de Farners", "solsones": "Solsona", "tarragones": "Tarragona", "terra alta": "Gandesa", "urgell": "Tàrrega", "val d'aran": "Vielha e Mijaran", "aran": "Vielha e Mijaran", "valles occidental": "Sabadell", "valles oriental": "Granollers" };
+  return C[k] || null;
+}
+
 /** Provincia de un municipio catalán (el CIDO solo da el ayuntamiento). */
 export function provinciaCatalana(municipio: string | null | undefined): string | null {
   if (!municipio) return null;

@@ -4,7 +4,7 @@ import { actualizar, alertasActivas, getMeta, insertarNuevas, setMeta } from "./
 import { coincide, estadoActual, hoyMadrid, type Filtros } from "./filters";
 import { enviarPush } from "./push";
 import { enriquecerBoe, fetchSumario, itemsSeccion2B, ofertaDesdeBoe } from "./sources/boe";
-import { CIDO_FEEDS, CIDO_OBERTES, enriquecerCido, fetchFeed, ofertasDesdeFeed } from "./sources/cido";
+import { CIDO_FEEDS, CIDO_OBERTES, enriquecerCido, fetchFeed, municipioDe, ofertasDesdeFeed } from "./sources/cido";
 import { ofertasTmb, TMB_URL } from "./sources/tmb";
 import { recogerEmpresas } from "./sources/transporte";
 import { geocodificar } from "./geocodificar";
@@ -103,6 +103,20 @@ export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSe
       await env.DB.prepare(`UPDATE ofertas SET estado = 'revisar' WHERE fuente = 'CIDO' AND estado = 'abierta' AND plazo_fin IS NULL AND detalle_ok = 0 AND id NOT IN (SELECT value FROM json_each(?))`).bind(lista).run();
     }
   } catch (e) { res.errores.push("CIDO obertes: " + String(e).slice(0, 100)); }
+
+  // Una vez: municipio sede para organismos catalanes sin ayuntamiento y capital de comarca para los consells
+  if ((await getMeta(env, "sedes")) !== "1") {
+    try {
+      const filas = (await env.DB.prepare("SELECT id, organismo, titulo, municipio FROM ofertas WHERE lat IS NULL AND comunidad = 'Cataluña'").all<{ id: string; organismo: string | null; titulo: string; municipio: string | null }>()).results;
+      const st = filas.flatMap((f) => {
+        const m = municipioDe(f.organismo || "", f.titulo); const c = coordCatalana(m);
+        if (c) return [env.DB.prepare("UPDATE ofertas SET municipio = ?, provincia = COALESCE(provincia, ?), lat = ?, lon = ? WHERE id = ?").bind(m, provinciaCatalana(m), c[1], c[0], f.id)];
+        return f.municipio ? [env.DB.prepare("UPDATE ofertas SET municipio = NULL WHERE id = ?").bind(f.id)] : [];
+      });
+      for (let i = 0; i < st.length; i += 80) await env.DB.batch(st.slice(i, i + 80));
+      await setMeta(env, "sedes", "1");
+    } catch (e) { res.errores.push("sedes: " + String(e).slice(0, 80)); }
+  }
 
   // Una vez: grupo probable (por el nombre del puesto) para las plazas sin ficha leída
   if ((await getMeta(env, "grupo_probable")) !== "1") {
