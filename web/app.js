@@ -134,11 +134,13 @@ function render(){
   av.innerHTML=sinPerfil?`<span>Dinos tus estudios e intereses y te enseñamos solo lo que encaja contigo.</span><button type="button" data-ir-perfil>Completar perfil</button><button type="button" class="x" data-cerrar-aviso aria-label="Cerrar">✕</button>`
     :`<span>Tienes el perfil hecho. ¿Ver solo las plazas que encajan contigo?</span><button type="button" data-solo-perfil>Ver solo las mías</button><button type="button" class="x" data-cerrar-aviso aria-label="Cerrar">✕</button>`;
   if(S.meta){$("lastrun").textContent=`${LANG==="ca"?"Última revisió":"Última revisión"}: ${new Date(S.meta.fecha).toLocaleString(LANG==="ca"?"ca-ES":"es-ES",{dateStyle:"medium",timeStyle:"short"})} · ${S.meta.recogidas??0} ${t("nuevas")} · ${S.meta.completadas??0} ${LANG==="ca"?"fitxes llegides":"fichas leídas"}`}
-  S.mapRows=base.filter(o=>pasaFiltros(o));
+  // El mapa enseña siempre todas las plazas abiertas que pasan los filtros (vistas o no); la pestaña solo afecta a la lista
+  const filtradas=base.filter(o=>pasaFiltros(o));
+  S.mapRows=S.tab==="todas"?filtradas:S.ofertas.filter(o=>(o.marca||"nueva")!=="descartada"&&isOpen(o)&&pasaFiltros(o));
   if(S.clasico){drawPins();renderInfo();drawEs()}
   renderLugar();
   window.Mapa3D&&S.m3&&Mapa3D.actualizar(S.mapRows,S.place);
-  const rows=S.mapRows.filter(lugarActivo)
+  const rows=filtradas.filter(lugarActivo)
     .sort(S.place?.kind==="cerca"?(a,b)=>distOferta(a)-distOferta(b):(a,b)=>{const da=daysLeft(a),db=daysLeft(b);if(da===null&&db===null)return 0;if(da===null)return 1;if(db===null)return -1;return da-db});
   const activos=S.dif.length+S.grp.length+S.sis.length+(S.place?1:0)+(S.sec?1:0)+S.subs.length+(S.niv!=null?1:0)+(S.solo?1:0);
   $("fclear").hidden=!activos;
