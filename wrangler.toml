@@ -26,4 +26,4 @@ IA_DIARIAS = "10"
 # Bot de Telegram (nombre sin @). El token va como secreto TELEGRAM_BOT_TOKEN.
 TELEGRAM_BOT = ""
 GOOGLE_CLIENT_IDS = ""          # IDs de cliente OAuth de Google (web, iOS), separados por comas
-APPLE_CLIENT_IDS = "com.radaropos.app"
+APPLE_CLIENT_IDS = "com.radaropos.app,com.radaropos.web"   # app de iPhone y Services ID de la web
