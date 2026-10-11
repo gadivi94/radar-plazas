@@ -13,26 +13,26 @@
   const VISTAS={"España":[[-9.6,35.8],[4.5,43.9]],"Canarias":[[-18.3,27.5],[-13.3,29.5]]};
   const CAT_PROV={8:"Barcelona",17:"Girona",25:"Lleida",43:"Tarragona"},CAT_COD={Barcelona:8,Girona:17,Lleida:25,Tarragona:43};
   const Z_PROV=6.3,Z_MUNI=7.9; // a partir de estos zooms se ven provincias y municipios
-  const C={tierra:"#f3f1ec",agua:"#a9d3f4",linea:"#5d6778",acento:"#2f6feb",urgente:"#e5484d",pronto:"#e8890c",ok:"#1e9e6a",gris:"#8a93a3"};
+  const C={tierra:"#f3f1ec",agua:"#a9d3f4",linea:"#5d6778",acento:"#b4302e",urgente:"#b4302e",pronto:"#d4820e",ok:"#1f7a4d",gris:"#8a93a3"};
   const CSS_ETQ=`
-.m3-et{display:flex;gap:6px;align-items:baseline;white-space:nowrap;font:600 13px/1.1 var(--font-body);color:#1d2433;background:#fff;border:0;border-radius:999px;padding:5px 10px;box-shadow:0 1px 2px rgba(29,36,51,.18),0 2px 8px rgba(29,36,51,.12);cursor:pointer;transition:opacity .15s}
-.m3-et b{font-weight:800;color:#2f6feb;font-variant-numeric:tabular-nums}
-.m3-et.cero{background:rgba(255,255,255,.85);color:#657084;font-weight:500;font-size:12px;padding:3px 8px;box-shadow:0 1px 2px rgba(29,36,51,.12)}
-.m3-et.elegida{background:#2f6feb;color:#fff}.m3-et.elegida b{color:#fff}
+.m3-et{display:flex;gap:6px;align-items:baseline;white-space:nowrap;font:600 13px/1.1 var(--font-body);color:#1c1a17;background:#fff;border:0;border-radius:6px;padding:5px 10px;box-shadow:0 1px 2px rgba(29,36,51,.18),0 2px 8px rgba(29,36,51,.12);cursor:pointer;transition:opacity .15s}
+.m3-et b{font-weight:800;color:#b4302e;font-variant-numeric:tabular-nums}
+.m3-et.cero{background:rgba(255,255,255,.85);color:#6b655c;font-weight:500;font-size:12px;padding:3px 8px;box-shadow:0 1px 2px rgba(29,36,51,.12)}
+.m3-et.elegida{background:#b4302e;color:#fff}.m3-et.elegida b{color:#fff}
 .m3-et.tenue{background:none;box-shadow:none;padding:0;font:600 12px/1 var(--font-body);color:#4b5466;pointer-events:none;text-shadow:0 0 2px #fff,0 0 2px #fff,0 0 3px #fff}
 .m3-mk{position:relative;width:calc(var(--r)*2);height:calc(var(--r)*2);padding:0;border:0;background:none;cursor:pointer}
 .m3-mk i{position:absolute;inset:0;border-radius:50%;background:var(--c);border:2px solid #fff;box-shadow:0 1px 4px rgba(29,36,51,.35);color:#fff;font:800 12px/1 var(--font-body);font-style:normal;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
 .m3-mk.grupo i{box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--c),0 2px 5px rgba(29,36,51,.3)}
-.m3-mk.elegida i{border:3px solid #1d2433}
-.m3-mk span{position:absolute;white-space:nowrap;font:600 12.5px/1 var(--font-body);color:#1d2433;background:#fff;padding:4px 7px;border-radius:999px;box-shadow:0 1px 3px rgba(29,36,51,.2);pointer-events:none;transition:opacity .15s}
-.m3-mk span small{font-weight:700;color:#657084;font-size:11.5px}
+.m3-mk.elegida i{border:3px solid #1c1a17}
+.m3-mk span{position:absolute;white-space:nowrap;font:600 12.5px/1 var(--font-body);color:#1c1a17;background:#fff;padding:4px 7px;border-radius:6px;box-shadow:0 1px 3px rgba(29,36,51,.2);pointer-events:none;transition:opacity .15s}
+.m3-mk span small{font-weight:700;color:#6b655c;font-size:11.5px}
 .m3-mk span.der{left:calc(100% + 4px);top:50%;transform:translateY(-50%)}
 .m3-mk span.izq{right:calc(100% + 4px);top:50%;transform:translateY(-50%)}
 .m3-mk span.arr{bottom:calc(100% + 4px);left:50%;transform:translateX(-50%)}
 .m3-mk span.aba{top:calc(100% + 4px);left:50%;transform:translateX(-50%)}
-.m3-mk.elegida span{background:#1d2433;color:#fff}
+.m3-mk.elegida span{background:#1c1a17;color:#fff}
 .m3-zoom .m3-mk span,.m3-zoom .m3-et{opacity:0}
-.m3-yo{width:18px;height:18px;border-radius:50%;background:#2f6feb;border:3px solid #fff;box-shadow:0 0 0 6px rgba(47,111,235,.2),0 1px 4px rgba(0,0,0,.3)}`;
+.m3-yo{width:18px;height:18px;border-radius:50%;background:#b4302e;border:3px solid #fff;box-shadow:0 0 0 6px rgba(180,48,46,.2),0 1px 4px rgba(0,0,0,.3)}`;
   let map=null,D=null,opts=null,filas=[],lugar=null,etiquetas=[],listo=false,yo=null,nivel="comunidades",conBase=false,capasBase={};
 
   function soporta(){try{const c=document.createElement("canvas");return !!(window.WebGLRenderingContext&&(c.getContext("webgl2")||c.getContext("webgl")))}catch(_){return false}}

@@ -131,6 +131,7 @@ export function enriquecerCido(o: Oferta, html: string, hoy = new Date().toISOSt
   const req = campo(desde, "Titulació requerida");
   const altres = campo(desde, "Altres requisits");
   const requisitos = requisitosDe(desde.slice(0, 12000), req || grupoTxt || null);
+  if (requisitos.otroIdioma === "Euskera" || requisitos.otroIdioma === "Gallego") delete requisitos.otroIdioma; // el CIDO es solo Cataluña
   return {
     subtipo: cls.subtipo,
     nivel: nivelDe(grupo, req || grupoTxt),

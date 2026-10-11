@@ -1,21 +1,21 @@
 /* Fichas de plazas, páginas por sector, guías y herramientas (se suma a legal/legal.css) */
-:root{--urgent-soft:#fdeced;--soon:#c77300;--soon-soft:#fff3e0;--ok:#1e9e6a;--ok-soft:#e3f6ee}
+:root{--urgent-soft:#f6e3e1;--soon:#a3610a;--soon-soft:#f8ecd9;--ok:#1f7a4d;--ok-soft:#e1f1e8}
 .migas{font-size:13px;color:var(--muted);margin-top:14px}
 .migas a{color:var(--muted)}
 .org{font-weight:600;color:var(--muted);margin:0 0 4px;font-size:14px}
 main h1{font-size:clamp(26px,6vw,36px)}
 .plazo{display:flex;align-items:center;gap:12px;border-radius:10px;padding:10px 14px;background:var(--ok-soft);color:var(--ok);margin:12px 0}
-.plazo b{font-family:var(--font-display);font-weight:800;font-size:30px;line-height:1}
+.plazo b{font-family:var(--font-display);font-weight:600;font-size:30px;line-height:1}
 .plazo span{font-weight:600}
 .plazo.urgente{background:var(--urgent-soft);color:var(--urgent)} .plazo.pronto{background:var(--soon-soft);color:var(--soon)}
 .plazo.cerrada,.plazo.nada{background:var(--bg);color:var(--muted)} .plazo.nada b,.plazo.cerrada b{font-size:22px}
 .botones{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
-.btn{display:inline-block;font:700 14px var(--font-body);padding:9px 15px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);text-decoration:none;cursor:pointer}
+.btn{display:inline-block;font:700 14px var(--font-body);padding:9px 15px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);text-decoration:none;cursor:pointer}
 .btn.primario{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn:disabled{opacity:.6}
 table.datos th{width:40%;font-weight:600}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{font-size:13px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--bg)}
+.chip{font-size:13px;padding:3px 10px;border-radius:6px;border:1px solid var(--line);background:var(--bg)}
 .cumple{border:1px dashed var(--line);border-radius:10px;padding:10px 14px;margin:12px 0;font-size:15px}
 .cumple.si{border:1px solid var(--ok);background:var(--ok-soft)} .cumple.no{border:1px solid var(--urgent);background:var(--urgent-soft)} .cumple.\?{border:1px solid var(--soon);background:var(--soon-soft)}
 .ia{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
@@ -38,7 +38,7 @@ table.datos th{width:40%;font-weight:600}
 .sector ul{margin:0;padding-left:18px;font-size:14px}
 small{color:var(--muted)}
 .lugares{display:flex;flex-wrap:wrap;gap:6px}
-.lugares a{font-size:14px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;text-decoration:none;color:var(--fg);background:var(--surface)}
+.lugares a{font-size:14px;padding:4px 10px;border:1px solid var(--line);border-radius:6px;text-decoration:none;color:var(--fg);background:var(--surface)}
 .barras{display:flex;flex-direction:column;gap:6px;margin:8px 0}
 .barra{display:grid;grid-template-columns:minmax(0,180px) 1fr 44px;gap:8px;align-items:center;font-size:14px}
 .barra i{display:block;height:12px;border-radius:3px;background:var(--accent)}

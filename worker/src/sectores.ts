@@ -215,9 +215,11 @@ export function requisitosDe(textoBruto: string, titulacionCampo?: string | null
     else if (/nivell intermedi/.test(t)) r.catalan = "B2";
     else if (/nivell elemental|nivell basic/.test(t)) r.catalan = "A2";
   }
-  if (/euskera|perfil linguistico/.test(t)) r.otroIdioma = "Euskera";
-  else if (/valenciano|valencia\b.*nivel|coneixements de valencia/.test(t)) r.otroIdioma = "Valenciano";
-  else if (/lingua galega|idioma gallego|celga/.test(t)) r.otroIdioma = "Gallego";
+  // Otro idioma solo si se pide de verdad (nivel, perfil, certificado…), no por aparecer en un menú o un traductor
+  const pide = (re: RegExp) => { const m = t.match(re); if (!m) return false; const i = m.index!; const frase = t.slice(Math.max(0, t.lastIndexOf(".", i)), (t.indexOf(".", i) + 1) || t.length); return /nivel|nivell|perfil|certifica|acredita|conocimiento|coneixement|requisit|exigi|hizkuntza|eskakizun/.test(frase) && !/traduc|idiomes:|idiomas:|languages/.test(frase); };
+  if (pide(/euskera|euskara|perfil linguistico/)) r.otroIdioma = "Euskera";
+  else if (pide(/valenciano|valencia\b|coneixements de valencia/)) r.otroIdioma = "Valenciano";
+  else if (pide(/lingua galega|idioma gallego|galego|celga/)) r.otroIdioma = "Gallego";
   if (/estatura|alcada minima|altura minima|talla minima/.test(t)) r.altura = true;
   if (/nacionalidad espanola|nacionalitat espanyola/.test(t)) r.nacionalidad = /estado miembro|estats membres|union europea|unio europea/.test(t) ? "ue" : "es";
   const mt = t.match(/(?:tasa|taxa|derechos de examen|drets d'examen|drets de participacio)[^.]{0,90}?(\d{1,3}(?:[.,]\d{1,2})?) ?(?:euros|€|eur\b)/);

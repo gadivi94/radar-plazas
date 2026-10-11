@@ -25,16 +25,16 @@ const lugarDe = (o: Oferta) => o.municipio || o.provincia || o.comunidad || "";
 const plazoDe = (o: Oferta) => (o.plazo_fin ? `hasta el ${fmt(o.plazo_fin)}` : o.plazo_texto || "plazo aún sin fijar");
 
 function fila(env: Env, o: Oferta, extra = ""): string {
-  return `<li style="margin:0 0 10px"><a href="${escHtml(enlacePlaza(env, o))}" style="color:#1d2433;font-weight:bold">${escHtml(corto(o.titulo))}</a><br>
-<span style="color:#657084;font-size:13px">${escHtml([o.organismo, lugarDe(o)].filter(Boolean).join(" · "))} · ${escHtml(plazoDe(o))}${extra}</span></li>`;
+  return `<li style="margin:0 0 10px"><a href="${escHtml(enlacePlaza(env, o))}" style="color:#1c1a17;font-weight:bold">${escHtml(corto(o.titulo))}</a><br>
+<span style="color:#6b655c;font-size:13px">${escHtml([o.organismo, lugarDe(o)].filter(Boolean).join(" · "))} · ${escHtml(plazoDe(o))}${extra}</span></li>`;
 }
 const boton = (env: Env, texto = "Ver en Radar de Plazas", url = sitio(env)) =>
-  `<p style="margin:22px 0 0"><a href="${url}" style="display:inline-block;background:#2f6feb;color:#ffffff;padding:11px 18px;border-radius:999px;text-decoration:none;font-weight:bold">${texto}</a></p>`;
-const aviso = `<p style="font-size:12px;color:#657084;margin:16px 0 0">Comprueba siempre los requisitos y el plazo en la convocatoria oficial.</p>`;
+  `<p style="margin:22px 0 0"><a href="${url}" style="display:inline-block;background:#b4302e;color:#ffffff;padding:11px 18px;border-radius:999px;text-decoration:none;font-weight:bold">${texto}</a></p>`;
+const aviso = `<p style="font-size:12px;color:#6b655c;margin:16px 0 0">Comprueba siempre los requisitos y el plazo en la convocatoria oficial.</p>`;
 
 async function pieBaja(env: Env, uid: string, motivo: string) {
   const baja = `${sitio(env)}/api/baja?u=${uid}&t=${await tokenBaja(env, uid)}`;
-  return { baja, pie: `${motivo} <a href="${baja}" style="color:#657084">Dejar de recibir correos</a>` };
+  return { baja, pie: `${motivo} <a href="${baja}" style="color:#6b655c">Dejar de recibir correos</a>` };
 }
 const cabeceras = (baja: string) => ({ "List-Unsubscribe": `<${baja}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" });
 
@@ -46,7 +46,7 @@ export async function correoAvisos(env: Env, u: { id: string; email: string; nom
   const una = secciones.length === 1 ? secciones[0].alerta : "";
   const { baja, pie } = await pieBaja(env, u.id, semanal ? "Recibes este resumen semanal porque tienes alertas activas." : "Recibes este correo porque tienes alertas activas.");
   const html = plantilla(env, `<p style="font-size:15px;margin:0 0 16px">${hola}${semanal ? "Esta semana han salido" : "Han salido"} <b>${total} ${total === 1 ? "plaza" : "plazas"}</b> que encajan con tus alertas.</p>
-${secciones.map((s) => `<p style="font-size:15px;color:#2f6feb;margin:20px 0 8px;font-weight:bold">🔔 ${escHtml(s.alerta)} (${s.hits.length})</p>
+${secciones.map((s) => `<p style="font-size:15px;color:#b4302e;margin:20px 0 8px;font-weight:bold">🔔 ${escHtml(s.alerta)} (${s.hits.length})</p>
 <ul style="padding-left:18px;margin:0">${s.hits.slice(0, 10).map((o) => fila(env, o)).join("")}</ul>${s.hits.length > 10 ? `<p style="font-size:13px;margin:0">y ${s.hits.length - 10} más en la web.</p>` : ""}`).join("")}
 ${boton(env)}${aviso}`, pie);
   const text = `${u.nombre ? `Hola, ${u.nombre}. ` : ""}${semanal ? "Esta semana han salido" : "Han salido"} ${total} plazas que encajan con tus alertas.\n\n` + secciones.map((s) => `${s.alerta}\n` + s.hits.slice(0, 10).map((o) => `- ${corto(o.titulo)} (${lugarDe(o)}, ${plazoDe(o)}) ${enlacePlaza(env, o)}`).join("\n")).join("\n\n") + `\n\nVer todo: ${sitio(env)}\nDejar de recibir correos: ${baja}`;
@@ -86,7 +86,7 @@ export async function correoBoletin(env: Env, u: { id: string; email: string }, 
   for (const o of plazas) porSector.set(o.tipo || "otros", [...(porSector.get(o.tipo || "otros") || []), o]);
   const bloques = [...porSector].sort((a, b) => b[1].length - a[1].length).slice(0, 8);
   const html = plantilla(env, `<p style="font-size:15px;margin:0 0 16px">Las plazas destacadas de la semana: <b>${plazas.length}</b> nuevas con plazo abierto.</p>
-${bloques.map(([s, l]) => `<p style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#2f6feb;margin:18px 0 8px;font-weight:bold">${escHtml(SECTOR_NOMBRE[s] || s)} · ${l.length}</p>
+${bloques.map(([s, l]) => `<p style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#b4302e;margin:18px 0 8px;font-weight:bold">${escHtml(SECTOR_NOMBRE[s] || s)} · ${l.length}</p>
 <ul style="padding-left:18px;margin:0">${l.slice(0, 4).map((o) => fila(env, o)).join("")}</ul>`).join("")}${boton(env, "Ver todas las plazas")}${aviso}`, pie);
   return {
     to: u.email, html, headers: cabeceras(baja), subject: `Boletín semanal: ${plazas.length} plazas nuevas · Radar de Plazas`,

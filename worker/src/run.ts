@@ -104,6 +104,16 @@ export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSe
     }
   } catch (e) { res.errores.push("CIDO obertes: " + String(e).slice(0, 100)); }
 
+  // Una vez: quitar el «euskera» que se colaba desde el menú traductor del CIDO
+  if ((await getMeta(env, "sin_euskera")) !== "1") {
+    try {
+      const filas = (await env.DB.prepare("SELECT id, requisitos FROM ofertas WHERE fuente = 'CIDO' AND requisitos LIKE '%otroIdioma%'").all<{ id: string; requisitos: string }>()).results;
+      const st = filas.map((f) => { const r = JSON.parse(f.requisitos); delete r.otroIdioma; return env.DB.prepare("UPDATE ofertas SET requisitos = ? WHERE id = ?").bind(JSON.stringify(r), f.id); });
+      for (let i = 0; i < st.length; i += 80) await env.DB.batch(st.slice(i, i + 80));
+      await setMeta(env, "sin_euskera", "1");
+    } catch (e) { res.errores.push("sin_euskera: " + String(e).slice(0, 80)); }
+  }
+
   // Una vez: municipio sede para organismos catalanes sin ayuntamiento y capital de comarca para los consells
   if ((await getMeta(env, "sedes")) !== "1") {
     try {
