@@ -14,7 +14,6 @@ workflows:
         bundle_identifier: com.radaropos.app
       vars:
         RADAR_API: https://radaropos.com
-        GOOGLE_IOS_CLIENT_ID: ""             # ID de cliente OAuth de Google de tipo iOS (opcional: sin él solo sale «Entrar con Apple»)
       node: 22
       xcode: latest
     scripts:
