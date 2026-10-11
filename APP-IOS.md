@@ -38,4 +38,4 @@ App Store Connect → la app → **Distribución**: capturas de iPhone (6,9" y 6
 - Elige la compilación de TestFlight → **Enviar a revisión**.
 
 ## Actualizar la app
-Los cambios de la web llegan a la app en la siguiente compilación: Codemagic → **Start new build** → **iOS (TestFlight)**. El número de compilación sube solo; para cambiar la versión que se ve en la tienda (1.0.0 → 1.1.0) cambia `"version"` en `package.json`.
+Se compila sola: cada vez que se publica un cambio en la web o en la app (rama `main`), Codemagic la compila y la sube a TestFlight. Si el cambio no toca la app (solo el servidor o los textos), la compilación se para en el primer paso sin gastar minutos. También se puede lanzar a mano: Codemagic → **Start new build** → **iOS (TestFlight)**. El número de compilación sube solo; para cambiar la versión que se ve en la tienda (1.0.0 → 1.1.0) cambia `"version"` en `package.json`.
