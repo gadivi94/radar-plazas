@@ -302,6 +302,21 @@ describe("cuentas por correo", () => {
     const pend = JSON.parse((DB.raw.query("SELECT v FROM meta WHERE k='avisos_pendientes'").get() as { v: string }).v);
     expect(pend.map((p: { title: string }) => p.title)).toEqual(["2 plazas nuevas · Policía Cataluña"]);
 
+    // Correo diario por intereses del perfil: Ana marca «subalterno»; recibe lo de hoy de ese sector, sin repetir lo de su alerta
+    await call("/cuenta", { method: "PATCH", token: tAna, body: JSON.stringify({ perfil: { nivel: 2, intereses: ["subalterno", "seguridad"] } }) });
+    DB.raw.run("DELETE FROM meta WHERE k = 'ultimo_diario'");
+    const antes2 = correos.length;
+    const r2 = await ciclo(env, { forzarRecogida: true });
+    expect(r2.errores).toEqual([]);
+    const diario = correos.slice(antes2).find((c) => c.to[0] === "ana@ejemplo.com" && /hoy en/.test(c.subject));
+    expect(diario).toBeTruthy();
+    expect(diario!.text).toContain("Subaltern");
+    expect(diario!.text).not.toContain("Agent de Policia Local"); // ya avisado por su alerta
+    // Al día siguiente no se repite en la misma jornada
+    const antes3 = correos.length;
+    await ciclo(env, { forzarRecogida: true });
+    expect(correos.slice(antes3).some((c) => /hoy en/.test(c.subject))).toBe(false);
+
     // Marcas propias
     expect((await call("/ofertas/cido%3A22173139", { method: "PATCH", token: tAna, body: JSON.stringify({ marca: "interesa" }) })).status).toBe(200);
     const deAnaPanel = await call("/ofertas", { token: tAna });

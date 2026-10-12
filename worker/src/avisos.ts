@@ -94,6 +94,23 @@ ${bloques.map(([s, l]) => `<p style="font-size:13px;text-transform:uppercase;let
   };
 }
 
+/** Correo diario con las plazas nuevas de los sectores que la persona marcó en su perfil. */
+export async function correoDiario(env: Env, u: { id: string; email: string; nombre?: string | null }, plazas: Oferta[], sectores: string[]): Promise<Correo> {
+  const { baja, pie } = await pieBaja(env, u.id, "Recibes este correo diario por los intereses de tu perfil. Puedes cambiarlos o desactivar los avisos en Mi cuenta.");
+  const porSector = new Map<string, Oferta[]>();
+  for (const o of plazas) porSector.set(o.tipo || "otros", [...(porSector.get(o.tipo || "otros") || []), o]);
+  const bloques = [...porSector].sort((a, b) => b[1].length - a[1].length);
+  const nombres = sectores.map((k) => SECTOR_NOMBRE[k] || k).join(", ");
+  const hola = u.nombre ? `Hola, ${escHtml(u.nombre)}. ` : "";
+  const html = plantilla(env, `<p style="font-size:15px;margin:0 0 16px">${hola}Hoy han entrado <b>${plazas.length} ${plazas.length === 1 ? "plaza nueva" : "plazas nuevas"}</b> en lo que te interesa (${escHtml(nombres)}).</p>
+${bloques.map(([s, l]) => `<p style="font-size:15px;color:#b4302e;margin:20px 0 8px;font-weight:bold">${escHtml(SECTOR_NOMBRE[s] || s)} (${l.length})</p>
+<ul style="padding-left:18px;margin:0">${l.slice(0, 8).map((o) => fila(env, o)).join("")}</ul>${l.length > 8 ? `<p style="font-size:13px;margin:4px 0 0">y ${l.length - 8} más en la web.</p>` : ""}`).join("")}${boton(env, "Ver todas en Radar de Plazas")}${aviso}`, pie);
+  return {
+    to: u.email, html, headers: cabeceras(baja), subject: `${plazas.length} ${plazas.length === 1 ? "plaza nueva" : "plazas nuevas"} hoy en ${nombres.length > 40 ? "tus sectores" : nombres}`,
+    text: `${u.nombre ? `Hola, ${u.nombre}. ` : ""}Hoy han entrado ${plazas.length} plazas nuevas en ${nombres}.\n\n` + bloques.map(([s, l]) => `${SECTOR_NOMBRE[s] || s}\n` + l.slice(0, 8).map((o) => `- ${corto(o.titulo)} (${lugarDe(o)}, ${plazoDe(o)}) ${enlacePlaza(env, o)}`).join("\n")).join("\n\n") + `\n\nDejar de recibir correos: ${baja}`,
+  };
+}
+
 // ---------- Telegram (opcional: TELEGRAM_BOT_TOKEN) ----------
 export const telegramActivo = (env: Env) => !!env.TELEGRAM_BOT_TOKEN;
 export async function enviarTelegram(env: Env, chat: string, texto: string): Promise<void> {

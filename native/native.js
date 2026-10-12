@@ -22,7 +22,7 @@
   try { if (navigator.serviceWorker) navigator.serviceWorker.register = function(){ return Promise.reject(new Error("sin SW en la app")); }; } catch (e) {}
 
   /* 3. Enlaces de fuera (BOE, ayuntamientos, fichas de la web) en el navegador integrado */
-  function abrirFuera(url){ if (P.Browser) P.Browser.open({ url: url, presentationStyle: "popover" }).catch(function(){ location.href = url; }); else location.href = url; }
+  function abrirFuera(url){ if (P.Browser) P.Browser.open({ url: url, presentationStyle: "fullscreen" }).catch(function(){ location.href = url; }); else location.href = url; }
   document.addEventListener("click", function(e){
     var a = e.target.closest && e.target.closest("a[href]"); if (!a) return;
     var h = a.getAttribute("href") || "";

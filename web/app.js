@@ -568,7 +568,7 @@ function renderCuenta(){
   const vias=["correo",y.google?"Google":"",y.apple?"Apple":""].filter(Boolean).join(", ");
   $("cuentaBody").innerHTML=`<form id="fNombre" class="add nombre"><label for="nombreIn">Cómo quieres que te saludemos</label><input id="nombreIn" maxlength="40" autocomplete="given-name" placeholder="Tu nombre" value="${esc(y.nombre||"")}"><button type="submit">Guardar</button></form>
     <p class="note">Has entrado como <b>${esc(y.email)}</b> · ${y.admin?"administración":"cuenta gratuita"} · puedes entrar con ${esc(vias)}. Tus filtros, perfil, alertas, plazas seguidas y la conversación con el tutor se sincronizan en todos tus dispositivos.</p>
-    <label class="check"><input type="checkbox" id="avisosEmail" ${y.avisos_email?"checked":""}><span>Recibir por correo las plazas nuevas de mis alertas, los cambios en las que sigo y el aviso 3 días antes de que cierren</span></label>
+    <label class="check"><input type="checkbox" id="avisosEmail" ${y.avisos_email?"checked":""}><span>Recibir por correo: cada día las plazas nuevas de los sectores de mi perfil y de mis alertas, los cambios en las que sigo y el aviso 3 días antes de que cierren</span></label>
     <label class="mini-l">Frecuencia de las alertas <select id="frecuencia"><option value="diaria" ${y.frecuencia!=="semanal"?"selected":""}>Cada día que haya novedades</option><option value="semanal" ${y.frecuencia==="semanal"?"selected":""}>Resumen semanal (lunes)</option></select></label>
     <label class="check"><input type="checkbox" id="boletin" ${y.boletin?"checked":""}><span>Boletín semanal con las plazas destacadas de toda España</span></label>
     <div class="acts">${tg}${cal}</div>

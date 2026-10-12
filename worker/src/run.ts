@@ -12,7 +12,7 @@ import { fmt, grupoProbable } from "./classify";
 import { correoActivo, enviarCorreo } from "./mail";
 import { clasificar, nivelDe } from "./sectores";
 import { coordCatalana, provinciaCatalana } from "./geo";
-import { corto, correoAvisos, correoBoletin, correoCambios, correoRecordatorio, enviarTelegram, textoTelegram, type Seccion } from "./avisos";
+import { corto, correoAvisos, correoBoletin, correoCambios, correoDiario, correoRecordatorio, enviarTelegram, textoTelegram, type Seccion } from "./avisos";
 import type { Env, Oferta } from "./types";
 
 export { corto };
@@ -270,6 +270,31 @@ export async function ciclo(env: Env, opts: { forzarRecogida?: boolean; forzarSe
       if (u.admin) pendientes.push({ title: `⏰ ${plazas.length === 1 ? "Cierra pronto una plaza que te interesa" : `${plazas.length} plazas que te interesan cierran pronto`}`, body: plazas.map((o) => `• ${corto(o.titulo)} (hasta ${fmt(o.plazo_fin!)})`).join("\n"), fecha: ahora });
       await env.DB.batch(plazas.map((o) => env.DB.prepare("UPDATE marcas SET recordado = 1 WHERE uid = ? AND oferta_id = ?").bind(uid, o.id)));
     }
+  }
+
+  // 5b · Correo diario (a partir de las 10, una vez al día) con las plazas nuevas de los sectores del perfil,
+  // para quien tiene avisos por correo y marcó intereses. Lo que ya avisó una alerta no se repite.
+  const diario = `diario:${hoy}`;
+  if ((horaMadrid() >= 10 || opts.forzarRecogida) && (await getMeta(env, "ultimo_diario")) !== diario) {
+    await setMeta(env, "ultimo_diario", diario);
+    try {
+      const deHoy = (await env.DB.prepare(
+        "SELECT * FROM ofertas WHERE encontrada >= ? AND (plazo_fin IS NULL OR plazo_fin >= ?) AND (estado IS NULL OR estado NOT IN ('cerrada','revisar'))",
+      ).bind(hoy, hoy).all<Oferta>()).results;
+      if (deHoy.length) {
+        const perfiles = (await env.DB.prepare("SELECT id, perfil FROM users WHERE avisos_email = 1 AND perfil IS NOT NULL").all<{ id: string; perfil: string }>()).results;
+        for (const f of perfiles) {
+          const u = usuarios.get(f.id); if (!u) continue;
+          let p: { intereses?: string[]; nivel?: number; prefs?: { intereses?: string[] } } = {};
+          try { p = JSON.parse(f.perfil); } catch { continue; }
+          const sect = (p.intereses?.length ? p.intereses : p.prefs?.intereses) || [];
+          if (!sect.length) continue;
+          const porAlerta = new Set(alertas.filter((a) => a.uid === u.id).flatMap((a) => deHoy.filter((o) => coincide(o, a.f, hoy)).map((o) => o.id)));
+          const mias = deHoy.filter((o) => sect.includes(o.tipo || "otros") && !porAlerta.has(o.id) && (typeof p.nivel !== "number" || o.nivel == null || Number(o.nivel) <= p.nivel));
+          if (mias.length) await correo(correoDiario(env, u, mias, sect), u.id);
+        }
+      }
+    } catch (e) { res.errores.push("diario: " + String(e).slice(0, 100)); }
   }
 
   // 6 · Lunes: resumen semanal de alertas (para quien lo eligió) y boletín de plazas destacadas
