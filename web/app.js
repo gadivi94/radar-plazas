@@ -45,6 +45,8 @@ const DOCS=[["dni","DNI o NIE"],["titulo","Título"],["tasa","Pago de la tasa"],
 const SISTEMA={concurso:"Concurso de méritos","concurso-oposicion":"Concurso-oposición",oposicion:"Oposición",bolsa:"Bolsa de trabajo"};
 const COMUNIDADES=["Andalucía","Aragón","Asturias","Baleares","Canarias","Cantabria","Castilla y León","Castilla-La Mancha","Cataluña","Comunidad Valenciana","Extremadura","Galicia","La Rioja","Madrid","Murcia","Navarra","País Vasco","Ceuta","Melilla","Estatal"];
 const SECT=Object.fromEntries(SECTORES.map(s=>[s.k,s]));
+// Provincias con su comunidad (para elegirlas en las alertas)
+const PROV_CCAA=[["Almería", "Andalucía"], ["Cádiz", "Andalucía"], ["Córdoba", "Andalucía"], ["Granada", "Andalucía"], ["Huelva", "Andalucía"], ["Jaén", "Andalucía"], ["Málaga", "Andalucía"], ["Sevilla", "Andalucía"], ["Huesca", "Aragón"], ["Teruel", "Aragón"], ["Zaragoza", "Aragón"], ["Asturias", "Asturias"], ["Illes Balears", "Baleares"], ["Las Palmas", "Canarias"], ["Santa Cruz de Tenerife", "Canarias"], ["Cantabria", "Cantabria"], ["Ávila", "Castilla y León"], ["Burgos", "Castilla y León"], ["León", "Castilla y León"], ["Palencia", "Castilla y León"], ["Salamanca", "Castilla y León"], ["Segovia", "Castilla y León"], ["Soria", "Castilla y León"], ["Valladolid", "Castilla y León"], ["Zamora", "Castilla y León"], ["Albacete", "Castilla-La Mancha"], ["Ciudad Real", "Castilla-La Mancha"], ["Cuenca", "Castilla-La Mancha"], ["Guadalajara", "Castilla-La Mancha"], ["Toledo", "Castilla-La Mancha"], ["Barcelona", "Cataluña"], ["Girona", "Cataluña"], ["Lleida", "Cataluña"], ["Tarragona", "Cataluña"], ["Alicante", "Comunidad Valenciana"], ["Castellón", "Comunidad Valenciana"], ["Valencia", "Comunidad Valenciana"], ["Badajoz", "Extremadura"], ["Cáceres", "Extremadura"], ["A Coruña", "Galicia"], ["Lugo", "Galicia"], ["Ourense", "Galicia"], ["Pontevedra", "Galicia"], ["La Rioja", "La Rioja"], ["Madrid", "Madrid"], ["Murcia", "Murcia"], ["Navarra", "Navarra"], ["Álava", "País Vasco"], ["Gipuzkoa", "País Vasco"], ["Bizkaia", "País Vasco"], ["Ceuta", "Ceuta"], ["Melilla", "Melilla"]];
 const CORTO={seguridad:"Seguridad",justicia:"Justicia",sanidad:"Sanidad",educacion:"Educación",social:"Social",transporte:"Transporte",empresas:"Empresas públicas",militar:"Militar",subalterno:"Conserjes",administrativo:"Administración",oficios:"Oficios",tecnico:"Técnicos",otros:"Otros"};
 const ICONO={seguridad:"🚓",justicia:"⚖️",sanidad:"🩺",educacion:"🎒",social:"🤝",transporte:"🚇",empresas:"📮",militar:"🎖️",subalterno:"🗝️",administrativo:"🗂️",oficios:"🔧",tecnico:"💻",otros:"✳️"};
 const FUENTE={BOE:"BOE",TMB:"TMB",EMPRESA:"web de la empresa"};
@@ -236,10 +238,8 @@ function resumenFiltros(f){
   const p=[];
   if(f.cerca)p.push(`A menos de ${f.cerca.km} km de ${f.cerca.etiqueta||"tu ubicación"}`);
   else if(f.zonas?.length)p.push(f.zonas.length>4?`${f.zonas.length} municipios`:f.zonas.join(", "));
-  else if(f.provincias?.length)p.push(f.provincias.join(", "));
-  else if(f.comunidades?.length)p.push(f.comunidades.join(", "));else p.push("Toda España");
-  if(f.subtipos?.length)p.push(f.subtipos.map(k=>SUBN[k]?.n||k).join(", "));
-  else if(f.tipos?.length)p.push(f.tipos.length>4?"varios sectores":f.tipos.map(k=>SECT[k]?.n||k).join(", "));
+  else if(f.provincias?.length||f.comunidades?.length){const l=[...(f.comunidades||[]).map(c=>c==="Estatal"?"ámbito estatal":c),...(f.provincias||[])];p.push(l.length>4?`${l.length} lugares`:l.join(", "))}else p.push("Toda España");
+  if(f.subtipos?.length||f.tipos?.length){const conSub=new Set((f.subtipos||[]).map(k=>SUBN[k]?.s));const partes=[...(f.subtipos||[]).map(k=>SUBN[k]?.n||k),...(f.tipos||[]).filter(k=>!conSub.has(k)).map(k=>SECT[k]?.n||k)];p.push(partes.length>4?`${partes.length} sectores`:partes.join(", "))}
   if(f.nivelMax!=null)p.push(NIV_OPC.find(x=>x[0]===String(f.nivelMax))?.[1]||"");
   if(f.palabras?.length)p.push(`“${f.palabras.slice(0,3).join("”, “")}”${f.palabras.length>3?"…":""}`);
   if(f.dificultades?.length)p.push(f.dificultades.map(d=>DIF[d-1][1]).join("/"));
@@ -261,8 +261,8 @@ function filtrosActuales(){
   else if(pl?.kind==="muniES")f.zonas=[pl.id];
   else if(pl?.kind==="cerca")f.cerca={lat:pl.lat,lon:pl.lon,km:pl.km,etiqueta:pl.id};
   else if(pl?.kind==="muni")f.zonas=[pl.id];
-  else if(pl?.kind==="com")f.zonas=GEO.munis.filter(m=>m[1]===pl.id).map(m=>m[0]);
-  else if(pl?.kind==="prov"){f.comunidades=["Cataluña"];f.zonas=GEO.munis.filter(m=>m[2]===pl.id).map(m=>m[0])}
+  else if(pl?.kind==="com"){f.comunidades=["Cataluña"];f.zonas=GEO.munis.filter(m=>m[1]===pl.id).map(m=>m[0])}
+  else if(pl?.kind==="prov")f.provincias=[PROV_NOM[pl.id]];
   return f;
 }
 
@@ -1140,23 +1140,44 @@ function abrirAlerta(a){
   $("alGuardar").textContent=a?"Guardar cambios":"Crear alerta";
   $("alNombre").value=a?a.nombre:(sugerirNombre(f));
   $("alPalabras").value=(f.palabras||[]).join(", ");$("alExcluir").value=(f.excluir||[]).join(", ");
-  $("alComunidades").innerHTML=COMUNIDADES.map(c=>`<label><input type="checkbox" value="${esc(c)}" ${ccaa.has(c)?"checked":""}>${esc(c==="Estatal"?"Ámbito estatal":c)}</label>`).join("");
+  const provs=new Set(f.provincias||[]);
+  // Si el filtro actual es una provincia catalana por código, se traduce a su nombre
+  if(!a&&S.place?.kind==="prov")provs.add(PROV_NOM[S.place.id]);
+  const porCcaa=new Map();for(const [pv,cc] of PROV_CCAA)porCcaa.set(cc,[...(porCcaa.get(cc)||[]),pv]);
+  $("alProvincias").innerHTML=[...porCcaa].map(([cc,ps])=>`<details class="grupo-prov" ${ps.some(x=>provs.has(x))||ccaa.has(cc)?"open":""}><summary><label><input type="checkbox" class="ccaa-todas" value="${esc(cc)}" ${ccaa.has(cc)&&!ps.some(x=>provs.has(x))?"checked":""}> ${esc(cc)}</label><span class="n-sel"></span></summary><div class="opciones">${ps.map(pv=>`<label><input type="checkbox" class="prov" data-ccaa="${esc(cc)}" value="${esc(pv)}" ${provs.has(pv)?"checked":""}>${esc(pv)}</label>`).join("")}</div></details>`).join("")+`<label class="estatal-l"><input type="checkbox" id="alEstatal" ${ccaa.has("Estatal")?"checked":""}> Incluir plazas de ámbito estatal (toda España)</label>`;
+  actualizarResumenProv();
   $("alSistemas").innerHTML=TIPOS_PROC.map(([v,l])=>`<label><input type="checkbox" value="${v}" ${(f.sistemas||[]).includes(v)?"checked":""}>${esc(l)}</label>`).join("");
   $("alGrupos").innerHTML=GRUPOS.filter(([v])=>v!=="?").map(([v,l])=>`<label><input type="checkbox" value="${v}" ${(f.grupos||[]).includes(v)?"checked":""}>${esc(l)}</label>`).join("");
   const lug=lugarDeFiltros(f);$("alLugarBox").hidden=!lug;$("alLugar").checked=!!lug;$("alLugarT").textContent=lug?`Solo en: ${lug}`:"";
   $("alLugarBox").dataset.f=JSON.stringify({zonas:f.zonas,provincias:f.provincias,cerca:f.cerca});
-  $("alSector").innerHTML=`<option value="">Todos los sectores</option>`+SECTORES.map(x=>`<option value="${x.k}" ${(f.tipos||[])[0]===x.k?"selected":""}>${esc(x.n)}</option>`).join("");
-  $("alSector").dataset.subs=JSON.stringify(f.subtipos||[]);
+  const tipos=new Set(f.tipos||[]),subs=new Set(f.subtipos||[]);
+  $("alSectores").innerHTML=SECTORES.filter(x=>x.k!=="otros").map(x=>`<details class="grupo-prov" ${tipos.has(x.k)||x.subs.some(([k])=>subs.has(k))?"open":""}><summary><label><input type="checkbox" class="sector" value="${x.k}" ${tipos.has(x.k)?"checked":""}> ${ICONO[x.k]||""} ${esc(x.n)}</label><span class="n-sel"></span></summary><div class="opciones">${x.subs.map(([k,n])=>`<label><input type="checkbox" class="sub" data-sector="${x.k}" value="${k}" ${subs.has(k)?"checked":""}>${esc(n)}</label>`).join("")}</div></details>`).join("");
+  actualizarResumenSec();
   $("alNivel").innerHTML=NIV_OPC.map(([v,l])=>`<option value="${v}" ${String(f.nivelMax??"")===v?"selected":""}>${esc(l)}</option>`).join("");
   for(const r of document.querySelectorAll('[name="alFrec"]'))r.checked=r.value===(S.yo?.frecuencia||"diaria");
   $("alErr").textContent="";
   const d=$("dlgAlerta");if(d.showModal)d.showModal();else d.setAttribute("open","");
   setTimeout(()=>$("alPalabras").focus(),60);
 }
+function actualizarResumenProv(){
+  for(const d of $("alProvincias").querySelectorAll("details")){const todas=d.querySelector(".ccaa-todas"),ps=[...d.querySelectorAll("input.prov")],n=ps.filter(x=>x.checked).length;
+    d.querySelector(".n-sel").textContent=todas.checked?"todas":n?`${n} de ${ps.length}`:"";}
+}
+function actualizarResumenSec(){
+  for(const d of $("alSectores").querySelectorAll("details")){const t=d.querySelector(".sector"),ss=[...d.querySelectorAll("input.sub")],n=ss.filter(x=>x.checked).length;
+    d.querySelector(".n-sel").textContent=t.checked?"todo el sector":n?`${n} de ${ss.length}`:"";}
+}
+document.addEventListener("change",e=>{
+  const el=e.target;
+  if(el.classList?.contains("ccaa-todas")){const d=el.closest("details");if(el.checked)for(const x of d.querySelectorAll("input.prov"))x.checked=false;actualizarResumenProv()}
+  else if(el.classList?.contains("prov")){const d=el.closest("details");if(el.checked)d.querySelector(".ccaa-todas").checked=false;actualizarResumenProv()}
+  else if(el.classList?.contains("sector")){const d=el.closest("details");if(el.checked)for(const x of d.querySelectorAll("input.sub"))x.checked=false;actualizarResumenSec()}
+  else if(el.classList?.contains("sub")){const d=el.closest("details");if(el.checked)d.querySelector(".sector").checked=false;actualizarResumenSec()}
+});
 function sugerirNombre(f){
   const p=[];if(f.subtipos?.length)p.push(SUBN[f.subtipos[0]]?.n);else if(f.tipos?.length)p.push(SECT[f.tipos[0]]?.n);
   if(S.q)p.push(S.q);
-  const l=f.comunidades?.[0]||(S.place&&S.place.kind!=="cerca"?nombreLugar(S.place).replace(/^en (la provincia de )?/,""):"");if(l)p.push(l);
+  const l=f.provincias?.slice(0,2).join(", ")||f.comunidades?.[0]||(S.place&&S.place.kind!=="cerca"?nombreLugar(S.place).replace(/^en (la provincia de )?/,""):"");if(l)p.push(l);
   return p.filter(Boolean).join(" · ").slice(0,80);
 }
 const listaComas=v=>v.split(",").map(x=>x.trim()).filter(Boolean).slice(0,20);
@@ -1168,11 +1189,19 @@ $("fAlerta").addEventListener("submit",async e=>{
   const nombre=$("alNombre").value.trim();if(!nombre){$("alErr").textContent="Ponle un nombre a la alerta.";return}
   const f={soloAbiertas:true};
   const pal=listaComas($("alPalabras").value),exc=listaComas($("alExcluir").value);if(pal.length)f.palabras=pal;if(exc.length)f.excluir=exc;
-  const cc=[...$("alComunidades").querySelectorAll("input:checked")].map(x=>x.value);if(cc.length)f.comunidades=cc;
-  if($("alLugar").checked&&!$("alLugarBox").hidden){const l=JSON.parse($("alLugarBox").dataset.f||"{}");for(const k of ["zonas","provincias","cerca"])if(l[k]&&(!Array.isArray(l[k])||l[k].length))f[k]=l[k]}
+  // Lugares: provincias marcadas; una comunidad entera cuenta como todas sus provincias
+  const provSel=[...$("alProvincias").querySelectorAll("input.prov:checked")].map(x=>x.value);
+  const ccSel=[...$("alProvincias").querySelectorAll("input.ccaa-todas:checked")].map(x=>x.value);
+  if(ccSel.length)f.comunidades=ccSel;
+  if(provSel.length)f.provincias=provSel;
+  if($("alEstatal").checked)f.comunidades=[...(f.comunidades||[]),"Estatal"];
+  if($("alLugar").checked&&!$("alLugarBox").hidden){const l=JSON.parse($("alLugarBox").dataset.f||"{}");for(const k of ["zonas","cerca"])if(l[k]&&(!Array.isArray(l[k])||l[k].length))f[k]=l[k]}
   const sis=[...$("alSistemas").querySelectorAll("input:checked")].map(x=>x.value);if(sis.length)f.sistemas=sis;
   const grs=[...$("alGrupos").querySelectorAll("input:checked")].map(x=>x.value);if(grs.length)f.grupos=grs;
-  const sec=$("alSector").value;if(sec){f.tipos=[sec];const subs=JSON.parse($("alSector").dataset.subs||"[]").filter(k=>SUBN[k]?.s===sec);if(subs.length)f.subtipos=subs}
+  const secSel=[...$("alSectores").querySelectorAll("input.sector:checked")].map(x=>x.value);
+  const subSel=[...$("alSectores").querySelectorAll("input.sub:checked")].map(x=>x.value);
+  if(secSel.length)f.tipos=secSel;
+  if(subSel.length){f.subtipos=subSel;f.tipos=[...new Set([...(f.tipos||[]),...subSel.map(k=>SUBN[k]?.s).filter(Boolean)])]}
   const niv=$("alNivel").value;if(niv!=="")f.nivelMax=+niv;
   const frec=document.querySelector('[name="alFrec"]:checked')?.value||"diaria";
   $("alGuardar").disabled=true;

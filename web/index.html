@@ -158,14 +158,12 @@
     <label class="campo">Nombre de la alerta<input id="alNombre" maxlength="80" required placeholder="Por ejemplo: Policía local en Girona"></label>
     <label class="campo">Palabras que debe tener<input id="alPalabras" placeholder="policía, bombero, auxiliar…" autocomplete="off"><small>Separadas por comas. Te avisamos si el título o el organismo contiene alguna.</small></label>
     <label class="campo">Palabras que no quieres<input id="alExcluir" placeholder="prácticas, temporal…" autocomplete="off"></label>
-    <fieldset class="campo"><legend>Comunidades</legend><div class="opciones" id="alComunidades"></div><small>Si no marcas ninguna, toda España.</small></fieldset>
+    <fieldset class="campo"><legend>Dónde</legend><div class="arbol" id="alProvincias"></div><small>Marca provincias sueltas o una comunidad entera. Si no marcas nada, toda España.</small></fieldset>
     <label class="check" id="alLugarBox" hidden><input type="checkbox" id="alLugar" checked><span id="alLugarT"></span></label>
     <fieldset class="campo"><legend>Tipo de proceso</legend><div class="opciones" id="alSistemas"></div></fieldset>
     <fieldset class="campo"><legend>Grupo</legend><div class="opciones" id="alGrupos"></div><small>AP sin titulación · C2 ESO · C1 bachillerato o FP medio · A2 y A1 universidad.</small></fieldset>
-    <div class="campos2">
-      <label class="campo">Sector<select id="alSector"></select></label>
-      <label class="campo">Tus estudios<select id="alNivel"></select></label>
-    </div>
+    <fieldset class="campo"><legend>Qué</legend><div class="arbol" id="alSectores"></div><small>Marca sectores enteros o solo algunos puestos. Si no marcas nada, todos.</small></fieldset>
+    <label class="campo">Tus estudios<select id="alNivel"></select></label>
     <fieldset class="campo"><legend>¿Cada cuánto?</legend><div class="opciones"><label><input type="radio" name="alFrec" value="diaria" checked> Cada día que haya novedades</label><label><input type="radio" name="alFrec" value="semanal"> Un resumen los lunes</label></div><small>Se aplica a todas tus alertas.</small></fieldset>
     <p class="note err" id="alErr" role="alert"></p>
     <div class="hoja-pie"><button type="button" class="btn sec" id="alCancelar">Cancelar</button><button type="submit" class="btn pri" id="alGuardar">Crear alerta</button></div>

@@ -376,3 +376,19 @@ dialog.hoja::backdrop{background:rgba(29,36,51,.38)}
 .social .o{display:flex;align-items:center;gap:10px;margin:2px 0;color:var(--muted);font-size:13px}
 .social .o::before,.social .o::after{content:"";flex:1;border-top:1px solid var(--line)}
 .add.nombre{flex-wrap:wrap}.add.nombre label{flex-basis:100%;font-size:14px;font-weight:600}
+
+/* Árbol de provincias y sectores en la alerta */
+.arbol{display:flex;flex-direction:column;border:1px solid var(--line-2);border-radius:var(--r-s);max-height:300px;overflow-y:auto;background:var(--surface)}
+.arbol details{border-bottom:1px solid var(--line)}
+.arbol details:last-of-type{border-bottom:0}
+.arbol summary{display:flex;align-items:center;gap:8px;padding:9px 10px;cursor:pointer;list-style:none;font-weight:500;font-size:14px}
+.arbol summary::-webkit-details-marker{display:none}
+.arbol summary::before{content:"";width:7px;height:7px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(-45deg);flex:none;transition:transform .15s}
+.arbol details[open] summary::before{transform:rotate(45deg)}
+.arbol summary label{display:flex;align-items:center;gap:7px;flex:1;font-weight:600;cursor:pointer}
+.arbol summary input{accent-color:var(--accent);margin:0;width:17px;height:17px}
+.arbol .n-sel{font-size:12.5px;color:var(--muted);font-weight:400}
+.arbol .opciones{padding:2px 10px 10px 32px}
+.arbol .opciones label{font-weight:500;font-size:13.5px;padding:5px 10px}
+.arbol .estatal-l{display:flex;align-items:center;gap:8px;padding:9px 10px;font-weight:500;font-size:14px;border-top:1px solid var(--line)}
+.arbol .estatal-l input{accent-color:var(--accent);margin:0;width:17px;height:17px}

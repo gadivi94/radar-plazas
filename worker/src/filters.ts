@@ -42,8 +42,12 @@ export function coordDe(o: Oferta): [number, number] | null {
 export function coincide(o: Oferta, f: Filtros, hoy = hoyMadrid()): boolean {
   const has = (a?: unknown[]) => Array.isArray(a) && a.length > 0;
   if (has(f.fuentes) && !f.fuentes!.includes(o.fuente)) return false;
-  if (has(f.comunidades) && !f.comunidades!.includes(o.comunidad || "")) return false;
-  if (has(f.provincias) && !f.provincias!.includes(o.provincia || "")) return false;
+  // Lugar: comunidades enteras y provincias sueltas se suman (basta con estar en una de ellas)
+  if (has(f.comunidades) || has(f.provincias)) {
+    const enCcaa = has(f.comunidades) && f.comunidades!.includes(o.comunidad || "");
+    const enProv = has(f.provincias) && f.provincias!.some((p) => norm(p) === norm(o.provincia || ""));
+    if (!enCcaa && !enProv) return false;
+  }
   if (has(f.subtipos)) {
     // Una subcategoría manda sobre su sector; los sectores elegidos sin subcategoría entran enteros.
     const conSub = new Set(f.subtipos!.map((k) => SUBTIPOS[k]?.sector).filter(Boolean));
