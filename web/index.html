@@ -19,11 +19,12 @@
 <link rel="icon" href="/icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap">
 <link rel="stylesheet" href="app.css">
 <link rel="preload" href="vendor/maplibre/maplibre-gl.js" as="script">
 </head>
 <body>
+<a class="saltar" href="#list">Saltar a las plazas</a>
 <header class="cab">
   <div class="wrap">
     <a class="marca" href="./" aria-label="Radar de Plazas, inicio"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14.5" fill="none" stroke="var(--fg)" stroke-width="1.5"/><circle cx="16" cy="16" r="9" fill="none" stroke="var(--fg)" stroke-width="1" opacity=".5"/><circle cx="16" cy="16" r="3.5" fill="none" stroke="var(--fg)" stroke-width="1"/><path d="M16 16 L16 2.5 A13.5 13.5 0 0 1 27.7 9.2 Z" fill="var(--fg)" opacity=".12"/><circle cx="22.5" cy="9" r="2.8" fill="var(--accent)"/></svg><b>Radar de Plazas <span class="sep">/</span> <span class="op">Oposiciones</span></b></a>
@@ -103,7 +104,7 @@
       <h2 data-i18n>Mapa</h2>
       <div class="zooms"><button type="button" data-mapa="cat" aria-pressed="true" data-i18n>Cataluña</button><button type="button" data-mapa="es" aria-pressed="false" data-i18n>España</button></div>
     </div>
-    <div class="zooms" id="zooms" style="padding:0 14px 8px">
+    <div class="zooms" id="zooms">
       <button type="button" data-zoom="all" aria-pressed="true">Todo</button><button type="button" data-zoom="8">Barcelona</button><button type="button" data-zoom="17">Girona</button><button type="button" data-zoom="25">Lleida</button><button type="button" data-zoom="43">Tarragona</button><button type="button" data-zoom="in" aria-label="Acercar">＋</button><button type="button" data-zoom="out" aria-label="Alejar">－</button>
     </div>
     <div class="mapbox">
@@ -112,14 +113,14 @@
       <button type="button" class="toda" id="toda" hidden></button>
       <button type="button" class="fuera" id="fuera" hidden></button>
     </div>
-    <div class="leyenda" id="leyCat"><span><i style="background:var(--urgent)"></i>cierra en 3 días o menos</span><span><i style="background:var(--soon)"></i>en 7 días o menos</span><span><i style="background:var(--ok)"></i>más de 7</span><span><i style="background:var(--muted)"></i>sin plazo aún</span></div>
-    <div class="leyenda" id="leyEs" hidden><span><i class="sq" style="background:var(--heat1)"></i>pocas</span><span><i class="sq" style="background:var(--heat2)"></i>bastantes</span><span><i class="sq" style="background:var(--heat3)"></i>muchas plazas</span><span id="mapinfoEs"></span></div>
+    <div class="leyenda" id="leyCat"><span><i class="c-urgent"></i>cierra en 3 días o menos</span><span><i class="c-soon"></i>en 7 días o menos</span><span><i class="c-ok"></i>más de 7</span><span><i class="c-none"></i>sin plazo aún</span></div>
+    <div class="leyenda" id="leyEs" hidden><span><i class="sq c-h1"></i>pocas</span><span><i class="sq c-h2"></i>bastantes</span><span><i class="sq c-h3"></i>muchas plazas</span><span id="mapinfoEs"></span></div>
     <div class="mapinfo" id="mapinfo"><p class="note">Toca un punto para ver las plazas de ese municipio.</p></div>
     <div class="credit">Límites: ICGC e IGN</div>
   </section>
 
   <div class="avisoperfil" id="avisoPerfil" hidden></div>
-  <section class="list" id="list" aria-live="polite">
+  <section class="list" id="list" aria-live="polite" tabindex="-1">
     <div class="esq"></div><div class="esq"></div><div class="esq"></div>
   </section>
 
