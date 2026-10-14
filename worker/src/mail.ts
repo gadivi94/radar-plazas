@@ -42,8 +42,8 @@ export async function enviarCorreo(env: Env, c: Correo): Promise<void> {
 /** Envoltorio común de los correos: cabecera, contenido y pie con el titular. */
 export function plantilla(env: Env, cuerpo: string, pie = ""): string {
   const web = sitio(env);
-  return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1c1a17;background:#ffffff">
-<p style="font-size:20px;font-weight:bold;margin:0 0 16px">Radar de <span style="color:#b4302e">Plazas</span> <span style="color:#b4302e;font-weight:normal">/</span> Oposiciones</p>
+  return `<div style="font-family:Archivo,'Helvetica Neue',Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#141b33;background:#ffffff">
+<p style="font-size:20px;font-weight:bold;margin:0 0 16px">Radar de Plazas <span style="color:#97a0b4;font-weight:normal">/</span> <span style="color:#566079;font-weight:normal">Oposiciones</span></p>
 ${cuerpo}
-<p style="font-size:12px;color:#6b655c;margin:24px 0 0;border-top:1px solid #e4dfd6;padding-top:12px">${pie}${pie ? "<br>" : ""}Radar de Plazas · <a href="${web}" style="color:#b4302e">${web.replace(/^https?:\/\//, "")}</a> · ${escHtml(contacto(env))}</p></div>`;
+<p style="font-size:12px;color:#566079;margin:24px 0 0;border-top:1px solid #dde3ec;padding-top:12px">${pie}${pie ? "<br>" : ""}Radar de Plazas · <a href="${web}" style="color:#2338b5">${web.replace(/^https?:\/\//, "")}</a> · ${escHtml(contacto(env))}</p></div>`;
 }

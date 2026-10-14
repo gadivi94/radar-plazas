@@ -1,46 +1,52 @@
-/* Páginas legales y de contacto de Radar de Plazas: mismos colores y tipos que la web */
+/* Páginas secundarias de Radar de Plazas: la misma tinta azul, papel frío, fosforitos y letra Archivo que la portada */
 :root{
-  --bg:#fbfaf7; --surface:#ffffff; --fg:#1c1a17; --muted:#6b655c; --line:#e4dfd6;
-  --accent:#b4302e; --accent-ink:#ffffff; --accent-soft:#f6e3e1; --urgent:#b4302e; --mark:#f8ecd9;
-  --font-display:"Source Serif 4","Iowan Old Style","Times New Roman",serif;
-  --font-body:"Inter","Segoe UI",system-ui,sans-serif;
+  --bg:#f1f4f8; --surface:#ffffff; --raise:#e8edf3; --fg:#141b33; --muted:#566079; --line:#dde3ec; --line-2:#c3cbd9;
+  --accent:#2338b5; --accent-ink:#ffffff; --accent-soft:#e3e7fa; --accent-dark:#172785; --urgent:#c01f55;
+  --fluo-am:#ffe94a; --fluo-rosa:#ff9cc9; --fluo-nar:#ffc163; --fluo-ver:#a9ee90; --mark:var(--fluo-am);
+  --font-body:"Archivo","Helvetica Neue",system-ui,-apple-system,sans-serif; --font-display:var(--font-body);
   --font-mono:ui-monospace,Menlo,monospace;
   color-scheme:light;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:16px;line-height:1.55}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+p,li{text-wrap:pretty}
 .wrap{max-width:760px;margin:0 auto;padding:20px 16px 48px}
-.marca{font-family:var(--font-display);font-weight:600;font-size:21px;color:var(--fg);text-decoration:none}
-.marca span{color:var(--accent)}
-.top{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding-bottom:12px}
-.top a.volver{font-weight:600;color:var(--accent);text-decoration:none;font-size:14px}
-main{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 18px 22px;margin-top:20px}
-h1{font-family:var(--font-display);font-weight:600;font-size:clamp(26px,6vw,36px);line-height:1.12;margin:0 0 6px}
-.fecha{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin:0 0 18px}
-h2{font-family:var(--font-display);font-weight:600;font-size:22px;margin:26px 0 6px}
+.marca{display:flex;align-items:center;gap:9px;color:var(--fg);text-decoration:none;min-width:0}
+.marca svg{width:30px;height:30px;flex:none}
+.marca b{font:700 semi-expanded 18px var(--font-display);letter-spacing:-.01em;white-space:nowrap}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:4px}
+.top a.volver{font-weight:600;color:var(--accent-ink);background:var(--accent);text-decoration:none;font-size:14px;padding:8px 14px;border-radius:10px;white-space:nowrap}
+.top a.volver:hover{background:var(--accent-dark)}
+main{background:var(--surface);box-shadow:0 0 0 1px var(--line);border-radius:16px;padding:22px 20px 26px;margin-top:18px}
+h1{font:700 expanded clamp(25px,6vw,36px)/1.06 var(--font-display);letter-spacing:-.025em;margin:0 0 8px;text-wrap:balance}
+.fecha{font-size:13px;color:var(--muted);margin:0 0 18px}
+h2{font:700 semi-expanded 21px/1.2 var(--font-display);letter-spacing:-.015em;margin:28px 0 6px}
 p,li{overflow-wrap:anywhere}
-a{color:var(--accent)}
+a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:3px}
 ul{padding-left:20px}
 table{width:100%;border-collapse:collapse;font-size:14px;display:block;overflow-x:auto}
 th,td{border:1px solid var(--line);padding:8px;text-align:left;vertical-align:top}
-th{background:var(--bg)}
-mark{background:var(--mark);color:inherit;padding:0 3px;border-radius:2px}
+th{background:var(--raise)}
+mark{color:inherit;padding:0 4px;border-radius:2px 6px 3px 7px;background:linear-gradient(176deg,transparent 12%,var(--fluo-am) 13% 88%,transparent 89%)}
 .ficha{list-style:none;padding:0;margin:0;display:grid;gap:4px}
 .ficha b{display:inline-block;min-width:150px}
-.nota{background:var(--accent-soft);border-left:4px solid var(--accent);padding:10px 14px;border-radius:4px;margin:14px 0}
+.nota{background:var(--accent-soft);padding:12px 16px;border-radius:10px;margin:14px 0}
 footer{margin-top:20px;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
 footer nav{display:flex;flex-wrap:wrap;gap:6px 14px}
+footer a{color:var(--muted);text-underline-offset:3px}
+footer a:hover{color:var(--fg)}
 form.contacto{display:flex;flex-direction:column;gap:12px;margin-top:10px}
 form.contacto label{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:14px}
 form.contacto input,form.contacto textarea{font:16px var(--font-body);padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);width:100%}
 form.contacto textarea{min-height:150px;resize:vertical}
 form.contacto .check{flex-direction:row;align-items:flex-start;gap:8px;font-weight:400}
 form.contacto .check input{width:18px;height:18px;margin-top:3px;flex:none;accent-color:var(--accent)}
-form.contacto button{align-self:flex-start;font:700 15px var(--font-body);border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:10px 18px;cursor:pointer}
+form.contacto button{align-self:flex-start;font:600 15px var(--font-body);border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:10px 18px;cursor:pointer}
+form.contacto button:hover{background:var(--accent-dark)}
 form.contacto button:disabled{opacity:.6}
 .trampa{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .estado{font-weight:600;margin:0}
-.estado.ok{color:var(--accent)} .estado.err{color:var(--urgent)}
+.estado.ok{color:#1d7a3a} .estado.err{color:var(--urgent)}
 .rgpd{font-size:12.5px;color:var(--muted);line-height:1.45}
 button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}

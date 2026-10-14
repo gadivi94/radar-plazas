@@ -27,17 +27,17 @@ function shell(env: Env, o: { titulo: string; desc: string; ruta: string; cuerpo
 <meta name="description" content="${e(o.desc.slice(0, 160))}">
 <link rel="canonical" href="${e(url)}">${o.noindex ? '\n<meta name="robots" content="noindex">' : ""}
 <meta property="og:type" content="website"><meta property="og:title" content="${e(o.titulo)}"><meta property="og:description" content="${e(o.desc.slice(0, 200))}"><meta property="og:url" content="${e(url)}"><meta property="og:image" content="${sitio(env)}/icon-512.png">
-<meta name="theme-color" content="#fbfaf7">
+<meta name="theme-color" content="#ffffff">
 <link rel="icon" href="/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap">
 <link rel="stylesheet" href="/legal/legal.css">
 <link rel="stylesheet" href="/paginas.css">
 ${(o.jsonld || []).map((j) => `<script type="application/ld+json">${JSON.stringify(j).replace(/</g, "\\u003c")}</script>`).join("\n")}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a class="marca" href="/">Radar de <span>Plazas</span> / Oposiciones</a><a class="volver" href="/">Todas las plazas →</a></div>
+  <div class="top"><a class="marca" href="/" aria-label="Radar de Plazas, inicio"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14.5" fill="none" stroke="var(--fg)" stroke-width="1.5"/><circle cx="16" cy="16" r="9" fill="none" stroke="var(--fg)" stroke-width="1" opacity=".5"/><circle cx="16" cy="16" r="3.5" fill="none" stroke="var(--fg)" stroke-width="1"/><path d="M16 16 L16 2.5 A13.5 13.5 0 0 1 27.7 9.2 Z" fill="var(--accent)" opacity=".16"/><circle cx="22.5" cy="9" r="3.4" fill="var(--fluo-am)" stroke="var(--fg)" stroke-width="1.2"/></svg><b>Radar de Plazas</b></a><a class="volver" href="/">Ver todas las plazas</a></div>
 ${o.cuerpo}
   <footer><nav aria-label="Más"><a href="/quienes-somos.html">Quiénes somos</a><a href="/oposiciones">Por sector</a><a href="/estadisticas.html">Estadísticas</a><a href="/guias/">Guías</a><a href="/sueldos.html">Sueldos</a><a href="/legal/aviso-legal.html">Aviso legal</a><a href="/legal/privacidad.html">Privacidad</a><a href="/contacto.html">Contacto</a></nav><span>© 2026 @gadivi · Radar de Plazas / Oposiciones. Información de fuentes oficiales (BOE, CIDO, TMB): comprueba siempre la convocatoria publicada.</span></footer>
 </div>
