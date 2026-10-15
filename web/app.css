@@ -494,3 +494,8 @@ dialog.hoja::backdrop{background:rgba(20,27,51,.38)}
   .tabs .n{order:1;margin:0;font:800 condensed 24px/1 var(--font-display);color:var(--muted)}
   .tabs button[aria-pressed="true"] .n{color:var(--fg)}
 }
+
+/* ---------- Titular: Bricolage Grotesque en magenta ---------- */
+:root{--magenta:#c2187a}
+.intro,.saludo .hola{font-family:"Bricolage Grotesque",var(--font-body);font-weight:800;font-stretch:normal;font-size:clamp(34px,9.5vw,58px);line-height:.98;letter-spacing:-.035em;color:var(--magenta)}
+.saludo .hola b{color:inherit}

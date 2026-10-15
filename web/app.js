@@ -7,7 +7,7 @@ const ls={get(k,d=null){try{const v=localStorage.getItem(k);return v===null?d:v}
 // ---------- Idioma (castellano / catalán) ----------
 let LANG=ls.get("rp_lang","es");
 const CA={
-  "Nuevas":"Noves","Todas abiertas":"Totes obertes","Mis candidaturas":"Les meves candidatures","Descartadas":"Descartades","Abiertas":"Obertes","Mías":"Meves","Oposiciones y bolsas, en un mapa":"Oposicions i borses, en un mapa","Convocatorias, bolsas de trabajo e interinidades de toda España, revisadas cada día.":"Convocatòries, borses de treball i interinatges de tot l'Estat, revisats cada dia.",
+  "Nuevas":"Noves","Todas abiertas":"Totes obertes","Mis candidaturas":"Les meves candidatures","Descartadas":"Descartades","Abiertas":"Obertes","Mías":"Meves","Oposiciones y bolsas":"Oposicions i borses","Convocatorias, bolsas de trabajo e interinidades de toda España, revisadas cada día.":"Convocatòries, borses de treball i interinatges de tot l'Estat, revisats cada dia.",
   "Me interesa":"M'interessa","Presentada":"Presentada","Admitido":"Admès","Examen":"Examen","Aprobado":"Aprovat","En bolsa":"A la borsa","Descartar":"Descartar",
   "Sector":"Sector","Subcategoría":"Subcategoria","Estudios":"Estudis","Dificultad":"Dificultat","Grupo":"Grup","Lugar":"Lloc",
   "Todos":"Tots","Fácil":"Fàcil","Media":"Mitjana","Difícil":"Difícil","Sin especificar":"Sense especificar",
