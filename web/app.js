@@ -102,7 +102,9 @@ function inTab(o){
 }
 function counts(){
   const c={nuevas:0,todas:0,mias:0,descartada:0};
+  // Las cifras de las pestañas cuentan lo mismo que la lista: con los filtros y el lugar elegidos
   for(const o of S.ofertas){const m=o.marca||"nueva";
+    if(!pasaFiltros(o)||!lugarActivo(o))continue;
     if(esNueva(o)&&isOpen(o))c.nuevas++;
     if(m!=="descartada"&&isOpen(o))c.todas++;
     if(SEGUIMIENTO.has(m))c.mias++; if(m==="descartada")c.descartada++;}
