@@ -148,7 +148,7 @@ function render(){
   $("fclear").hidden=!activos;
   $("hTotal").textContent=rows.length.toLocaleString("es-ES");
   $("hTexto").textContent=(rows.length===1?"plaza ":"plazas ")+(S.tab==="nuevas"?(S.ses?"nuevas sin revisar":"nuevas esta semana"):S.tab==="mias"?"en seguimiento":S.tab==="descartada"?"descartadas":"abiertas")+" "+nombreLugar(S.place);
-  renderActivos();
+  renderActivos();renderCierran();
   if(!rows.length){
     const sinCuenta=!S.ses&&["mias","descartada"].includes(S.tab);
     const msg=sinCuenta?"Entra con tu correo para seguir plazas y verlas aquí en cualquier dispositivo.":{nuevas:S.ses?"No hay plazas nuevas sin revisar. Cuando la revisión diaria encuentre algo, aparecerá aquí y te llegará un aviso.":"No han entrado plazas nuevas esta semana con estos filtros.",
@@ -189,6 +189,28 @@ function renderM3info(rows){
   box.innerHTML=`<div><b>${esc(nombreLugar(S.place).replace(/^en (la provincia de )?/,""))}</b><span>${rows.length} ${rows.length===1?"plaza":"plazas"}${pronto?` · ${pronto} cierran en 7 días`:""}</span></div>
     <div class="acc"><button type="button" class="si" id="m3ver">Ver lista</button><button type="button" id="m3quitar" aria-label="Quitar el lugar y ver toda España">✕</button></div>`;
 }
+// Tira «Cierran esta semana»: lo que vence en 7 días o menos con los filtros y el lugar elegidos
+function renderCierran(){
+  const box=$("cierran");if(!box)return;
+  const ca=LANG==="ca";
+  const xs=S.ofertas.filter(o=>{const n=daysLeft(o);return n!==null&&n>=0&&n<=7&&(o.marca||"nueva")!=="descartada"&&pasaFiltros(o)&&lugarActivo(o)})
+    .sort((a,b)=>daysLeft(a)-daysLeft(b));
+  if(!xs.length){box.hidden=true;box.innerHTML="";return}
+  box.hidden=false;
+  const tk=o=>{const n=daysLeft(o),cls=n<=3?"urgent":"soon";
+    return `<a class="tk ${cls}" href="${esc(o.ruta?API+o.ruta:o.url)}" data-ir-card="${esc(o.id)}">
+      <b class="d">${n===0?(ca?"Avui":"Hoy"):n}</b><small>${n===0?(ca?"últim dia":"último día"):t(n===1?"día":"días")}${o.zona?`<span>${esc(o.zona)}</span>`:""}</small>
+      <span class="t">${esc(o.titulo)}</span></a>`};
+  box.innerHTML=`<h2 id="cierranT">${ca?"Tanquen aquesta setmana":"Cierran esta semana"} <small>${xs.length}</small></h2>
+    <div class="tks">${xs.slice(0,12).map(tk).join("")}${xs.length>12?`<button type="button" class="tk mas-tk" data-ver-todas>${ca?"Veure-les totes":"Verlas todas"}<small>${xs.length-12} ${ca?"més":"más"}</small></button>`:""}</div>`;
+}
+document.addEventListener("click",e=>{
+  const a=e.target.closest("[data-ir-card]");
+  if(a){const el=document.getElementById("c-"+a.dataset.irCard.replace(/[^a-zA-Z0-9]/g,"-"));
+    if(el){e.preventDefault();el.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"center"});el.classList.remove("destaca");void el.offsetWidth;el.classList.add("destaca")}
+    return}
+  if(e.target.closest("[data-ver-todas]")){$("list").scrollIntoView({behavior:"smooth",block:"start"})}
+});
 function promoOpos(o){return o.tipo==="seguridad"&&(o.subtipo==="mossos"||(o.comunidad==="Cataluña"&&["policia-local","agente-civico","vigilante"].includes(o.subtipo)))}
 function card(o){
   const n=daysLeft(o), m=o.marca||"nueva";
@@ -212,10 +234,10 @@ function card(o){
   return `<article class="card ${isOpen(o)?"":"closed"}" id="c-${esc(o.id.replace(/[^a-zA-Z0-9]/g,"-"))}">${due}<button type="button" class="descartar" data-id="${esc(o.id)}" data-marca="descartada" aria-pressed="${m==="descartada"}" aria-label="${t(m==="descartada"?"Recuperar":"Descartar")}" title="${t(m==="descartada"?"Recuperar":"Descartar")}" ${dis}><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><div class="body">
     <div class="ens"><span aria-hidden="true">${ICONO[o.tipo||"otros"]||""}</span><span>${esc(o.ens)}</span></div>
     <h2 class="titulo"><a href="${ruta}">${esc(o.titulo)}</a></h2>
-    <p class="meta">${meta.map(esc).join(" · ")}</p>
+    <p class="meta">${o.zona?`<b>${esc(o.zona)}</b>${meta.length>1?" · ":""}`:""}${meta.slice(o.zona?1:0).map(esc).join(" · ")}</p>
     <div class="tags">${tags.join("")}</div>
     <div class="acts">${o.tramiteUrl&&isOpen(o)?`<a class="primary" href="${esc(o.tramiteUrl)}" target="_blank" rel="noopener">${t("Presentar solicitud")}</a>`:""}
-      <button type="button" class="sigo" data-id="${esc(o.id)}" data-marca="interesa" aria-pressed="${sigue}" ${dis}>${sigue?"★ "+t(ETAPAS.find(e=>e[0]===m)?.[1]||"Me interesa"):"☆ "+t("Me interesa")}</button>
+      <button type="button" class="sigo" data-id="${esc(o.id)}" data-marca="interesa" aria-pressed="${sigue}" ${sigue?"":`aria-label="${t("Me interesa")}" title="${t("Me interesa")}"`} ${dis}>${sigue?"★ "+t(ETAPAS.find(e=>e[0]===m)?.[1]||"Me interesa"):`<span aria-hidden="true">☆</span> <span class="tx">${t("Me interesa")}</span>`}</button>
       <span class="ico">
         <button type="button" data-share="${esc(o.id)}" aria-label="${t("Compartir")}" title="${t("Compartir")}"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10M6 7l4-4 4 4M4 12v4h12v-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         ${o.terminiFecha&&isOpen(o)?`<a href="${API}/api/ics/${esc(o.id.split(":")[0])}/${encodeURIComponent(o.id.split(":").slice(1).join(":"))}" aria-label="${t("Calendario")}" title="${t("Calendario")}"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4.5" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 8.5h14M7 3v3M13 3v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></a>`:""}

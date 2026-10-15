@@ -32,6 +32,8 @@
 .m3-mk span.aba{top:calc(100% + 4px);left:50%;transform:translateX(-50%)}
 .m3-mk.elegida span{background:#141b33;color:#fff}
 .m3-zoom .m3-mk span,.m3-zoom .m3-et{opacity:0}
+.m3-mk.urge::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--c);pointer-events:none;opacity:0}
+@media (prefers-reduced-motion:no-preference){.m3-mk.urge::after{animation:m3ping 2.6s cubic-bezier(.2,.7,.2,1) infinite}@keyframes m3ping{0%{transform:scale(1);opacity:.8}70%,100%{transform:scale(2.6);opacity:0}}}
 .m3-yo{width:18px;height:18px;border-radius:50%;background:#2338b5;border:3px solid #fff;box-shadow:0 0 0 6px rgba(35,56,181,.2),0 1px 4px rgba(0,0,0,.3)}`;
   let map=null,D=null,opts=null,filas=[],lugar=null,etiquetas=[],listo=false,yo=null,nivel="comunidades",conBase=false,capasBase={};
 
@@ -212,7 +214,7 @@
     for(const G of grupos){
       const g=G.g,el=document.createElement("button");el.type="button";
       const n=G.n,rr=Math.min(G.r+4,Math.max(G.r,n>1?7+String(n).length*3.6:6.5));
-      el.className="m3-mk"+(G.extra?" grupo":"")+(g.sel?" elegida":"");
+      el.className="m3-mk"+(G.extra?" grupo":"")+(g.sel?" elegida":"")+(G.d>=0&&G.d<=3?" urge":"");
       el.style.setProperty("--r",rr+"px");el.style.setProperty("--c",colorPlazo(G.d===999?-1:G.d));
       el.innerHTML=`<i>${n>1?fmt(n):""}</i>`+(G.lado?`<span class="${G.lado}">${esc(g.nom)}${G.extra?` <small>+${G.extra}</small>`:""}</span>`:"");
       el.title=G.extra?`${n} plazas en ${g.nom}, ${G.otros.join(", ")}${G.extra>G.otros.length?` y ${G.extra-G.otros.length} más`:""}. Toca para acercar`:`${g.nom}: ${n} ${n==1?"plaza":"plazas"}`;
