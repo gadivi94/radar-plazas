@@ -7,7 +7,7 @@ const ls={get(k,d=null){try{const v=localStorage.getItem(k);return v===null?d:v}
 // ---------- Idioma (castellano / catalán) ----------
 let LANG=ls.get("rp_lang","es");
 const CA={
-  "Nuevas":"Noves","Todas abiertas":"Totes obertes","Mis candidaturas":"Les meves candidatures","Descartadas":"Descartades",
+  "Nuevas":"Noves","Todas abiertas":"Totes obertes","Mis candidaturas":"Les meves candidatures","Descartadas":"Descartades","Abiertas":"Obertes","Mías":"Meves","Oposiciones y bolsas, en un mapa":"Oposicions i borses, en un mapa","Convocatorias, bolsas de trabajo e interinidades de toda España, revisadas cada día.":"Convocatòries, borses de treball i interinatges de tot l'Estat, revisats cada dia.",
   "Me interesa":"M'interessa","Presentada":"Presentada","Admitido":"Admès","Examen":"Examen","Aprobado":"Aprovat","En bolsa":"A la borsa","Descartar":"Descartar",
   "Sector":"Sector","Subcategoría":"Subcategoria","Estudios":"Estudis","Dificultad":"Dificultat","Grupo":"Grup","Lugar":"Lloc",
   "Todos":"Tots","Fácil":"Fàcil","Media":"Mitjana","Difícil":"Difícil","Sin especificar":"Sense especificar",
@@ -38,7 +38,7 @@ function traducirEstatico(){
 }
 
 // ---------- Datos fijos ----------
-const TABS=[["nuevas","Nuevas"],["todas","Todas abiertas"],["mias","Mis candidaturas"],["descartada","Descartadas"]];
+const TABS=[["nuevas","Nuevas","Nuevas"],["todas","Todas abiertas","Abiertas"],["mias","Mis candidaturas","Mías"],["descartada","Descartadas","Descartadas"]];
 const ETAPAS=[["interesa","Me interesa"],["presentada","Presentada"],["admitido","Admitido"],["examen","Examen"],["aprobado","Aprobado"],["bolsa","En bolsa"]];
 const SEGUIMIENTO=new Set(ETAPAS.map(e=>e[0]));
 const DOCS=[["dni","DNI o NIE"],["titulo","Título"],["tasa","Pago de la tasa"],["idioma","Certificado de idioma"],["carne","Carné de conducir"],["medico","Certificado médico"],["meritos","Méritos y experiencia"]];
@@ -110,7 +110,7 @@ function counts(){
 }
 function render(){
   const c=counts();
-  $("tabs").innerHTML=TABS.map(([k,l])=>`<button type="button" data-tab="${k}" aria-pressed="${S.tab===k}">${t(l)}<span class="n">${c[k]}</span></button>`).join("");
+  $("tabs").innerHTML=TABS.map(([k,l,cor])=>`<button type="button" data-tab="${k}" aria-pressed="${S.tab===k}"><span class="l">${t(l)}</span><span class="c">${t(cor)}</span><span class="n">${c[k]}</span></button>`).join("");
   $("etapas").hidden=S.tab!=="mias";
   if(S.tab==="mias"){const ce=k=>S.ofertas.filter(o=>o.marca===k).length;
     $("etapas").innerHTML=`<button type="button" data-etapa="" aria-pressed="${!S.etapa}">${t("Todas")}</button>`+ETAPAS.map(([k,l])=>`<button type="button" data-etapa="${k}" aria-pressed="${S.etapa===k}">${t(l)}<small>${ce(k)}</small></button>`).join("")}

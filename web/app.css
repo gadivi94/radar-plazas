@@ -480,3 +480,17 @@ dialog.hoja::backdrop{background:rgba(20,27,51,.38)}
 }
 .tks{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 40px),transparent)}
 @media (min-width:992px){.tks{margin:0;padding-inline:0 40px;scroll-padding-inline:0}}
+
+/* ---------- Titular más corto y subtítulo ---------- */
+.sub-intro{margin:8px 0 0;font-size:16px;color:var(--muted);max-width:52ch}
+#intro.sr+.sub-intro{display:none}
+/* ---------- Pestañas: en el móvil, cuatro columnas iguales con la cifra arriba ---------- */
+.tabs .c{display:none}
+@media (max-width:560px){
+  .tabs{gap:0;overflow:visible}
+  .tabs button{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 2px 9px;font-size:13px}
+  .tabs .l{display:none}
+  .tabs .c{display:block;order:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .tabs .n{order:1;margin:0;font:800 condensed 24px/1 var(--font-display);color:var(--muted)}
+  .tabs button[aria-pressed="true"] .n{color:var(--fg)}
+}
