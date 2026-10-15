@@ -13,12 +13,12 @@
   const VISTAS={"España":[[-9.6,35.8],[4.5,43.9]],"Canarias":[[-18.3,27.5],[-13.3,29.5]]};
   const CAT_PROV={8:"Barcelona",17:"Girona",25:"Lleida",43:"Tarragona"},CAT_COD={Barcelona:8,Girona:17,Lleida:25,Tarragona:43};
   const Z_PROV=6.3,Z_MUNI=7.9; // a partir de estos zooms se ven provincias y municipios
-  const C={tierra:"#f4f6f9",agua:"#bcd6ec",linea:"#56627a",acento:"#2338b5",urgente:"#d6246a",pronto:"#e58a00",ok:"#2f9e4a",gris:"#8a93a3"};
+  const C={tierra:"#f4f6f9",agua:"#bcd6ec",linea:"#56627a",acento:"#c2187a",urgente:"#e5383b",pronto:"#e58a00",ok:"#2f9e4a",gris:"#8a93a3"};
   const CSS_ETQ=`
 .m3-et{display:flex;gap:6px;align-items:baseline;white-space:nowrap;font:600 13px/1.1 var(--font-body);color:#141b33;background:#fff;border:0;border-radius:999px;padding:5px 11px;box-shadow:0 1px 2px rgba(20,27,51,.18),0 2px 8px rgba(20,27,51,.12);cursor:pointer;transition:opacity .15s}
-.m3-et b{font-weight:800;color:#2338b5;font-variant-numeric:tabular-nums}
+.m3-et b{font-weight:800;color:#c2187a;font-variant-numeric:tabular-nums}
 .m3-et.cero{background:rgba(255,255,255,.85);color:#566079;font-weight:500;font-size:12px;padding:3px 8px;box-shadow:0 1px 2px rgba(20,27,51,.12)}
-.m3-et.elegida{background:#2338b5;color:#fff}.m3-et.elegida b{color:#fff}
+.m3-et.elegida{background:#c2187a;color:#fff}.m3-et.elegida b{color:#fff}
 .m3-et.tenue{background:none;box-shadow:none;padding:0;font:600 12px/1 var(--font-body);color:#4b5466;pointer-events:none;text-shadow:0 0 2px #fff,0 0 2px #fff,0 0 3px #fff}
 .m3-mk{position:relative;width:calc(var(--r)*2);height:calc(var(--r)*2);padding:0;border:0;background:none;cursor:pointer}
 .m3-mk i{position:absolute;inset:0;border-radius:50%;background:var(--c);border:2px solid #fff;box-shadow:0 1px 4px rgba(20,27,51,.35);color:#fff;font:800 12px/1 var(--font-body);font-style:normal;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
@@ -34,7 +34,7 @@
 .m3-zoom .m3-mk span,.m3-zoom .m3-et{opacity:0}
 .m3-mk.urge::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--c);pointer-events:none;opacity:0}
 @media (prefers-reduced-motion:no-preference){.m3-mk.urge::after{animation:m3ping 2.6s cubic-bezier(.2,.7,.2,1) infinite}@keyframes m3ping{0%{transform:scale(1);opacity:.8}70%,100%{transform:scale(2.6);opacity:0}}}
-.m3-yo{width:18px;height:18px;border-radius:50%;background:#2338b5;border:3px solid #fff;box-shadow:0 0 0 6px rgba(35,56,181,.2),0 1px 4px rgba(0,0,0,.3)}`;
+.m3-yo{width:18px;height:18px;border-radius:50%;background:#c2187a;border:3px solid #fff;box-shadow:0 0 0 6px rgba(194,24,122,.2),0 1px 4px rgba(0,0,0,.3)}`;
   let map=null,D=null,opts=null,filas=[],lugar=null,etiquetas=[],listo=false,yo=null,nivel="comunidades",conBase=false,capasBase={};
 
   function soporta(){try{const c=document.createElement("canvas");return !!(window.WebGLRenderingContext&&(c.getContext("webgl2")||c.getContext("webgl")))}catch(_){return false}}

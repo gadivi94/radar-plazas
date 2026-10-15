@@ -1,5 +1,5 @@
 /* Fichas de plazas, páginas por sector, guías y herramientas (se suma a legal/legal.css) */
-:root{--urgent-soft:#ffe1ee;--soon:#a85600;--soon-soft:#ffefd6;--ok:#1d7a3a;--ok-soft:#e2f7da}
+:root{--urgent-soft:#ffe3e3;--soon:#a85600;--soon-soft:#ffefd6;--ok:#1d7a3a;--ok-soft:#e2f7da}
 .migas{font-size:13px;color:var(--muted);margin-top:14px}
 .migas a{color:var(--muted)}
 .org{font-weight:600;color:var(--muted);margin:0 0 4px;font-size:14px}

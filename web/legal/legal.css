@@ -1,7 +1,7 @@
 /* Páginas secundarias de Radar de Plazas: la misma tinta azul, papel frío, fosforitos y letra Archivo que la portada */
 :root{
   --bg:#f1f4f8; --surface:#ffffff; --raise:#e8edf3; --fg:#141b33; --muted:#566079; --line:#dde3ec; --line-2:#c3cbd9;
-  --accent:#2338b5; --accent-ink:#ffffff; --accent-soft:#e3e7fa; --accent-dark:#172785; --urgent:#c01f55;
+  --accent:#c2187a; --accent-ink:#ffffff; --accent-soft:#fbe3f0; --accent-dark:#8f0f5a; --urgent:#c62a32;
   --fluo-am:#ffe94a; --fluo-rosa:#ff9cc9; --fluo-nar:#ffc163; --fluo-ver:#a9ee90; --mark:var(--fluo-am);
   --font-body:"Archivo","Helvetica Neue",system-ui,-apple-system,sans-serif; --font-display:var(--font-body);
   --font-mono:ui-monospace,Menlo,monospace;

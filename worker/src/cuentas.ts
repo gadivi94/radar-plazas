@@ -102,7 +102,7 @@ const otpHash = (env: Env, email: string, code: string) => sha256(`otp:${email}:
 
 async function enviarCodigo(env: Env, email: string, code: string) {
   const html = plantilla(env, `<p style="font-size:15px;margin:0 0 16px">Tu código para entrar en Radar de Plazas es:</p>
-<p style="font-size:34px;font-weight:bold;letter-spacing:8px;margin:0 0 16px;color:#2338b5">${code}</p>
+<p style="font-size:34px;font-weight:bold;letter-spacing:8px;margin:0 0 16px;color:#c2187a">${code}</p>
 <p style="font-size:13px;color:#566079;margin:0">Caduca en ${OTP_MIN} minutos. Si no lo has pedido tú, ignora este correo.</p>`);
   await enviarCorreo(env, { to: email, subject: `Tu código de Radar de Plazas: ${code}`, html, text: `Tu código para entrar en Radar de Plazas es ${code}. Caduca en ${OTP_MIN} minutos.` });
 }
@@ -239,7 +239,7 @@ export async function rutasCuenta(req: Request, env: Env, path: string, u: URL):
     if (ok) await db.prepare("UPDATE users SET avisos_email = 0 WHERE id = ?").bind(uid).run();
     const msg = ok ? "Listo: ya no recibirás avisos por correo. Puedes volver a activarlos en Mi cuenta." : "El enlace no es válido. Desactiva los avisos desde Mi cuenta.";
     return new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Avisos por correo</title>
-<body style="font-family:system-ui,sans-serif;max-width:520px;margin:40px auto;padding:0 16px;color:#141b33;background:#f1f4f8"><h1 style="font-size:24px">Radar de Plazas</h1><p>${msg}</p><p><a href="${sitio(env)}" style="color:#2338b5">Volver a Radar de Plazas</a></p></body>`,
+<body style="font-family:system-ui,sans-serif;max-width:520px;margin:40px auto;padding:0 16px;color:#141b33;background:#f1f4f8"><h1 style="font-size:24px">Radar de Plazas</h1><p>${msg}</p><p><a href="${sitio(env)}" style="color:#c2187a">Volver a Radar de Plazas</a></p></body>`,
       { status: ok ? 200 : 400, headers: { "Content-Type": "text/html; charset=utf-8" } });
   }
 

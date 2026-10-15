@@ -4,11 +4,11 @@
    Una sola familia, Archivo (Omnibus-Type), jugando con su anchura: estrecha y gruesa para las cifras, ancha para los titulares. */
 :root{
   --bg:#f1f4f8; --surface:#ffffff; --raise:#e8edf3; --fg:#141b33; --muted:#566079; --line:#dde3ec; --line-2:#c3cbd9;
-  --accent:#2338b5; --accent-ink:#ffffff; --accent-soft:#e3e7fa; --accent-dark:#172785;
+  --accent:#c2187a; --accent-ink:#ffffff; --accent-soft:#fbe3f0; --accent-dark:#8f0f5a;
   --fluo-am:#ffe94a; --fluo-rosa:#ff9cc9; --fluo-nar:#ffc163; --fluo-ver:#a9ee90;
   --sun:#141b33; --sun-soft:var(--fluo-am);
-  --urgent:#c01f55; --urgent-soft:#ffe1ee; --soon:#a85600; --soon-soft:#ffefd6; --ok:#1d7a3a; --ok-soft:#e2f7da;
-  --sea:#bcd6ec; --land:#f4f6f9; --heat1:#dfe4fa; --heat2:#8d9de4; --heat3:#2338b5; --border-com:#9aa5b8; --border-prov:#56627a;
+  --urgent:#c62a32; --urgent-soft:#ffe3e3; --soon:#a85600; --soon-soft:#ffefd6; --ok:#1d7a3a; --ok-soft:#e2f7da;
+  --sea:#bcd6ec; --land:#f4f6f9; --heat1:#f8dcec; --heat2:#e27cb6; --heat3:#c2187a; --border-com:#9aa5b8; --border-prov:#56627a;
   --font-body:"Archivo","Helvetica Neue",system-ui,-apple-system,sans-serif;
   --font-display:var(--font-body);
   --r-s:8px; --r-m:10px; --r-l:16px;

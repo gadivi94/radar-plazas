@@ -6,9 +6,9 @@
   try{var s=document.currentScript;if(s&&s.src)BASE=new URL(s.src).origin}catch(e){}
   var esc=function(t){return String(t==null?"":t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})};
   var css="[data-radar-plazas]{font-family:system-ui,-apple-system,Segoe UI,sans-serif;border:1px solid #dde3ec;border-radius:10px;padding:12px;background:#fff;color:#141b33;max-width:560px}"+
-    "[data-radar-plazas] h3{margin:0 0 8px;font-size:16px}[data-radar-plazas] h3 span{color:#2338b5}[data-radar-plazas] ul{list-style:none;margin:0;padding:0}"+
+    "[data-radar-plazas] h3{margin:0 0 8px;font-size:16px}[data-radar-plazas] h3 span{color:#c2187a}[data-radar-plazas] ul{list-style:none;margin:0;padding:0}"+
     "[data-radar-plazas] li{padding:8px 0;border-top:1px dashed #dde3ec}[data-radar-plazas] a{color:#141b33;text-decoration:none;font-weight:600}"+
-    "[data-radar-plazas] small{display:block;color:#566079;font-weight:400}[data-radar-plazas] .rp-pie{margin-top:8px;font-size:12px}[data-radar-plazas] .rp-pie a{color:#2338b5}";
+    "[data-radar-plazas] small{display:block;color:#566079;font-weight:400}[data-radar-plazas] .rp-pie{margin-top:8px;font-size:12px}[data-radar-plazas] .rp-pie a{color:#c2187a}";
   var st=document.createElement("style");st.textContent=css;document.head.appendChild(st);
   function fmt(iso){var p=iso.split("-");return p[2]+"/"+p[1]+"/"+p[0]}
   Array.prototype.forEach.call(document.querySelectorAll("[data-radar-plazas]"),function(el){
